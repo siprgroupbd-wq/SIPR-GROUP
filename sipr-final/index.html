@@ -289,14 +289,11 @@ var NAVS=[
   {id:"transactions",ic:"&#8645;",lb:"Transactions"},
   {id:"members",ic:"&#9711;",lb:"Members"},
   {id:"goals",ic:"&#127919;",lb:"Goals & Targets"},
-  {id:"adviser",ic:"&#129302;",lb:"Adviser"},
-  {id:"proposals",ic:"&#128203;",lb:"Proposals"},
-  {id:"announcements",ic:"&#128226;",lb:"Announcements"},
+  {id:"noticeboard",ic:"&#128276;",lb:"Notice Board"},
   {id:"profit-share",ic:"&#9733;",lb:"Profit Share"},
   {id:"expenses",ic:"&#128184;",lb:"Expense Tracker"},
   {id:"documents",ic:"&#128196;",lb:"Documents"},
   {id:"activity",ic:"&#128336;",lb:"Activity Log"},
-  {id:"profile",ic:"&#128100;",lb:"My Profile"},
   {id:"summary",ic:"&#9636;",lb:"Summary"},
   {id:"about",ic:"&#10022;",lb:"About SIPR"},
   {id:"users",ic:"&#9881;",lb:"Control Panel",adm:true}
@@ -471,7 +468,7 @@ var A={
     if($("sb-nav"))$("sb-nav").innerHTML=h;
     if($("dr-inner"))$("dr-inner").innerHTML=$("sidebar").innerHTML;
     var bh="";
-    var pri=["dashboard","payments","investments","transactions","adviser"];
+    var pri=["dashboard","payments","investments","transactions","members"];
     pri.forEach(function(id){var n=NAVS.find(function(x){return x.id===id;});if(!n)return;var on=n.id===S.tab;bh+="<button onclick='A.go(\""+n.id+"\")' style='flex:1;padding:9px 2px 7px;border:none;background:transparent;color:"+(on?"var(--grn)":"var(--mut)")+";display:flex;flex-direction:column;align-items:center;gap:2px;cursor:pointer'><span style='font-size:18px'>"+n.ic+"</span><span style='font-size:7px;font-weight:700;letter-spacing:.5px'>"+n.lb.split(" ")[0].toUpperCase()+"</span>"+(on?"<div style='width:18px;height:2px;background:var(--grn);border-radius:99px'></div>":"")+"</button>";});
     bh+="<button onclick='A.openDr()' style='flex:1;padding:9px 2px 7px;border:none;background:transparent;color:var(--mut);display:flex;flex-direction:column;align-items:center;gap:2px;cursor:pointer'><span style='font-size:18px'>&#8943;</span><span style='font-size:7px;font-weight:700'>MORE</span></button>";
     if($("bot-nav"))$("bot-nav").innerHTML=bh;
@@ -496,10 +493,8 @@ var A={
     var map={dashboard:A.pDash,investments:A.pInv,transactions:A.pTx,members:A.pMem,goals:A.pGoals,"profit-share":A.pProfitShare,expenses:A.pExpenses,profile:A.pProfile,summary:A.pSummary,about:A.pAbout};
     if(map[tab]){c.innerHTML=map[tab]();return;}
     if(tab==="payments"){c.innerHTML=A.pPay();return;}
-    if(tab==="announcements"){c.innerHTML=A.pAnn();A.loadAnn();return;}
+    if(tab==="noticeboard"){c.innerHTML=A.pNotice();A.loadNotice();return;}
     if(tab==="documents"){c.innerHTML=A.pDocs();A.loadDocs();return;}
-    if(tab==="adviser"){c.innerHTML=A.pAdviser();A.renderChat();return;}
-    if(tab==="proposals"){c.innerHTML=A.pProposals();A.loadProps();return;}
     if(tab==="activity"){c.innerHTML=A.pActivity();A.loadActivity();return;}
     if(tab==="users"){c.innerHTML=S.role==="admin"?A.pUsers():"<div class='card' style='text-align:center;padding:48px;color:var(--mut)'>Admin access required.</div>";return;}
   },
@@ -535,88 +530,106 @@ var A={
   },
 
   // ═══════════════ PROFESSIONAL PAYMENT SHEET ═══════════════
+  _reportTxt:function(ps,pn,up){
+    var mn=MF[S.payM]+" "+S.payY,collected=ps.reduce(function(s,m){return s+(m.paid?m.paidAmt:0);},0),rate=Math.round(pn/9*100);
+    var txt="*SIPR GROUP — Payment Report*\n*"+mn+"*\n━━━━━━━━━━━━━━━━━━\n\n";
+    txt+="Paid ("+pn+"/9):\n";
+    ps.filter(function(m){return m.paid;}).forEach(function(m){txt+="  ✓ "+m.name+" — "+fmt(m.paidAmt)+" ("+fd(m.paidDate)+")\n";});
+    if(up.length){txt+="\nPending ("+up.length+"/9):\n";up.forEach(function(m){txt+="  ✗ "+m.name+"\n";});}
+    txt+="\n━━━━━━━━━━━━━━━━━━\n";
+    txt+="Total: "+fmt(collected)+"  |  Rate: "+rate+"%\nbKash: 01845526909 (Shoeb)\nDeadline: 10th\n— Jaziro, SIPR Group";
+    return txt;
+  },
+  sendReportWa:function(){
+    var ps=A.payS(S.payY,S.payM),pn=ps.filter(function(m){return m.paid;}).length,up=ps.filter(function(m){return !m.paid;});
+    window.open("https://wa.me/?text="+encodeURIComponent(A._reportTxt(ps,pn,up)),"_blank");
+    toast("Opening WhatsApp...");
+  },
+  sendReportEmail:function(){
+    var ps=A.payS(S.payY,S.payM),pn=ps.filter(function(m){return m.paid;}).length,up=ps.filter(function(m){return !m.paid;});
+    var mn=MF[S.payM]+" "+S.payY;
+    window.location.href="mailto:?subject="+encodeURIComponent("SIPR Payment Report — "+mn)+"&body="+encodeURIComponent(A._reportTxt(ps,pn,up));
+    toast("Opening email...");
+  },
+  openPrintReport:function(){
+    var ps=A.payS(S.payY,S.payM),pn=ps.filter(function(m){return m.paid;}).length;
+    var collected=ps.reduce(function(s,m){return s+(m.paid?m.paidAmt:0);},0);
+    var mn=MF[S.payM]+" "+S.payY,rate=Math.round(pn/9*100);
+    var today=new Date().toLocaleDateString("en-GB",{day:"2-digit",month:"long",year:"numeric"});
+    var rows="";
+    ps.forEach(function(m,i){rows+="<tr style=\"background:"+(i%2===0?"#f8fafb":"#fff")+"\"><td style=\"padding:11px 14px;font-weight:600\">"+m.name+"</td><td style=\"padding:11px 14px;color:#64748b;font-size:12px\">"+m.title+"</td><td style=\"padding:11px 14px;text-align:center\"><span style=\"padding:3px 12px;border-radius:99px;font-size:12px;font-weight:700;background:"+(m.paid?"#dcfce7":"#fee2e2")+";color:"+(m.paid?"#15803d":"#dc2626")+"\">"+(m.paid?"✓ Paid":"✗ Pending")+"</span></td><td style=\"padding:11px 14px;text-align:right;font-weight:700;color:"+(m.paid?"#15803d":"#dc2626")+"\">"+(m.paid?fmt(m.paidAmt):"BDT "+DUE+" due")+"</td><td style=\"padding:11px 14px;text-align:center;color:#64748b;font-size:12px\">"+(m.paid?fd(m.paidDate):"—")+"</td></tr>";});
+    var html="<!DOCTYPE html><html><head><meta charset=\"UTF-8\"/><title>SIPR Report</title><style>*{box-sizing:border-box;margin:0;padding:0}body{font-family:'Segoe UI',Arial,sans-serif;padding:36px 28px;max-width:720px;margin:0 auto}.np{display:flex;gap:10px;margin-top:24px;justify-content:center}@media print{.np{display:none}}</style></head><body>";
+    html+="<div style=\"display:flex;justify-content:space-between;padding-bottom:20px;border-bottom:3px solid #4f8ef7;margin-bottom:28px\"><div><div style=\"font-size:11px;letter-spacing:3px;color:#4f8ef7;font-weight:700;margin-bottom:6px\">SIPR GROUP — CONFIDENTIAL</div><div style=\"font-size:28px;font-weight:900\">Payment Report</div><div style=\"font-size:20px;font-weight:700;color:#4f8ef7\">"+mn+"</div></div><div style=\"text-align:right\"><div style=\"font-size:11px;color:#64748b\">Generated</div><div style=\"font-weight:700\">"+today+"</div><div style=\"font-size:11px;color:#64748b;margin-top:8px\">bKash: 01845526909</div></div></div>";
+    html+="<div style=\"display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:12px;margin-bottom:24px\">";
+    [[pn+"/9","PAID","#15803d","#dcfce7"],[(9-pn)+"/9","PENDING","#dc2626","#fee2e2"],[fmt(collected),"COLLECTED","#1d4ed8","#dbeafe"],[rate+"%","RATE",rate>=80?"#15803d":rate>=50?"#d97706":"#dc2626",rate>=80?"#dcfce7":rate>=50?"#fef3c7":"#fee2e2"]].forEach(function(x){html+="<div style=\"background:"+x[3]+";border-radius:10px;padding:14px;text-align:center\"><div style=\"font-size:9px;letter-spacing:1.5px;color:"+x[2]+";font-weight:700;margin-bottom:4px\">"+x[1]+"</div><div style=\"font-size:20px;font-weight:900;color:"+x[2]+"\">"+x[0]+"</div></div>";});
+    html+="</div><table style=\"width:100%;border-collapse:collapse;border:1px solid #e2e8f0\"><thead><tr style=\"background:#1a2233\"><th style=\"padding:12px 14px;text-align:left;color:#fff;font-size:11px\">MEMBER</th><th style=\"padding:12px 14px;text-align:left;color:#fff;font-size:11px\">ROLE</th><th style=\"padding:12px 14px;text-align:center;color:#fff;font-size:11px\">STATUS</th><th style=\"padding:12px 14px;text-align:right;color:#fff;font-size:11px\">AMOUNT</th><th style=\"padding:12px 14px;text-align:center;color:#fff;font-size:11px\">DATE PAID</th></tr></thead><tbody>"+rows+"</tbody><tfoot><tr style=\"background:#f1f5f9;border-top:2px solid #1a2233\"><td colspan=\"3\" style=\"padding:13px 14px;font-weight:800\">TOTAL COLLECTED</td><td style=\"padding:13px 14px;text-align:right;font-weight:900;color:#15803d;font-size:16px\">"+fmt(collected)+"</td><td></td></tr></tfoot></table>";
+    html+="<div style=\"margin-top:20px;padding-top:16px;border-top:1px solid #e2e8f0;display:flex;justify-content:space-between;font-size:11px;color:#94a3b8\"><span>SIPR Group — Private & Confidential</span><span>Invest. Grow. Prosper.</span></div>";
+    html+="<div class=\"np\"><button onclick=\"window.print()\" style=\"padding:12px 28px;background:#1a2233;color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer\">Print / Save PDF</button><button onclick=\"window.close()\" style=\"padding:12px 20px;background:#f1f5f9;color:#1a2233;border:none;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer\">Close</button></div>";
+    html+="</body></html>";
+    var win=window.open("","_blank","width=820,height=700");win.document.write(html);win.document.close();
+  },
+
   pPay:function(){
-    var ia=S.role==="admin",cw=S.role==="admin"||S.role==="manager";
-    // Build all month keys from transactions + current month
+    var ia=S.role==="admin",cw=ia||S.role==="manager";
+    var cn=new Date(),ck=cn.getFullYear()+"-"+String(cn.getMonth()+1).padStart(2,"0");
     var allKeys={};
     S.txs.filter(function(t){return t.type==="deposit";}).forEach(function(t){var d=new Date(t.date);allKeys[d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")]=true;});
-    var cn=new Date(),ck=cn.getFullYear()+"-"+String(cn.getMonth()+1).padStart(2,"0");
     allKeys[ck]=true;
     var cols=Object.keys(allKeys).sort();
-
-    // Build payment map: mem.id → monthKey → {paid, amount, date}
-    var payMap={};
-    S.mems.forEach(function(mb){payMap[mb.id]={};cols.forEach(function(k){payMap[mb.id][k]={paid:false,amount:0,date:null};});});
-    S.txs.filter(function(t){return t.type==="deposit";}).forEach(function(t){var u=resolveUID(t);if(!u)return;var d=new Date(t.date),k=d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0");if(payMap[u]&&payMap[u][k]!==undefined){payMap[u][k]={paid:true,amount:Number(t.amount),date:t.date,txId:t.id};}});
-
-    var ps=A.payS(S.payY,S.payM),pn=ps.filter(function(m){return m.paid;}).length,up=ps.filter(function(m){return !m.paid;});
-
-    var h="<div class='fc'>";
-    h+="<div><h2 style='font-weight:800;font-size:22px;letter-spacing:-.5px'>Monthly Payments</h2><p style='font-size:13px;color:var(--mut);margin-top:4px'>Full payment ledger &mdash; all members, all months at a glance.</p></div>";
-
-    // Summary cards
     var totalCollected=S.txs.filter(function(t){return t.type==="deposit";}).reduce(function(s,t){return s+Number(t.amount);},0);
-    h+="<div class='g4'>";
-    h+="<div class='sc' style='background:var(--gdm);border-color:var(--gbr);text-align:center'><div style='color:var(--mut);font-size:9px;letter-spacing:2px;font-weight:700;margin-bottom:8px'>PAID THIS MONTH</div><div style='color:var(--grn);font-weight:900;font-size:28px'>"+pn+"<span style='font-size:14px;color:var(--mut)'>/9</span></div></div>";
-    h+="<div class='sc' style='background:#1a040488;border-color:#7f1d1d44;text-align:center'><div style='color:var(--mut);font-size:9px;letter-spacing:2px;font-weight:700;margin-bottom:8px'>PENDING THIS MONTH</div><div style='color:#ef4444;font-weight:900;font-size:28px'>"+(9-pn)+"<span style='font-size:14px;color:var(--mut)'>/9</span></div></div>";
-    h+="<div class='sc' style='background:var(--sur2);border-color:var(--bor);text-align:center'><div style='color:var(--mut);font-size:9px;letter-spacing:2px;font-weight:700;margin-bottom:8px'>TOTAL COLLECTED</div><div style='color:var(--txt);font-weight:900;font-size:18px'>"+fmt(totalCollected)+"</div></div>";
-    h+="<div class='sc' style='background:var(--sur2);border-color:var(--bor);text-align:center'><div style='color:var(--mut);font-size:9px;letter-spacing:2px;font-weight:700;margin-bottom:8px'>MONTHS TRACKED</div><div style='color:var(--blue);font-weight:900;font-size:28px'>"+cols.length+"</div></div>";
+    var ps=A.payS(S.payY,S.payM),pn=ps.filter(function(m){return m.paid;}).length,up=ps.filter(function(m){return !m.paid;});
+    var rate=Math.round(pn/9*100),collected=ps.reduce(function(s,m){return s+(m.paid?m.paidAmt:0);},0);
+    var dayOfMonth=new Date().getDate(),isOverdue=dayOfMonth>10&&new Date().getMonth()===S.payM&&new Date().getFullYear()===S.payY&&up.length>0;
+    if(!S.payMode)S.payMode="single";
+    var h="<div class='fc'>";
+    h+="<div style='display:flex;justify-content:space-between;align-items:flex-end;flex-wrap:wrap;gap:12px'><div><h2 style='font-weight:800;font-size:22px'>Monthly Payments</h2><p style='font-size:13px;color:var(--mut);margin-top:4px'>Track contributions, send reports and reminders.</p></div>";
+    if(ia)h+="<button onclick='A.openTx(null,\"deposit\")' class='ba'>+ Add Payment</button>";
     h+="</div>";
-
-    // THE PROFESSIONAL SHEET
-    h+="<div class='card' style='padding:0;overflow:hidden'>";
-    h+="<div style='padding:14px 20px;border-bottom:1px solid var(--bor);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px'>";
-    h+="<div style='font-size:11px;letter-spacing:2px;color:var(--mut);font-weight:700'>&#128197; PAYMENT LEDGER &mdash; ALL MONTHS</div>";
-    h+="<div style='display:flex;gap:10px;align-items:center'>";
-    h+="<div style='display:flex;gap:6px;align-items:center;font-size:11px;color:var(--mut)'><div style='width:12px;height:12px;border-radius:3px;background:#001f14;border:1px solid var(--gbr)'></div>Paid</div>";
-    h+="<div style='display:flex;gap:6px;align-items:center;font-size:11px;color:var(--mut)'><div style='width:12px;height:12px;border-radius:3px;background:#1a0404;border:1px solid #7f1d1d'></div>Unpaid</div>";
-    h+="</div></div>";
-    h+="<div class='sheet-wrap'>";
-    h+="<table class='sheet'><thead><tr>";
-    h+="<th style='text-align:left'>MEMBER</th>";
-    cols.forEach(function(k){var p=k.split("-");var isNow=k===ck;h+="<th style='text-align:center;"+(isNow?"color:var(--grn);":"")+"'>"+MS[parseInt(p[1])-1].toUpperCase()+"<br><span style='font-size:8px;font-weight:500;letter-spacing:0'>"+p[0]+"</span></th>";});
-    h+="<th style='text-align:center'>TOTAL</th><th style='text-align:center'>PAID</th></tr></thead><tbody>";
-
-    S.mems.forEach(function(mb){
-      var memTotal=0,memPaid=0;
-      h+="<tr><td><div style='display:flex;align-items:center;gap:8px'>"+av(mb.name,28)+"<div><div style='font-size:13px;font-weight:700'>"+mb.name+"</div><div style='font-size:9px;color:var(--dim)'>"+mb.title+"</div></div></div></td>";
-      cols.forEach(function(k){
-        var cell=payMap[mb.id]?payMap[mb.id][k]:null;
-        var isNow=k===ck;
-        if(cell&&cell.paid){memTotal+=cell.amount;memPaid++;h+="<td class='cell-paid'"+(isNow?"style='outline:1px solid var(--gbr);'":"")+" title='Paid "+fmt(cell.amount)+" on "+fd(cell.date)+"'>&#10003;<br><span style='font-size:9px'>"+fmt(cell.amount).replace("BDT ","")+"</span></td>";}
-        else{h+="<td class='cell-unpaid'"+(isNow?"style='outline:1px solid #7f1d1d;animation:blink 2s infinite'":"")+" title='Not paid'>&#8212;</td>";}
-      });
-      h+="<td style='text-align:center;color:var(--grn);font-weight:700;font-size:12px'>"+fmt(memTotal)+"</td>";
-      h+="<td style='text-align:center'><span style='background:"+( memPaid===cols.length?"var(--gdm)":"var(--sur2)")+";color:"+(memPaid===cols.length?"var(--grn)":"var(--mut)")+";padding:3px 8px;border-radius:99px;font-size:10px;font-weight:700'>"+memPaid+"/"+cols.length+"</span></td>";
-      h+="</tr>";
-    });
-
-    // Footer totals row
-    h+="</tbody><tfoot><tr><td style='padding:12px 16px;font-weight:800;font-size:12px;color:var(--grn)'>MONTHLY TOTAL</td>";
-    cols.forEach(function(k){var colTotal=0,colPaid=0;S.mems.forEach(function(mb){var cell=payMap[mb.id]?payMap[mb.id][k]:null;if(cell&&cell.paid){colTotal+=cell.amount;colPaid++;}});h+="<td style='text-align:center;padding:10px 12px'><div style='color:var(--grn);font-weight:700;font-size:11px'>"+fmt(colTotal)+"</div><div style='font-size:9px;color:var(--mut)'>"+colPaid+"/9</div></td>";});
-    h+="<td style='text-align:center;color:var(--grn);font-weight:800;padding:12px'>"+fmt(totalCollected)+"</td><td></td></tr></tfoot>";
-    h+="</table></div></div>";
-
-    // Reminder section
-    if(ia&&up.length>0){
-      h+="<div class='card' style='border-color:#3d1010;background:linear-gradient(135deg,var(--sur),#1a0808)'>";
-      h+="<div style='display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;margin-bottom:14px'>";
-      h+="<div><div style='color:#ef4444;font-size:11px;font-weight:700;letter-spacing:1.5px'>REMINDERS &mdash; "+up.length+" PENDING THIS MONTH</div><div style='font-size:12px;color:var(--dim);margin-top:4px'>"+MS[S.payM]+" "+S.payY+"</div></div>";
-      h+="<div style='display:flex;gap:8px'><select id='pay-month-sel' class='inp' style='width:auto;padding:7px 12px' onchange='S.payM=parseInt(this.value)'>";
-      MS.forEach(function(m,i){h+="<option value='"+i+"'"+(i===S.payM?" selected":"")+">"+m+"</option>";});
-      h+="</select><select id='pay-year-sel' class='inp' style='width:auto;padding:7px 12px' onchange='S.payY=parseInt(this.value)'>";
-      [2026,2027,2028].forEach(function(y){h+="<option"+(y===S.payY?" selected":"")+">"+y+"</option>";});
-      h+="</select></div></div>";
-      h+="<div style='display:flex;flex-wrap:wrap;gap:10px'>";
-      up.forEach(function(m){h+="<div style='background:var(--sur2);border-radius:12px;padding:12px 16px;border:1px solid #3d1010;display:flex;align-items:center;gap:10px;flex:1;min-width:200px'>"+av(m.name,36)+"<div style='flex:1'><div style='font-weight:700;font-size:13px'>"+m.name+"</div><div style='font-size:11px;color:var(--dim)'>Pending "+fmt(DUE)+"</div></div><div style='display:flex;gap:6px'><button onclick='A.wa(\""+m.phone+"\",\""+m.name+"\","+S.payM+","+S.payY+")' style='padding:6px 10px;border-radius:8px;border:1px solid var(--gbr);background:var(--gdm);color:var(--grn);font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap'>&#128172;</button><button onclick='A.em(\""+m.gmail+"\",\""+m.name+"\","+S.payM+","+S.payY+")' style='padding:6px 10px;border-radius:8px;border:1px solid var(--bor);background:var(--sur2);color:var(--mut);font-size:11px;cursor:pointer'>&#9993;</button></div></div>";});
-      h+="</div>";
-      h+="<div style='margin-top:14px;padding-top:14px;border-top:1px solid var(--bor)'><button onclick='A.bulkWa()' class='ba'>&#128172; Send WhatsApp to All "+up.length+" Pending</button></div>";
-      h+="</div>";
+    if(isOverdue)h+="<div style='border:1px solid #7f1d1d;border-radius:14px;padding:14px 18px;background:#0e0505;display:flex;align-items:center;gap:12px'><span style='font-size:20px'>⚠️</span><div><div style='color:#f87171;font-weight:700'>OVERDUE — Past 10th</div><div style='color:var(--dim);font-size:12px;margin-top:2px'>"+up.length+" member"+(up.length>1?"s have":"has")+" not paid for "+MF[S.payM]+".</div></div></div>";
+    h+="<div class='card' style='padding:14px 18px'><div style='display:flex;align-items:center;gap:12px;flex-wrap:wrap'>";
+    h+="<span style='font-size:11px;color:var(--mut);font-weight:700;letter-spacing:1px'>VIEWING:</span>";
+    h+="<select id='pay-ms' class='inp' style='width:auto;padding:7px 12px' onchange='S.payM=parseInt(this.value);A.render(\"payments\")'>";
+    MS.forEach(function(m,i){h+="<option value='"+i+"'"+(i===S.payM?" selected":"")+">"+m+"</option>";});
+    h+="</select><select id='pay-ys' class='inp' style='width:auto;padding:7px 12px' onchange='S.payY=parseInt(this.value);A.render(\"payments\")'>";
+    [2026,2027,2028].forEach(function(y){h+="<option"+(y===S.payY?" selected":"")+">"+y+"</option>";});
+    h+="</select><div style='display:flex;gap:4px;margin-left:auto'>";
+    h+="<button onclick='S.payMode=\"single\";A.render(\"payments\")' class='tab-btn "+(S.payMode==="single"?"on":"")+"'>Monthly Report</button>";
+    h+="<button onclick='S.payMode=\"all\";A.render(\"payments\")' class='tab-btn "+(S.payMode==="all"?"on":"")+"'>Full Ledger</button>";
+    h+="</div></div></div>";
+    if(S.payMode==="single"){
+      h+="<div class='g4'><div class='sc' style='background:var(--gdm);border-color:var(--gbr);text-align:center'><div style='color:var(--mut);font-size:9px;letter-spacing:2px;font-weight:700;margin-bottom:8px'>PAID</div><div style='color:var(--grn);font-weight:900;font-size:28px'>"+pn+"<span style='font-size:14px;color:var(--mut)'>/9</span></div></div><div class='sc' style='background:#1a040488;border-color:#7f1d1d44;text-align:center'><div style='color:var(--mut);font-size:9px;letter-spacing:2px;font-weight:700;margin-bottom:8px'>PENDING</div><div style='color:#ef4444;font-weight:900;font-size:28px'>"+(9-pn)+"<span style='font-size:14px;color:var(--mut)'>/9</span></div></div><div class='sc' style='background:var(--sur2);text-align:center'><div style='color:var(--mut);font-size:9px;letter-spacing:2px;font-weight:700;margin-bottom:8px'>COLLECTED</div><div style='color:var(--txt);font-weight:900;font-size:18px'>"+fmt(collected)+"</div></div><div class='sc' style='background:var(--sur2);text-align:center'><div style='color:var(--mut);font-size:9px;letter-spacing:2px;font-weight:700;margin-bottom:8px'>RATE</div><div style='color:"+(rate>=80?"var(--grn)":rate>=50?"var(--gold)":"var(--red)")+";font-weight:900;font-size:28px'>"+rate+"%</div></div></div>";
+      h+="<div class='card' style='padding:0;overflow:hidden'><div style='background:linear-gradient(135deg,var(--gdm),#001428);padding:18px 22px;border-bottom:1px solid var(--bor);display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px'><div><div style='color:var(--grn);font-size:10px;font-weight:700;letter-spacing:2px;margin-bottom:4px'>MONTHLY PAYMENT REPORT</div><div style='font-weight:900;font-size:20px'>"+MF[S.payM]+" "+S.payY+"</div></div>";
+      h+="<div style='display:flex;gap:8px;flex-wrap:wrap'>";
+      h+="<button onclick='A.openPrintReport()' style='padding:8px 14px;border-radius:10px;border:1px solid var(--gbr);background:var(--gdm);color:var(--grn);font-size:12px;font-weight:700;cursor:pointer'>PDF / Print</button>";
+      h+="<button onclick='A.sendReportWa()' style='padding:8px 14px;border-radius:10px;border:1px solid #25d36644;background:#0a2e1a;color:#25d366;font-size:12px;font-weight:700;cursor:pointer'>WhatsApp</button>";
+      h+="<button onclick='A.sendReportEmail()' style='padding:8px 14px;border-radius:10px;border:1px solid var(--bor);background:var(--sur2);color:var(--mut);font-size:12px;font-weight:700;cursor:pointer'>Email</button>";
+      h+="</div></div>";
+      h+="<div class='sheet-wrap'><table class='sheet'><thead><tr><th style='text-align:left'>MEMBER</th><th style='text-align:left'>ROLE</th><th style='text-align:center'>STATUS</th><th style='text-align:center'>AMOUNT</th><th style='text-align:center'>DATE PAID</th></tr></thead><tbody>";
+      ps.forEach(function(m){h+="<tr><td><div style='display:flex;align-items:center;gap:8px'>"+av(m.name,28)+"<span style='font-weight:700;font-size:13px'>"+m.name+"</span></div></td><td style='font-size:11px;color:var(--mut)'>"+m.title+"</td><td class='"+(m.paid?"cell-paid":"cell-unpaid")+"'>"+(m.paid?"✓ Paid":"— Pending")+"</td><td style='text-align:center;color:"+(m.paid?"var(--grn)":"var(--dim)")+";font-weight:700'>"+(m.paid?fmt(m.paidAmt):"BDT "+DUE+" due")+"</td><td style='text-align:center;color:var(--mut);font-size:12px'>"+(m.paid?fd(m.paidDate):"—")+"</td></tr>";});
+      h+="</tbody><tfoot><tr><td colspan='3' style='padding:12px 16px;color:var(--grn);font-weight:700'>TOTAL COLLECTED</td><td style='text-align:center;color:var(--grn);padding:12px;font-size:14px;font-weight:900'>"+fmt(collected)+"</td><td></td></tr></tfoot></table></div></div>";
+      if(cols.length>0){
+        h+="<div class='card'><div style='font-size:11px;letter-spacing:2px;color:var(--mut);font-weight:700;margin-bottom:14px'>PAYMENT STREAK</div><div style='display:flex;flex-direction:column;gap:8px'>";
+        S.mems.forEach(function(mb){var streak=0,sc=cols.slice().reverse();for(var si=0;si<sc.length;si++){var k=sc[si];var tx=S.txs.find(function(t){return txMatch(t,mb)&&t.type==="deposit"&&new Date(t.date).getFullYear()===parseInt(k.split("-")[0])&&new Date(t.date).getMonth()===parseInt(k.split("-")[1])-1;});if(tx)streak++;else break;}var pt=cols.length>0?Math.round(streak/cols.length*100):0;h+="<div style='display:flex;align-items:center;gap:12px'>"+av(mb.name,30)+"<div style='flex:1'><div style='display:flex;justify-content:space-between;margin-bottom:4px'><span style='font-size:13px;font-weight:700'>"+mb.name+"</span><span style='font-size:12px;color:"+(streak===cols.length&&cols.length>0?"var(--grn)":streak>0?"var(--gold)":"var(--red)")+";font-weight:800'>"+streak+" in a row"+(streak===cols.length&&cols.length>0?" 🏆":"")+"</span></div><div class='pbar'><div class='pfill' style='width:"+pt+"%;background:"+(pt===100?"linear-gradient(90deg,var(--gbr),var(--grn))":pt>=50?"linear-gradient(90deg,#78350f,var(--gold))":"linear-gradient(90deg,#7f1d1d,var(--red))")+"'></div></div></div></div>";});
+        h+="</div></div>";
+      }
+      if(cw&&up.length>0){
+        h+="<div class='card' style='border-color:#3d1010'><div style='display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:8px'><div style='color:#ef4444;font-size:11px;font-weight:700;letter-spacing:1.5px'>SEND REMINDERS — "+up.length+" PENDING</div><button onclick='A.bulkWa()' class='ba'>WhatsApp All "+up.length+"</button></div><div style='display:flex;flex-wrap:wrap;gap:10px'>";
+        up.forEach(function(m){h+="<div style='background:var(--sur2);border-radius:12px;padding:12px 16px;border:1px solid #3d1010;display:flex;align-items:center;gap:10px;flex:1;min-width:200px'>"+av(m.name,34)+"<div style='flex:1'><div style='font-weight:700;font-size:13px'>"+m.name+"</div><div style='font-size:11px;color:var(--dim)'>Pending "+fmt(DUE)+"</div></div>"+(m.phone?"<button onclick='A.wa(\""+m.phone+"\",\""+m.name+"\","+S.payM+","+S.payY+")' style='padding:7px 12px;border-radius:8px;border:1px solid var(--gbr);background:var(--gdm);color:var(--grn);font-size:11px;font-weight:700;cursor:pointer'>WA</button>":"")+"</div>";});
+        h+="</div></div>";
+      }
+    } else {
+      var payMap={};S.mems.forEach(function(mb){payMap[mb.id]={};cols.forEach(function(k){payMap[mb.id][k]={paid:false,amount:0,date:null};});});S.txs.filter(function(t){return t.type==="deposit";}).forEach(function(t){var u=resolveUID(t);if(!u)return;var d=new Date(t.date),k=d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0");if(payMap[u]&&payMap[u][k]!==undefined)payMap[u][k]={paid:true,amount:Number(t.amount),date:t.date};});
+      h+="<div class='g4'><div class='sc' style='background:var(--gdm);border-color:var(--gbr);text-align:center'><div style='color:var(--mut);font-size:9px;letter-spacing:2px;font-weight:700;margin-bottom:8px'>PAID THIS MONTH</div><div style='color:var(--grn);font-weight:900;font-size:28px'>"+pn+"<span style='font-size:14px;color:var(--mut)'>/9</span></div></div><div class='sc' style='background:#1a040488;border-color:#7f1d1d44;text-align:center'><div style='color:var(--mut);font-size:9px;letter-spacing:2px;font-weight:700;margin-bottom:8px'>PENDING</div><div style='color:#ef4444;font-weight:900;font-size:28px'>"+(9-pn)+"<span style='font-size:14px;color:var(--mut)'>/9</span></div></div><div class='sc' style='background:var(--sur2);text-align:center'><div style='color:var(--mut);font-size:9px;letter-spacing:2px;font-weight:700;margin-bottom:8px'>TOTAL COLLECTED</div><div style='color:var(--txt);font-weight:900;font-size:18px'>"+fmt(totalCollected)+"</div></div><div class='sc' style='background:var(--sur2);text-align:center'><div style='color:var(--mut);font-size:9px;letter-spacing:2px;font-weight:700;margin-bottom:8px'>MONTHS TRACKED</div><div style='color:var(--blue);font-weight:900;font-size:28px'>"+cols.length+"</div></div></div>";
+      h+="<div class='card' style='padding:0;overflow:hidden'><div style='padding:14px 20px;border-bottom:1px solid var(--bor);font-size:11px;letter-spacing:2px;color:var(--mut);font-weight:700'>FULL PAYMENT LEDGER — ALL MONTHS</div><div class='sheet-wrap'><table class='sheet'><thead><tr><th style='text-align:left'>MEMBER / ROLE</th>";
+      cols.forEach(function(k){var p=k.split("-"),isNow=k===ck;h+="<th style='text-align:center;"+(isNow?"color:var(--grn);":"")+"'>"+MS[parseInt(p[1])-1].toUpperCase()+"<br><span style='font-size:8px;font-weight:500'>"+p[0]+"</span></th>";});
+      h+="<th style='text-align:center'>TOTAL</th><th style='text-align:center'>MONTHS</th></tr></thead><tbody>";
+      S.mems.forEach(function(mb){var mt=0,mp2=0;h+="<tr><td><div style='display:flex;align-items:center;gap:10px'>"+av(mb.name,28)+"<div><div style='font-size:13px;font-weight:700'>"+mb.name+"</div><div style='font-size:9px;color:var(--dim)'>"+mb.title+"</div></div></div></td>";cols.forEach(function(k){var cell=payMap[mb.id]?payMap[mb.id][k]:null,isNow=k===ck;if(cell&&cell.paid){mt+=cell.amount;mp2++;h+="<td class='cell-paid'"+(isNow?" style='outline:2px solid var(--gbr)'":" ")+" title='"+fd(cell.date)+"'>✓<br><span style='font-size:9px'>"+cell.amount.toLocaleString()+"</span></td>";}else{h+="<td class='cell-unpaid'"+(isNow?" style='animation:blink 2s infinite;outline:2px solid #7f1d1d'":" ")+" title='Not paid'>—</td>";}});h+="<td style='text-align:center;color:var(--grn);font-weight:800;font-size:12px'>"+fmt(mt)+"</td><td style='text-align:center'><span style='background:"+(mp2===cols.length?"var(--gdm)":"var(--sur2)")+";color:"+(mp2===cols.length?"var(--grn)":"var(--mut)")+";padding:3px 10px;border-radius:99px;font-size:10px;font-weight:700'>"+mp2+"/"+cols.length+"</span></td></tr>";});
+      h+="</tbody><tfoot><tr><td style='padding:12px 16px;color:var(--grn);font-size:12px'>MONTHLY TOTAL</td>";cols.forEach(function(k){var ct=0,cp=0;S.mems.forEach(function(mb){var cell=payMap[mb.id]?payMap[mb.id][k]:null;if(cell&&cell.paid){ct+=cell.amount;cp++;}});h+="<td style='text-align:center;padding:10px 12px'><div style='color:var(--grn);font-weight:700;font-size:11px'>"+fmt(ct)+"</div><div style='font-size:9px;color:var(--mut)'>"+cp+"/9</div></td>";});
+      h+="<td style='text-align:center;color:var(--grn);font-weight:900;padding:12px'>"+fmt(totalCollected)+"</td><td></td></tr></tfoot></table></div></div>";
     }
     h+="</div>";return h;
   },
 
-  // ═══════════════ INVESTMENTS ═══════════════
   pInv:function(){
     var cw=S.role==="admin"||S.role==="manager",ia=S.role==="admin";
     var td=S.invs.reduce(function(s,i){return s+Number(i.amount);},0),te=S.invs.reduce(function(s,i){return s+Number(i.expectedReturn||0);},0),ta=S.invs.reduce(function(s,i){return s+Number(i.actualReturn||0);},0),ac=S.invs.filter(function(i){return i.status==="active";}).length;
@@ -912,6 +925,40 @@ var A={
   },
 
   // ═══════════════ ANNOUNCEMENTS ═══════════════
+  pNotice:function(){
+    var cw=S.role==="admin"||S.role==="manager";
+    if(!S.nbTab)S.nbTab="announcements";
+    var h="<div class='fc'>";
+    h+="<div style='display:flex;justify-content:space-between;align-items:flex-end;flex-wrap:wrap;gap:12px'><div><h2 style='font-weight:800;font-size:22px'>Notice Board</h2><p style='font-size:13px;color:var(--mut);margin-top:4px'>Announcements, proposals and voting — all in one place.</p></div>";
+    h+="<div style='display:flex;gap:8px'>";
+    if(cw){
+        h+="<button onclick='S.nbTab=\"announcements\";A.loadNotice();A.openAnnModal()' class='ba'>+ Announcement</button>";
+        h+="<button onclick='S.nbTab=\"proposals\";A.loadNotice();A.openNewProp()' class='ba'>+ Proposal</button>";
+    }
+    h+="</div></div>";
+    h+="<div class='tab-row'>";
+    h+="<button class='tab-btn "+(S.nbTab==="announcements"?"on":"")+"' onclick='S.nbTab=\"announcements\";A.loadNotice()'>&#128226; Announcements</button>";
+    h+="<button class='tab-btn "+(S.nbTab==="proposals"?"on":"")+"' onclick='S.nbTab=\"proposals\";A.loadNotice()'>&#128203; Proposals & Voting</button>";
+    h+="</div>";
+    h+="<div id='nb-content'><div class='card' style='text-align:center;padding:40px'><div class='spin'></div></div></div>";
+    h+="</div>";
+    return h;
+  },
+  loadNotice:function(){
+    if(!S.nbTab)S.nbTab="announcements";
+    // Re-render tabs highlight
+    var el=document.getElementById("nb-content");
+    if(!el){A.render("noticeboard");setTimeout(function(){A.loadNotice();},100);return;}
+    // Update tab buttons
+    var tabs=document.querySelectorAll(".tab-btn");
+    if(tabs){tabs.forEach(function(b){
+      if(b.textContent.indexOf("Announcement")>=0)b.className="tab-btn"+(S.nbTab==="announcements"?" on":"");
+      if(b.textContent.indexOf("Proposal")>=0)b.className="tab-btn"+(S.nbTab==="proposals"?" on":"");
+    });}
+    if(S.nbTab==="announcements")A.loadAnn();
+    else A.loadProps();
+  },
+
   pAnn:function(){
     var cw=S.role==="admin"||S.role==="manager";
     return "<div class='fc'><div style='display:flex;justify-content:space-between;align-items:flex-end;flex-wrap:wrap;gap:12px'><div><h2 style='font-weight:800;font-size:22px'>Announcements</h2><p style='font-size:13px;color:var(--mut);margin-top:4px'>Official messages from SIPR management.</p></div>"+(cw?"<button onclick='A.openAnnModal()' class='ba' style='font-size:13px;padding:10px 18px'>+ Post</button>":"")+"</div><div id='ann-list'><div class='card' style='text-align:center;padding:40px'><div class='spin'></div><div style='color:var(--mut);font-size:13px;margin-top:14px'>Loading...</div></div></div></div>";
