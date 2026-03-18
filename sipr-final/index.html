@@ -424,11 +424,12 @@ var A={
   _buildReportText:function(ps,pn,up){
     var mn=MF[S.payM]+" "+S.payY;
     var collected=ps.reduce(function(s,m){return s+(m.paid?m.paidAmt:0);},0);
-    var txt="📊 *SIPR GROUP — Payment Report*\n📅 "+mn+"\n━━━━━━━━━━━━━━━━━━━━\n\n";
+    var today=new Date().toLocaleDateString("en-GB",{day:"2-digit",month:"short",year:"numeric"});
+    var txt="📊 *SIPR GROUP — Monthly Payment Report*\n📅 Period: "+mn+"\n📆 Prepared: "+today+" by "+S.name+"\n━━━━━━━━━━━━━━━━━━━━\n\n";
     txt+="✅ *Paid ("+pn+"/9)*\n";
-    ps.filter(function(m){return m.paid;}).forEach(function(m){txt+="  ✓ "+m.name+" — "+fmt(m.paidAmt)+" ("+fd(m.paidDate)+")\n";});
+    ps.filter(function(m){return m.paid;}).forEach(function(m){txt+="  "+fd(m.paidDate)+"  "+m.name+" — "+fmt(m.paidAmt)+"\n";});
     if(up.length){txt+="\n⏳ *Pending ("+up.length+"/9)*\n";up.forEach(function(m){txt+="  ✗ "+m.name+"\n";});}
-    txt+="\n━━━━━━━━━━━━━━━━━━━━\n💰 *Total: "+fmt(collected)+"*  |  Rate: "+Math.round(pn/9*100)+"%\nbKash: 01845526909 (Shoeb) · Deadline: 10th\n— Jaziro, President SIPR Group";
+    txt+="\n━━━━━━━━━━━━━━━━━━━━\n💰 *Total Collected: "+fmt(collected)+"*\n📈 Collection Rate: "+Math.round(pn/9*100)+"%\n\nbKash: 01845526909 (Shoeb, Treasurer)\nDeadline: 1st–10th of each month\n\n— "+S.name+"\nSIPR Group · Invest. Grow. Prosper.";
     return txt;
   },
   sendReportWa:function(){
@@ -448,14 +449,15 @@ var A={
     var mn=MF[S.payM]+" "+S.payY,rate=Math.round(pn/9*100);
     var today=new Date().toLocaleDateString("en-GB",{day:"2-digit",month:"long",year:"numeric"});
     var rows="";
-    ps.forEach(function(m,i){rows+="<tr style='background:"+(i%2===0?"#f8fafb":"#fff")+"'><td style='padding:11px 14px;font-weight:600;color:#1a2233'>"+m.name+"</td><td style='padding:11px 14px;color:#64748b;font-size:12px'>"+m.title+"</td><td style='padding:11px 14px;text-align:center'><span style='padding:4px 14px;border-radius:99px;font-size:12px;font-weight:700;background:"+(m.paid?"#dcfce7":"#fee2e2")+";color:"+(m.paid?"#15803d":"#dc2626")+"'>"+(m.paid?"✓ Paid":"✗ Pending")+"</span></td><td style='padding:11px 14px;text-align:right;font-weight:700;color:"+(m.paid?"#15803d":"#dc2626")+"'>"+(m.paid?fmt(m.paidAmt):"BDT "+DUE+" due")+"</td><td style='padding:11px 14px;text-align:center;color:#64748b;font-size:12px'>"+(m.paid?fd(m.paidDate):"—")+"</td></tr>";});
+    ps.forEach(function(m,i){rows+="<tr style='background:"+(i%2===0?"#f8fafb":"#fff")+"'><td style='padding:11px 14px;color:#64748b;font-size:12px;white-space:nowrap'>"+(m.paid?fd(m.paidDate):"—")+"</td><td style='padding:11px 14px;font-weight:600;color:#1a2233'>"+m.name+"</td><td style='padding:11px 14px;text-align:center'><span style='padding:4px 14px;border-radius:99px;font-size:12px;font-weight:700;background:"+(m.paid?"#dcfce7":"#fee2e2")+";color:"+(m.paid?"#15803d":"#dc2626")+"'>"+(m.paid?"✓ Paid":"✗ Pending")+"</span></td><td style='padding:11px 14px;text-align:right;font-weight:700;color:"+(m.paid?"#15803d":"#dc2626")+"'>"+(m.paid?fmt(m.paidAmt):"BDT "+DUE+" due")+"</td></tr>";});
     var html='<!DOCTYPE html><html><head><meta charset="UTF-8"/><title>SIPR Payment Report</title><style>*{box-sizing:border-box;margin:0;padding:0}body{font-family:"Segoe UI",Arial,sans-serif;background:#fff;color:#1a2233}.np{display:flex}@media print{.np{display:none!important}}</style></head><body><div style="max-width:720px;margin:0 auto;padding:36px 28px">';
     html+='<div style="display:flex;justify-content:space-between;align-items:flex-start;padding-bottom:20px;border-bottom:3px solid #00b87a;margin-bottom:28px"><div><div style="font-size:11px;letter-spacing:3px;color:#00b87a;font-weight:700;margin-bottom:6px">SIPR GROUP — CONFIDENTIAL</div><div style="font-size:30px;font-weight:900;color:#1a2233;letter-spacing:-1px">Payment Report</div><div style="font-size:20px;font-weight:700;color:#00b87a;margin-top:4px">'+mn+'</div></div><div style="text-align:right"><div style="font-size:11px;color:#64748b;margin-bottom:3px">Generated on</div><div style="font-weight:700">'+today+'</div><div style="font-size:11px;color:#64748b;margin-top:10px">bKash: 01845526909 (Shoeb)</div><div style="font-size:11px;color:#64748b">Deadline: 10th of each month</div></div></div>';
     html+='<div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:12px;margin-bottom:24px">';
     var sc=[["Paid Members",pn+"/9","#15803d","#dcfce7"],["Pending",(9-pn)+"/9","#dc2626","#fee2e2"],["Total Collected",fmt(collected),"#1d4ed8","#dbeafe"],["Collection Rate",rate+"%",rate>=80?"#15803d":rate>=50?"#d97706":"#dc2626",rate>=80?"#dcfce7":rate>=50?"#fef3c7":"#fee2e2"]];
     sc.forEach(function(x){html+='<div style="background:'+x[3]+';border-radius:10px;padding:14px;text-align:center"><div style="font-size:9px;letter-spacing:1.5px;color:'+x[2]+';font-weight:700;margin-bottom:5px">'+x[0].toUpperCase()+'</div><div style="font-size:22px;font-weight:900;color:'+x[2]+'">'+x[1]+'</div></div>';});
     html+='</div><table style="width:100%;border-collapse:collapse;border:1px solid #e2e8f0;border-radius:12px;overflow:hidden"><thead><tr style="background:#1a2233"><th style="padding:12px 14px;text-align:left;color:#fff;font-size:11px;letter-spacing:1px">MEMBER</th><th style="padding:12px 14px;text-align:left;color:#fff;font-size:11px;letter-spacing:1px">ROLE</th><th style="padding:12px 14px;text-align:center;color:#fff;font-size:11px;letter-spacing:1px">STATUS</th><th style="padding:12px 14px;text-align:right;color:#fff;font-size:11px;letter-spacing:1px">AMOUNT</th><th style="padding:12px 14px;text-align:center;color:#fff;font-size:11px;letter-spacing:1px">DATE PAID</th></tr></thead><tbody>'+rows+'</tbody><tfoot><tr style="background:#f1f5f9;border-top:2px solid #1a2233"><td colspan="3" style="padding:13px 14px;font-weight:800;color:#1a2233">TOTAL COLLECTED</td><td style="padding:13px 14px;text-align:right;font-weight:900;color:#15803d;font-size:16px">'+fmt(collected)+'</td><td></td></tr></tfoot></table>';
-    html+='<div style="margin-top:24px;padding-top:16px;border-top:1px solid #e2e8f0;display:flex;justify-content:space-between;font-size:11px;color:#94a3b8"><span>SIPR Group · Private & Confidential</span><span>Invest. Grow. Prosper.</span></div>';
+    var prepDate=new Date().toLocaleDateString("en-GB",{day:"2-digit",month:"long",year:"numeric"});
+    html+='<div style="margin-top:24px;padding-top:16px;border-top:1px solid #e2e8f0;display:flex;justify-content:space-between;align-items:flex-end;font-size:11px;color:#94a3b8"><div><div style="font-weight:700;color:#1a2233;font-size:12px">'+S.name+'</div><div>Prepared on '+prepDate+'</div><div>SIPR Group · Private & Confidential</div></div><div style="text-align:right"><div style="font-weight:700;color:#1a2233;font-size:12px">SIPR GROUP</div><div>Invest. Grow. Prosper.</div><div>bKash: 01845526909</div></div></div>';
     html+='<div class="np" style="margin-top:24px;gap:10px;justify-content:center"><button onclick="window.print()" style="padding:12px 28px;background:#1a2233;color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer">🖨 Print / Save PDF</button><button onclick="window.close()" style="padding:12px 20px;background:#f1f5f9;color:#1a2233;border:none;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer">Close</button></div>';
     html+='</div></body></html>';
     var win=window.open("","_blank","width=820,height=700");win.document.write(html);win.document.close();
@@ -514,7 +516,7 @@ var A={
       h+="</div></div>";
 
       h+="<div class='sheet-wrap'><table class='sheet'><thead><tr>";
-      h+="<th style='text-align:left'>MEMBER</th><th style='text-align:left'>ROLE</th><th style='text-align:center'>STATUS</th><th style='text-align:center'>AMOUNT</th><th style='text-align:center'>DATE PAID</th></tr></thead><tbody>";
+      h+="<th style='text-align:center'>DATE PAID</th><th style='text-align:left'>MEMBER</th><th style='text-align:center'>STATUS</th><th style='text-align:center'>AMOUNT</th></tr></thead><tbody>";
       ps.forEach(function(m){
         h+="<tr><td><div style='display:flex;align-items:center;gap:8px'>"+av(m.name,28)+"<span style='font-weight:700;font-size:13px'>"+m.name+"</span></div></td>";
         h+="<td style='font-size:11px;color:var(--mut)'>"+m.title+"</td>";
@@ -522,14 +524,7 @@ var A={
         h+="<td style='text-align:center;color:"+(m.paid?"var(--grn)":"var(--dim)")+";font-weight:700'>"+(m.paid?fmt(m.paidAmt):"BDT "+DUE+" due")+"</td>";
         h+="<td style='text-align:center;color:var(--mut);font-size:12px'>"+(m.paid?fd(m.paidDate):"—")+"</td></tr>";
       });
-      h+="</tbody><tfoot><tr><td colspan='3' style='padding:12px 16px;color:var(--grn);font-weight:700'>TOTAL COLLECTED</td><td style='text-align:center;color:var(--grn);padding:12px;font-size:14px;font-weight:900'>"+fmt(collected)+"</td><td></td></tr></tfoot></table></div></div>";
-
-      // STREAK TRACKER
-      var streakData=S.mems.map(function(mb){var streak=0;var sc=cols.slice().reverse();for(var i=0;i<sc.length;i++){var k=sc[i];var tx=S.txs.find(function(t){return txMatch(t,mb)&&t.type==="deposit"&&new Date(t.date).getFullYear()===parseInt(k.split("-")[0])&&new Date(t.date).getMonth()===parseInt(k.split("-")[1])-1;});if(tx)streak++;else break;}return Object.assign({},mb,{streak:streak,total:cols.length});}).sort(function(a,b){return b.streak-a.streak;});
-      h+="<div class='card'><div style='font-size:11px;letter-spacing:2px;color:var(--mut);font-weight:700;margin-bottom:14px'>&#128293; PAYMENT STREAK</div>";
-      h+="<div style='display:flex;flex-direction:column;gap:8px'>";
-      streakData.forEach(function(m){var pct2=m.total>0?Math.round(m.streak/m.total*100):0;h+="<div style='display:flex;align-items:center;gap:12px'>"+av(m.name,32)+"<div style='flex:1;min-width:0'><div style='display:flex;justify-content:space-between;margin-bottom:4px'><span style='font-size:13px;font-weight:700'>"+m.name+"</span><span style='font-size:12px;color:"+(m.streak===m.total&&m.total>0?"var(--grn)":m.streak>0?"var(--gold)":"var(--red)")+";font-weight:800'>"+m.streak+" in a row"+(m.streak===m.total&&m.total>0?" 🏆":"")+"</span></div><div class='pbar'><div class='pfill' style='width:"+pct2+"%;background:"+(pct2===100?"linear-gradient(90deg,var(--gbr),var(--grn))":pct2>=50?"linear-gradient(90deg,#78350f,var(--gold))":"linear-gradient(90deg,#7f1d1d,var(--red))")+"'></div></div></div></div>";});
-      h+="</div></div>";
+      h+="</tbody><tfoot><tr><td></td><td style='padding:12px 16px;color:var(--grn);font-weight:700'>TOTAL COLLECTED</td><td></td><td style='text-align:center;color:var(--grn);padding:12px;font-size:14px;font-weight:900'>"+fmt(collected)+"</td></tr></tfoot></table></div></div>";
 
       // INDIVIDUAL REMINDERS
       if(cw&&up.length>0){
@@ -581,12 +576,54 @@ var A={
   // MEMBERS
   pMem:function(){
     var td=sumT(S.txs,"deposit");
-    var ms=S.mems.map(function(m){var t2=S.txs.filter(function(t){return txMatch(t,m)&&t.type==="deposit";});var tot=t2.reduce(function(s,t){return s+Number(t.amount);},0),lst=t2.sort(function(a,b){return new Date(b.date)-new Date(a.date);})[0];return Object.assign({},m,{total:tot,payments:t2.length,last:lst?lst.date:null});}).sort(function(a,b){return b.total-a.total;});
-    var mc=["#fbbf24","#94a3b8","#cd7c32"];
-    var h="<div class='fc'><div><h2 style='font-weight:800;font-size:22px'>Members</h2><p style='font-size:13px;color:var(--mut);margin-top:4px'>9 founding members ranked by contribution.</p></div>";
-    ms.forEach(function(m,i){var p=td>0?(m.total/td*100):0;h+="<div class='card'><div style='display:flex;align-items:center;gap:14px'><div style='position:relative;flex-shrink:0'>"+av(m.name,46)+(i<3?"<div style='position:absolute;bottom:-2px;right:-2px;width:16px;height:16px;border-radius:50%;background:"+mc[i]+";display:flex;align-items:center;justify-content:center;font-size:8px;font-weight:900;color:#000;border:2px solid var(--bg)'>"+(i+1)+"</div>":"")+"</div><div style='flex:1;min-width:0'><div style='display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px;flex-wrap:wrap;gap:6px'><div><div style='font-weight:800;font-size:15px'>"+m.name+"</div><div style='font-size:12px;color:var(--mut);margin-top:2px'>"+m.title+"</div></div><div style='color:var(--grn);font-weight:900;font-size:20px'>"+fmt(m.total)+"</div></div><div class='pbar' style='margin-bottom:6px'><div class='pfill' style='width:"+p+"%;background:"+(i<3?"linear-gradient(90deg,var(--gbr),var(--grn))":"linear-gradient(90deg,var(--bor),var(--mut))")+"'></div></div><div style='display:flex;gap:16px;font-size:11px;color:var(--dim);flex-wrap:wrap;font-weight:600'><span>"+p.toFixed(1)+"% of fund</span><span>"+m.payments+" payment"+(m.payments!==1?"s":"")+"</span>"+(m.last?"<span>Last: "+fd(m.last)+"</span>":"")+"</div></div></div></div>";});
+    var ms=S.mems.map(function(m){
+      var t2=S.txs.filter(function(t){return txMatch(t,m)&&t.type==="deposit";});
+      var tot=t2.reduce(function(s,t){return s+Number(t.amount);},0);
+      var lst=t2.sort(function(a,b){return new Date(b.date)-new Date(a.date);})[0];
+      var thisMon=A.payS(new Date().getFullYear(),new Date().getMonth()).find(function(x){return x.id===m.id;});
+      return Object.assign({},m,{total:tot,payments:t2.length,last:lst?lst.date:null,paidThisMonth:thisMon?thisMon.paid:false});
+    }).sort(function(a,b){return b.total-a.total;});
+    var h="<div class='fc'><div><h2 style='font-weight:800;font-size:22px'>Members</h2><p style='font-size:13px;color:var(--mut);margin-top:4px'>9 founding members &mdash; "+MS[new Date().getMonth()]+" "+new Date().getFullYear()+" status</p></div>";
+    ms.forEach(function(m,i){
+      var p=td>0?(m.total/td*100):0;
+      h+="<div class='card'>";
+      // Header row
+      h+="<div style='display:flex;align-items:flex-start;gap:14px;margin-bottom:16px'>";
+      h+=av(m.name,50);
+      h+="<div style='flex:1;min-width:0'>";
+      h+="<div style='display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:6px;margin-bottom:4px'>";
+      h+="<div><div style='font-weight:800;font-size:16px'>"+m.name+"</div><div style='font-size:12px;color:var(--mut);margin-top:2px'>"+m.title+"</div></div>";
+      h+="<div style='text-align:right'><div style='font-weight:900;font-size:18px;color:var(--grn)'>"+fmt(m.total)+"</div><div style='font-size:10px;color:var(--dim)'>"+p.toFixed(1)+"% of total fund</div></div>";
+      h+="</div>";
+      // This month badge
+      h+="<div style='display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px'>";
+      h+="<span class='bdg' style='background:"+(m.paidThisMonth?"var(--gdm)":"#1a0404")+";color:"+(m.paidThisMonth?"var(--grn)":"#f87171")+";border:1px solid "+(m.paidThisMonth?"var(--gbr)":"#7f1d1d")+"'>"+(m.paidThisMonth?"✓ Paid this month":"⏳ Pending this month")+"</span>";
+      h+="<span class='bdg' style='background:var(--sur2);border:1px solid var(--bor);color:var(--mut)'>"+m.payments+" payment"+(m.payments!==1?"s":"")+" total</span>";
+      if(m.last)h+="<span class='bdg' style='background:var(--sur2);border:1px solid var(--bor);color:var(--mut)'>Last: "+fd(m.last)+"</span>";
+      h+="</div>";
+      // Contribution bar
+      h+="<div class='pbar'><div class='pfill' style='width:"+p+"%;background:linear-gradient(90deg,var(--gbr),var(--grn))'></div></div>";
+      h+="</div></div>";
+      // Contact & details grid
+      h+="<div style='border-top:1px solid var(--bor);padding-top:14px;display:grid;grid-template-columns:1fr 1fr;gap:8px'>";
+      [
+        ["Member ID", m.id||"—"],
+        ["Phone", m.phone||"Not set"],
+        ["Gmail", m.gmail||"Not set"],
+        ["Address", m.address||"Not set"],
+        ["Member Since", "February 2026"],
+        ["Role", AUTH[m.email]?{admin:"Admin",manager:"Manager",member:"Member"}[AUTH[m.email].role]||"Member":"Member"]
+      ].forEach(function(r){
+        h+="<div style='background:var(--sur2);border-radius:10px;padding:10px 12px;border:1px solid var(--bor)'>";
+        h+="<div style='font-size:9px;letter-spacing:1.5px;color:var(--mut);font-weight:700;margin-bottom:3px'>"+r[0].toUpperCase()+"</div>";
+        h+="<div style='font-size:12px;font-weight:600;color:var(--txt);overflow:hidden;text-overflow:ellipsis;white-space:nowrap'>"+r[1]+"</div>";
+        h+="</div>";
+      });
+      h+="</div></div>";
+    });
     h+="</div>";return h;
   },
+
 
   // GOALS
   pGoals:function(){
@@ -711,7 +748,7 @@ var A={
   // ACTIVITY LOG
   pActivity:function(){return "<div class='fc'><div><h2 style='font-weight:800;font-size:22px'>Activity Log</h2><p style='font-size:13px;color:var(--mut);margin-top:4px'>Complete audit trail of all actions.</p></div><div id='act-filters' style='display:flex;gap:8px;flex-wrap:wrap'></div><div id='act-list'><div style='text-align:center;padding:40px'><div class='spin'></div></div></div></div>";},
   _actF:"all",
-  loadActivity:function(){db.collection("activity").orderBy("ts","desc").limit(200).get().then(function(sn){var acts=sn.docs.map(function(d){return Object.assign({id:d.id},d.data());});window._AC=acts;A.renderActFilters(acts);A.renderActList(acts);}).catch(function(){var el=$("act-list");if(el)el.innerHTML="<div class='card' style='text-align:center;padding:32px;color:var(--dim)'>Could not load.</div>";});},
+  loadActivity:function(){db.collection("activity").orderBy("ts","desc").limit(300).get().then(function(sn){var acts=sn.docs.map(function(d){return Object.assign({id:d.id},d.data());}).filter(function(a){return a.action!=="Login";});window._AC=acts;A.renderActFilters(acts);A.renderActList(acts);}).catch(function(){var el=$("act-list");if(el)el.innerHTML="<div class='card' style='text-align:center;padding:32px;color:var(--dim)'>Could not load.</div>";});},
   renderActFilters:function(acts){var el=$("act-filters");if(!el)return;var people=["all"];acts.forEach(function(a){if(a.by&&people.indexOf(a.by)<0)people.push(a.by);});var h="";people.forEach(function(p){var on=A._actF===p;h+="<button onclick='A._actF=\""+p+"\";A.renderActFilters(window._AC||[]);A.renderActList(window._AC||[])' style='padding:5px 14px;border-radius:99px;border:1px solid "+(on?"var(--grn)":"var(--bor)")+";background:"+(on?"var(--gdm)":"transparent")+";color:"+(on?"var(--grn)":"var(--mut)")+";cursor:pointer;font-size:11px;font-weight:700;font-family:Inter,sans-serif'>"+(p==="all"?"All":p)+"</button>";});el.innerHTML=h;},
   renderActList:function(acts){var el=$("act-list");if(!el)return;var shown=A._actF==="all"?acts:acts.filter(function(a){return a.by===A._actF;});if(!shown.length){el.innerHTML="<div class='card' style='text-align:center;padding:40px;color:var(--dim)'>No activity yet.</div>";return;}var ICONS={Login:"&#128100;","Transaction Added":"&#8595;","Investment Added":"&#128200;","Announcement Posted":"&#128226;","Document Added":"&#128196;","Proposal Submitted":"&#128203;","Vote Cast":"&#128203;","Proposal Approved":"&#10003;","Proposal Rejected":"&#10005;"};var grp={},ord=[];shown.forEach(function(a){var d=a.iso?fd(a.iso):"Unknown";if(!grp[d]){grp[d]=[];ord.push(d);}grp[d].push(a);});var h="<div class='fc'>";ord.forEach(function(date){h+="<div><div style='display:flex;align-items:center;gap:10px;margin-bottom:10px'><div style='height:1px;background:var(--bor);flex:1'></div><div style='font-size:10px;color:var(--mut);font-weight:700;letter-spacing:1px'>"+date+"</div><div style='height:1px;background:var(--bor);flex:1'></div></div>";grp[date].forEach(function(a){var ts=a.iso?new Date(a.iso).toLocaleTimeString("en-GB",{hour:"2-digit",minute:"2-digit"}):"";h+="<div class='csm' style='display:flex;gap:12px;align-items:center;margin-bottom:7px'><div style='width:38px;height:38px;border-radius:12px;background:var(--sur2);border:1px solid var(--bor);display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0;color:var(--grn)'>"+(ICONS[a.action]||"&#128336;")+"</div><div style='flex:1;min-width:0'><div style='font-weight:700;font-size:13px'>"+a.action+"</div><div style='font-size:11px;color:var(--mut);overflow:hidden;text-overflow:ellipsis;white-space:nowrap'>"+(a.detail||"")+"</div></div><div style='text-align:right;flex-shrink:0'><div style='font-size:10px;color:var(--dim)'>"+ts+"</div><div style='font-size:10px;color:var(--mut);margin-top:2px;font-weight:600'>"+a.by+"</div></div></div>";});h+="</div>";});h+="</div>";el.innerHTML=h;},
 
@@ -846,7 +883,12 @@ var A={
   },
 
   // MODALS — TX
-  openTx:function(id,forceType){var tx=id?S.txs.find(function(t){return t.id===id;}):null;var f=tx||{type:forceType||"deposit",amount:"",member:S.mems[0]?S.mems[0].name:"",note:"",date:new Date().toISOString().slice(0,10)};A._tt=f.type;var tb="";Object.keys(TC).forEach(function(k){var v=TC[k],on=k===f.type;tb+="<button id='tt-"+k+"' onclick='A._stt(\""+k+"\")' style='padding:10px 4px;border-radius:10px;cursor:pointer;border:"+(on?"2px solid "+v.C:"1px solid var(--bor)")+";background:"+(on?v.B:"var(--sur2)")+";color:"+(on?v.C:"var(--mut)")+";font-weight:700;font-size:11px;display:flex;flex-direction:column;align-items:center;gap:4px;font-family:Inter,sans-serif'><span style='font-size:18px'>"+v.I+"</span>"+v.L+"</button>";});var mo=S.mems.map(function(m){return "<option"+(m.name===f.member?" selected":"")+">"+m.name+"</option>";}).join("")+"<option value='SIPR Group'"+(f.member==="SIPR Group"?" selected":"")+">SIPR Group</option>";var h="<div class='movl' id='tx-ov' onclick='if(event.target.id===\"tx-ov\")A.closeM()'><div class='mbox'><div style='display:flex;justify-content:space-between;align-items:center;margin-bottom:22px'><b style='font-size:17px;font-weight:800'>"+(id?"Edit":"New")+" Transaction</b><button onclick='A.closeM()' style='background:none;border:none;color:var(--mut);font-size:30px;cursor:pointer;line-height:1'>&#215;</button></div><div class='fc' style='gap:16px'><div><label class='lbl'>Type</label><div class='g4'>"+tb+"</div></div><div class='g2'><div><label class='lbl'>Amount (BDT)</label><input type='number' id='tx-a' class='inp' placeholder='500' value='"+f.amount+"'/></div><div><label class='lbl'>Date</label><input type='date' id='tx-d' class='inp' value='"+f.date+"'/></div></div><div><label class='lbl'>Member</label><select id='tx-m' class='inp'>"+mo+"</select></div><div><label class='lbl'>Note</label><input type='text' id='tx-n' class='inp' placeholder='e.g. March 2026 contribution' value='"+(f.note||"")+"'/></div><div style='display:flex;gap:10px;margin-top:6px'><button onclick='A.saveTx(\""+( id||"")+"\")' class='bp' style='flex:1;padding:14px'>"+(id?"Update":"Save")+"</button><button onclick='A.closeM()' class='bs' style='flex:1;padding:14px'>Cancel</button></div></div></div></div>";document.getElementById("modal-wrap").innerHTML=h;},
+  openTx:function(id,forceType){var tx=id?S.txs.find(function(t){return t.id===id;}):null;var f=tx||{type:forceType||"deposit",amount:"",member:S.mems[0]?S.mems[0].name:"",note:"",date:new Date().toISOString().slice(0,10)};A._tt=f.type;var tb="";Object.keys(TC).forEach(function(k){var v=TC[k],on=k===f.type;tb+="<button id='tt-"+k+"' onclick='A._stt(\""+k+"\")' style='padding:10px 4px;border-radius:10px;cursor:pointer;border:"+(on?"2px solid "+v.C:"1px solid var(--bor)")+";background:"+(on?v.B:"var(--sur2)")+";color:"+(on?v.C:"var(--mut)")+";font-weight:700;font-size:11px;display:flex;flex-direction:column;align-items:center;gap:4px;font-family:Inter,sans-serif'><span style='font-size:18px'>"+v.I+"</span>"+v.L+"</button>";});var mo=S.mems.map(function(m){return "<option"+(m.name===f.member?" selected":"")+">"+m.name+"</option>";}).join("")+"<option value='SIPR Group'"+(f.member==="SIPR Group"?" selected":"")+">SIPR Group</option>";var h="<div class='movl' id='tx-ov' onclick='if(event.target.id===\"tx-ov\")A.closeM()'><div class='mbox'><div style='display:flex;justify-content:space-between;align-items:center;margin-bottom:22px'><b style='font-size:17px;font-weight:800'>"+(id?"Edit":"New")+" Transaction</b><button onclick='A.closeM()' style='background:none;border:none;color:var(--mut);font-size:30px;cursor:pointer;line-height:1'>&#215;</button></div><div class='fc' style='gap:16px'><div><label class='lbl'>Type</label><div class='g4'>"+tb+"</div></div><div class='g2'><div><label class='lbl'>Amount (BDT)</label><input type='number' id='tx-a' class='inp' placeholder='500' value='"+f.amount+"'/></div><div><label class='lbl'>Date</label><input type='date' id='tx-d' class='inp' value='"+f.date+"'/></div></div><div><label class='lbl'>Member</label><select id='tx-m' class='inp'>"+mo+"</select></div><div><label class='lbl'>Note / Description</label><input type='text' id='tx-n' class='inp' placeholder='e.g. March 2026 contribution' value='"+(f.note||"")+"'/></div>"+
+"<div style='background:var(--sur2);border-radius:10px;padding:10px 14px;border:1px solid var(--bor);font-size:12px;color:var(--mut)'>"+
+"<div style='font-weight:700;color:var(--txt);margin-bottom:4px'>💡 Double payment tip</div>"+
+"If a member is paying for two months at once, add two separate records — one per month. Set the correct date for each. For example: one for March 1 and one for April 1. This keeps the ledger clean and the monthly sheet accurate."+
+"</div>"+
+"<div style='display:flex;gap:10px;margin-top:6px'><button onclick='A.saveTx(\""+( id||"")+"\")' class='bp' style='flex:1;padding:14px'>"+(id?"Update":"Save")+"</button><button onclick='A.closeM()' class='bs' style='flex:1;padding:14px'>Cancel</button></div></div></div></div>";document.getElementById("modal-wrap").innerHTML=h;},
   _stt:function(k){A._tt=k;Object.keys(TC).forEach(function(t){var b=$("tt-"+t);if(!b)return;var v=TC[t],on=t===k;b.style.border=on?"2px solid "+v.C:"1px solid var(--bor)";b.style.background=on?v.B:"var(--sur2)";b.style.color=on?v.C:"var(--mut)";});},
   saveTx:function(id){var amt=Number(($("tx-a")||{}).value);if(!amt||amt<=0){toast("Enter a valid amount.",false);return;}var selName=($("tx-m")||{}).value||"",memObj=S.mems.find(function(m){return m.name===selName;});var data={type:A._tt||"deposit",amount:amt,member:selName,memberUID:memObj?memObj.id:"",note:($("tx-n")||{}).value||"",date:($("tx-d")||{}).value||""};var p=(id&&id!=="null"&&id!=="")?db.collection("transactions").doc(id).update(data):db.collection("transactions").add(Object.assign({},data,{createdAt:firebase.firestore.FieldValue.serverTimestamp()}));p.then(function(){toast(id?"Updated!":"Added!");A.logAct("Transaction Added",data.type+" "+fmt(data.amount)+" for "+data.member);A.closeM();}).catch(function(e){toast("Error: "+e.message,false);});},
   delTx:function(id){if(!confirm("Delete this record?"))return;db.collection("transactions").doc(id).delete().then(function(){toast("Deleted.");}).catch(function(){toast("Error.",false);});},
