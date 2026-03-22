@@ -623,32 +623,22 @@ var A={
     var inv=S.invs.find(function(x){return x.id===invId;});if(!inv)return;
     var profit=Number(inv.actualReturn||0)-Number(inv.capitalDeployed||inv.amount||0);
     if(profit<=0){toast("No profit to distribute yet.",false);return;}
+    var workers=inv.teamMembers||[];
     var h="<div class='modal-bg' onclick='if(event.target===this)A.closeM()'><div class='modal-box'>";
     h+="<div style='display:flex;justify-content:space-between;align-items:center;margin-bottom:16px'><div style='font-weight:800;font-size:18px'>Distribute Profit</div><button onclick='A.closeM()' style='background:none;border:none;color:var(--mut);font-size:20px;cursor:pointer'>✕</button></div>";
-    h+="<div style='background:var(--gdm);border:1px solid var(--gbr);border-radius:12px;padding:12px 16px;margin-bottom:16px'><div style='font-size:12px;color:var(--mut);margin-bottom:4px'>"+inv.name+" — Profit Available</div><div style='font-size:24px;font-weight:900;color:var(--grn)'>"+fmt(profit)+"</div></div>";
-    h+="<div style='font-size:10px;letter-spacing:2px;color:var(--mut);font-weight:700;margin-bottom:10px'>STEP 1 — WORKER SALARIES (optional)</div>";
-    h+="<div id='worker-rows' style='display:flex;flex-direction:column;gap:8px;margin-bottom:12px'>";
-    var workers=(inv.teamMembers||[]);
-    if(!workers.length){h+="<div style='font-size:12px;color:var(--mut);padding:8px'>No team members on this project.</div>";}
-    else{workers.forEach(function(wn,wi){h+="<div style='display:flex;gap:8px;align-items:center;background:var(--sur2);border-radius:10px;padding:10px 12px;border:1px solid var(--bor)'><div style='font-size:13px;font-weight:700;flex:1'>"+wn+"</div><input type='number' id='ws-"+wi+"' class='inp' style='width:120px;padding:8px 10px' placeholder='Salary BDT'/><input type='number' id='wl-"+wi+"' class='inp' style='width:80px;padding:8px 10px' placeholder='Lock days'/></div>";});}
-    h+="</div>";
-    h+="<div style='font-size:10px;letter-spacing:2px;color:var(--mut);font-weight:700;margin-bottom:10px'>STEP 2 — CONTRIBUTION MONTH</div>";
-    h+="<div class='g2' style='margin-bottom:16px'><select id='dist-m' class='inp'>";
-    MS.forEach(function(m,i){h+="<option value='"+i+"'"+(i===S.payM?" selected":"")+">"+m+"</option>";});
-    h+="</select><select id='dist-y' class='inp'>[2026,2027].forEach not needed";
-    h="<div class='modal-bg' onclick='if(event.target===this)A.closeM()'><div class='modal-box'>";
-    h+="<div style='display:flex;justify-content:space-between;align-items:center;margin-bottom:16px'><div style='font-weight:800;font-size:18px'>Distribute Profit</div><button onclick='A.closeM()' style='background:none;border:none;color:var(--mut);font-size:20px;cursor:pointer'>✕</button></div>";
     h+="<div style='background:var(--gdm);border:1px solid var(--gbr);border-radius:12px;padding:12px 16px;margin-bottom:16px'><div style='font-size:12px;color:var(--mut);margin-bottom:4px'>"+inv.name+"</div><div style='font-size:24px;font-weight:900;color:var(--grn)'>"+fmt(profit)+" profit</div></div>";
-    h+="<div style='font-size:10px;letter-spacing:2px;color:var(--mut);font-weight:700;margin-bottom:10px'>WORKER SALARIES</div><div style='display:flex;flex-direction:column;gap:8px;margin-bottom:12px'>";
+    h+="<div style='font-size:10px;letter-spacing:2px;color:var(--mut);font-weight:700;margin-bottom:10px'>WORKER SALARIES</div>";
+    h+="<div style='display:flex;flex-direction:column;gap:8px;margin-bottom:12px'>";
     workers.forEach(function(wn,wi){h+="<div style='display:flex;gap:8px;align-items:center;background:var(--sur2);border-radius:10px;padding:10px 12px;border:1px solid var(--bor)'><div style='font-size:13px;font-weight:700;flex:1'>"+wn+"</div><input type='number' id='ws-"+wi+"' class='inp' style='width:120px;padding:8px' placeholder='Salary BDT'/><input type='number' id='wl-"+wi+"' class='inp' style='width:80px;padding:8px' placeholder='Lock days'/></div>";});
-    if(!workers.length)h+="<div style='font-size:12px;color:var(--mut)'>No team on this project.</div>";
-    h+="</div><div style='font-size:10px;letter-spacing:2px;color:var(--mut);font-weight:700;margin-bottom:10px'>CONTRIBUTION MONTH FOR SHARE SPLIT</div>";
+    if(!workers.length)h+="<div style='font-size:12px;color:var(--mut)'>No team members on this project.</div>";
+    h+="</div>";
+    h+="<div style='font-size:10px;letter-spacing:2px;color:var(--mut);font-weight:700;margin-bottom:10px'>CONTRIBUTION MONTH FOR SHARE SPLIT</div>";
     h+="<div class='g2' style='margin-bottom:16px'><select id='dist-m' class='inp'>";
     MS.forEach(function(m,i){h+="<option value='"+i+"'"+(i===S.payM?" selected":"")+">"+m+"</option>";});
     h+="</select><select id='dist-y' class='inp'>";
     [2026,2027].forEach(function(y){h+="<option"+(y===S.payY?" selected":"")+">"+y+"</option>";});
     h+="</select></div>";
-    h+="<button onclick='A.doDistribute(\""+invId+"\","+profit+"," +workers.length+")' class='bp' style='width:100%;padding:13px'>Calculate & Preview</button></div></div>";
+    h+="<button onclick='A.doDistribute(""+invId+"","+profit+","+workers.length+")' class='bp' style='width:100%;padding:13px'>Calculate & Preview</button></div></div>";
     $("modal-wrap").innerHTML=h;
   },
   doDistribute:function(invId,profit,workerCount){
