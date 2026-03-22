@@ -210,7 +210,7 @@ textarea.inp{resize:vertical;}
       </div>
       <button onclick="A.emailLogin()" class="bp" style="width:100%;padding:14px;margin-bottom:12px">Login →</button>
       <div style="display:flex;justify-content:space-between">
-        <button onclick="A.showReg()" style="background:none;border:none;color:var(--mut);font-size:12px;cursor:pointer;font-family:inherit">New member? Register</button>
+        <button onclick="A.showRegister()" style="background:none;border:none;color:var(--mut);font-size:12px;cursor:pointer;font-family:inherit">New member? Register</button>
         <button onclick="A.forgotPass()" style="background:none;border:none;color:var(--mut);font-size:12px;cursor:pointer;font-family:inherit">Forgot password?</button>
       </div>
     </div>
@@ -224,7 +224,7 @@ textarea.inp{resize:vertical;}
         <div><label class="lbl">Member Invite Code</label><input type="text" id="rg-code" class="inp" placeholder="e.g. SIPR26-JH-6729" autocorrect="off" autocapitalize="characters"/><div style="font-size:11px;color:var(--mut);margin-top:5px">Get your code from Jaziro</div></div>
       </div>
       <button onclick="A.registerMember()" class="bp" style="width:100%;padding:14px;margin-bottom:12px">Submit Registration</button>
-      <button onclick="A.showLogin()" style="width:100%;background:none;border:none;color:var(--mut);font-size:12px;cursor:pointer;font-family:inherit">← Back to login</button>
+      <button onclick="A.showLoginForm()" style="width:100%;background:none;border:none;color:var(--mut);font-size:12px;cursor:pointer;font-family:inherit">← Back to login</button>
     </div>
     <div id="li-err" style="color:#f87171;font-size:12px;margin-top:12px;display:none;padding:10px 14px;background:#1a060688;border-radius:10px;border:1px solid #7f1d1d"></div>
     <div style="text-align:center;margin-top:20px;font-size:11px;color:var(--mut)">PRIVATE &amp; CONFIDENTIAL &middot; SIPR GROUP &copy; 2026</div>
@@ -417,7 +417,9 @@ var A={
     fauth.sendPasswordResetEmail(em).then(function(){toast("Reset email sent!");}).catch(function(e){toast(e.message,false);});
   },
   showRegister:function(){var lf=$("login-form"),rf=$("register-form"),er=$("li-err");if(lf)lf.style.display="none";if(rf)rf.style.display="block";if(er)er.style.display="none";},
+  showReg:function(){A.showRegister();},
   showLoginForm:function(){var lf=$("login-form"),rf=$("register-form"),er=$("li-err");if(lf)lf.style.display="block";if(rf)rf.style.display="none";if(er)er.style.display="none";},
+  showLogin:function(){A.showLoginForm();},
   registerMember:function(){
     var name=($("rg-name")||{value:""}).value.trim();
     var email=($("rg-email")||{value:""}).value.trim().toLowerCase();
