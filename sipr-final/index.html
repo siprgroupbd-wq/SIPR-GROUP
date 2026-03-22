@@ -8,6 +8,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap" rel="stylesheet"/>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <style>
 :root{
   --bg:#07090f;--sur:#0e1118;--sur2:#13161e;--bor:#1c2030;
@@ -94,6 +95,10 @@ textarea.inp{resize:vertical;}
 @keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
 @keyframes congratPop{0%{transform:scale(.8);opacity:0}60%{transform:scale(1.05)}100%{transform:scale(1);opacity:1}}
 #prof-drop{display:none;position:absolute;top:44px;right:0;background:var(--sur);border:1px solid var(--bor);border-radius:14px;padding:8px;min-width:200px;z-index:200;box-shadow:0 16px 48px #00000080;}
+/* Wallet badge */
+#wallet-badge{display:flex;align-items:center;gap:6px;background:var(--sur2);border:1px solid var(--bor);border-radius:10px;padding:6px 12px;cursor:pointer;position:relative;}
+#wallet-badge:hover{border-color:var(--gbr);}
+#wallet-drop{display:none;position:absolute;top:44px;right:0;background:var(--sur);border:1px solid var(--bor);border-radius:16px;padding:16px;min-width:260px;z-index:300;box-shadow:0 16px 48px #00000090;}
 /* Project cards */
 .proj-card{background:var(--sur);border:1px solid var(--bor);border-radius:18px;overflow:hidden;transition:border-color .2s;}
 .proj-card:hover{border-color:var(--gbr);}
@@ -108,9 +113,67 @@ textarea.inp{resize:vertical;}
 .prof-card-body{padding:20px 22px;}
 /* Congrats modal */
 .congrats-modal{animation:congratPop .4s ease both;}
+/* Loading */
+#loading-page{display:none;min-height:100vh;align-items:center;justify-content:center;flex-direction:column;gap:16px;}
+@keyframes spin{to{transform:rotate(360deg)}}
+.spinner{width:32px;height:32px;border:3px solid var(--bor);border-top-color:var(--grn);border-radius:50%;animation:spin 1s linear infinite;}
+/* Google button */
+.btn-google{width:100%;padding:13px;border-radius:11px;border:1px solid var(--bor);background:var(--sur2);color:var(--txt);font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:10px;transition:border-color .2s;}
+.btn-google:hover{border-color:var(--gbr);}
+.divider{display:flex;align-items:center;gap:12px;color:var(--mut);font-size:11px;font-weight:600;}
+.divider::before,.divider::after{content:'';flex:1;height:1px;background:var(--bor);}
+/* Mobile nav fix */
+#mob-menu-btn{display:none;background:var(--sur2);border:1px solid var(--bor);border-radius:8px;padding:7px 10px;cursor:pointer;font-size:18px;color:var(--txt);flex-shrink:0;}
+@media(max-width:820px){#mob-menu-btn{display:block;}#desk-nav{transform:translateX(-100%);transition:transform .25s;}#desk-nav.mob-open{transform:translateX(0);box-shadow:4px 0 32px #00000080;}#mob-nav-overlay{display:block!important;}}
+#mob-nav-overlay{display:none;position:fixed;inset:0;background:#00000060;z-index:99;}
+/* Passbook */
+.pb-entry{display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid var(--bor);}
+.pb-entry:last-child{border-bottom:none;}
+.pb-dot{width:36px;height:36px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:16px;}
+/* Invite page */
+#invite-page{display:none;min-height:100vh;align-items:center;justify-content:center;background:radial-gradient(ellipse at 30% 20%,#0d1f4a 0%,var(--bg) 60%);}
 </style>
 </head>
 <body>
+
+<!-- LOADING -->
+<div id="loading-page" style="display:flex;">
+  <div style="text-align:center">
+    <div style="width:48px;height:48px;border-radius:14px;background:linear-gradient(135deg,var(--gbr),var(--grn));display:flex;align-items:center;justify-content:center;font-size:24px;font-weight:900;color:#fff;margin:0 auto 16px">S</div>
+    <div style="font-size:14px;font-weight:700;color:var(--mut)">Loading SIPR...</div>
+    <div class="spinner" style="margin:16px auto 0"></div>
+  </div>
+</div>
+
+<!-- INVITE CODE PAGE (Google new users) -->
+<div id="invite-page">
+  <div class="lbox">
+    <div style="text-align:center;margin-bottom:24px">
+      <div style="font-size:44px;margin-bottom:12px">🔐</div>
+      <div style="font-size:20px;font-weight:900;margin-bottom:8px">One more step!</div>
+      <div style="font-size:13px;color:var(--mut);line-height:1.7">Enter your <strong style="color:var(--txt)">Member Invite Code</strong> to link your Google account to SIPR.</div>
+    </div>
+    <div id="invite-user-info" style="background:var(--sur2);border-radius:12px;padding:12px 14px;margin-bottom:18px;display:flex;align-items:center;gap:10px"></div>
+    <div style="margin-bottom:20px">
+      <label class="lbl">Member Invite Code</label>
+      <input type="text" id="invite-code" class="inp" placeholder="e.g. SIPR26-JH-6729" autocorrect="off" autocapitalize="characters" spellcheck="false" style="letter-spacing:1px;font-weight:700;font-size:15px"/>
+      <div style="font-size:11px;color:var(--mut);margin-top:6px">Ask Jaziro for your code. Each code links one Google account only.</div>
+    </div>
+    <button onclick="A.linkInviteCode()" class="bp" style="width:100%;padding:14px;margin-bottom:12px">Link My Account →</button>
+    <button onclick="A.logout()" style="width:100%;background:none;border:none;color:var(--mut);font-size:12px;cursor:pointer;font-family:inherit">Sign out and try again</button>
+    <div id="invite-err" style="color:#f87171;font-size:12px;margin-top:12px;display:none;padding:10px 14px;background:#1a060688;border-radius:10px;border:1px solid #7f1d1d"></div>
+  </div>
+</div>
+
+<!-- PENDING APPROVAL -->
+<div id="pending-banner" style="display:none;position:fixed;inset:0;background:var(--bg);z-index:9000;align-items:center;justify-content:center;">
+  <div class="lbox" style="text-align:center">
+    <div style="font-size:48px;margin-bottom:16px">⏳</div>
+    <div style="font-size:20px;font-weight:900;margin-bottom:8px">Registration Pending</div>
+    <div style="font-size:13px;color:var(--mut);line-height:1.7;margin-bottom:24px">Your registration has been submitted. Waiting for admin approval.<br>You'll get access once approved.</div>
+    <button onclick="A.logout()" style="width:100%;padding:13px;border-radius:11px;border:1px solid #7f1d1d;background:#1a0404;color:#ef4444;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit">Sign Out</button>
+  </div>
+</div>
 
 <!-- LOGIN -->
 <div id="login-page">
@@ -120,29 +183,51 @@ textarea.inp{resize:vertical;}
       <div style="font-size:22px;font-weight:900;letter-spacing:-0.5px">SIPR GROUP</div>
       <div style="font-size:10px;letter-spacing:3px;color:var(--mut);margin-top:4px">INVEST · GROW · PROSPER</div>
     </div>
-    <div style="margin-bottom:18px">
-      <label class="lbl">Email Address</label>
-      <input type="email" id="li-email" class="inp" placeholder="yourname@sipr.com"
-        autocomplete="email" autocorrect="off" autocapitalize="off" spellcheck="false"/>
-    </div>
-    <div style="margin-bottom:24px">
-      <label class="lbl">Password</label>
-      <div style="position:relative">
-        <input type="password" id="li-pwd" class="inp" style="padding-right:50px"
-          placeholder="Enter your password"
-          autocomplete="current-password" autocorrect="off" autocapitalize="off" spellcheck="false"/>
-        <button type="button" onclick="var i=document.getElementById('li-pwd');i.type=i.type==='password'?'text':'password'"
-          style="position:absolute;right:0;top:0;bottom:0;width:50px;background:none;border:none;color:var(--mut);font-size:20px;cursor:pointer;touch-action:manipulation">&#128065;</button>
+    <!-- Google Sign In -->
+    <button onclick="A.googleLogin()" class="btn-google" style="margin-bottom:20px">
+      <svg width="18" height="18" viewBox="0 0 18 18"><path fill="#4285F4" d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.258h2.908c1.702-1.567 2.684-3.874 2.684-6.615z"/><path fill="#34A853" d="M9 18c2.43 0 4.467-.806 5.956-2.184l-2.908-2.258c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332A8.997 8.997 0 0 0 9 18z"/><path fill="#FBBC05" d="M3.964 10.707A5.41 5.41 0 0 1 3.682 9c0-.593.102-1.17.282-1.707V4.961H.957A8.996 8.996 0 0 0 0 9c0 1.452.348 2.827.957 4.039l3.007-2.332z"/><path fill="#EA4335" d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 0 0 .957 4.961L3.964 6.293C4.672 4.166 6.656 3.58 9 3.58z"/></svg>
+      Continue with Google
+    </button>
+    <div class="divider" style="margin-bottom:20px">OR</div>
+    <!-- Email login form -->
+    <div id="login-form">
+      <div style="margin-bottom:14px">
+        <label class="lbl">Email Address</label>
+        <input type="email" id="li-email" class="inp" placeholder="yourname@sipr.com" autocomplete="email" autocorrect="off" autocapitalize="off" spellcheck="false"/>
       </div>
-      <div id="li-err" style="color:#f87171;font-size:12px;margin-top:10px;display:none;padding:10px 14px;background:#1a060688;border-radius:10px;border:1px solid #7f1d1d"></div>
+      <div style="margin-bottom:18px">
+        <label class="lbl">Password</label>
+        <div style="position:relative">
+          <input type="password" id="li-pwd" class="inp" style="padding-right:50px" placeholder="Enter your password" autocomplete="current-password"/>
+          <button type="button" onclick="var i=document.getElementById('li-pwd');i.type=i.type==='password'?'text':'password'" style="position:absolute;right:0;top:0;bottom:0;width:50px;background:none;border:none;color:var(--mut);font-size:20px;cursor:pointer">&#128065;</button>
+        </div>
+      </div>
+      <button onclick="A.emailLogin()" class="bp" style="width:100%;padding:14px;margin-bottom:12px">Login →</button>
+      <div style="display:flex;justify-content:space-between">
+        <button onclick="A.showReg()" style="background:none;border:none;color:var(--mut);font-size:12px;cursor:pointer;font-family:inherit">New member? Register</button>
+        <button onclick="A.forgotPass()" style="background:none;border:none;color:var(--mut);font-size:12px;cursor:pointer;font-family:inherit">Forgot password?</button>
+      </div>
     </div>
-    <button type="button" onclick="A.login()" class="bp" style="width:100%;padding:15px;font-size:15px;letter-spacing:.5px;touch-action:manipulation">LOGIN TO SIPR &rarr;</button>
+    <!-- Register form -->
+    <div id="register-form" style="display:none">
+      <div style="font-size:15px;font-weight:800;margin-bottom:16px;color:var(--grn)">New Member Registration</div>
+      <div style="display:flex;flex-direction:column;gap:12px;margin-bottom:18px">
+        <div><label class="lbl">Full Name</label><input type="text" id="rg-name" class="inp" placeholder="Your full name"/></div>
+        <div><label class="lbl">Email</label><input type="email" id="rg-email" class="inp" placeholder="your@gmail.com"/></div>
+        <div><label class="lbl">Password (min 6 chars)</label><input type="password" id="rg-pass" class="inp" placeholder="Create a password"/></div>
+        <div><label class="lbl">Member Invite Code</label><input type="text" id="rg-code" class="inp" placeholder="e.g. SIPR26-JH-6729" autocorrect="off" autocapitalize="characters"/><div style="font-size:11px;color:var(--mut);margin-top:5px">Get your code from Jaziro</div></div>
+      </div>
+      <button onclick="A.registerMember()" class="bp" style="width:100%;padding:14px;margin-bottom:12px">Submit Registration</button>
+      <button onclick="A.showLogin()" style="width:100%;background:none;border:none;color:var(--mut);font-size:12px;cursor:pointer;font-family:inherit">← Back to login</button>
+    </div>
+    <div id="li-err" style="color:#f87171;font-size:12px;margin-top:12px;display:none;padding:10px 14px;background:#1a060688;border-radius:10px;border:1px solid #7f1d1d"></div>
     <div style="text-align:center;margin-top:20px;font-size:11px;color:var(--mut)">PRIVATE &amp; CONFIDENTIAL &middot; SIPR GROUP &copy; 2026</div>
   </div>
 </div>
 
 <!-- APP -->
 <div id="app-page">
+  <div id="mob-nav-overlay" onclick="A.closeMobNav()"></div>
   <div id="desk-wrap">
     <div id="desk-nav">
       <div class="nav-logo">
@@ -167,9 +252,22 @@ textarea.inp{resize:vertical;}
     </div>
     <div id="desk-content">
       <div id="top-bar">
+        <button id="mob-menu-btn" onclick="A.togMobNav()">☰</button>
         <h2 id="page-title">Dashboard</h2>
         <div style="display:flex;align-items:center;gap:10px">
           <div id="fund-badge" style="font-size:13px;font-weight:800;color:var(--grn)"></div>
+          <div id="wallet-badge" onclick="A.togWallet()">
+            <span style="font-size:14px">💰</span>
+            <div>
+              <div id="wallet-avail" style="font-size:12px;font-weight:800;color:var(--grn);line-height:1">—</div>
+              <div style="font-size:9px;color:var(--mut);font-weight:600">MY WALLET</div>
+            </div>
+            <div id="wallet-drop">
+              <div style="font-size:10px;letter-spacing:2px;color:var(--mut);font-weight:700;margin-bottom:12px">MY WALLET</div>
+              <div id="wallet-drop-body"></div>
+              <button onclick="event.stopPropagation();A.go('wallet');A.closeWallet();" style="width:100%;margin-top:12px;padding:9px;border-radius:10px;border:1px solid var(--gbr);background:var(--gdm);color:var(--grn);font-size:12px;font-weight:700;cursor:pointer;font-family:inherit">View Full Wallet →</button>
+            </div>
+          </div>
           <div id="mob-av-btn" onclick="A.togDrop()" style="position:relative;cursor:pointer">
             <div id="mob-av"></div>
             <div id="prof-drop2" style="display:none;position:absolute;top:44px;right:0;background:var(--sur);border:1px solid var(--bor);border-radius:14px;padding:8px;min-width:180px;z-index:200;box-shadow:0 16px 48px #00000080">
@@ -239,6 +337,7 @@ var NAVS=[
   {id:"investments",ic:"📈",lb:"Investments"},
   {id:"transactions",ic:"⇅",lb:"Transactions"},
   {id:"members",ic:"○",lb:"Members"},
+  {id:"wallet",ic:"💰",lb:"My Wallet"},
   {id:"goals",ic:"◎",lb:"Goals & Targets"},
   {id:"noticeboard",ic:"🔔",lb:"Notice Board"},
   {id:"expenses",ic:"💸",lb:"Expense Tracker"},
@@ -302,10 +401,10 @@ var TITLE_ACCESS={
 
 var S={
   role:null,name:"",email:"",tab:"dashboard",
-  txs:[],invs:[],mems:[],anns:[],props:[],docs:[],acts:[],
+  txs:[],invs:[],mems:[],anns:[],props:[],docs:[],acts:[],wallets:[],
   payMode:"single",payM:new Date().getMonth(),payY:new Date().getFullYear(),
   fT:"all",fM:"all",nbTab:"announcements",sumTab:"monthly",
-  _pf:"all"
+  _pf:"all",_invF:"all"
 };
 window._MO={};
 
@@ -416,7 +515,7 @@ var A={
   },
   go:function(tab){
     S.tab=tab;A.buildNav();
-    var pt={dashboard:"Dashboard",payments:"Monthly Payments",investments:"Investments",transactions:"Transactions",members:"Members",goals:"Goals & Targets",noticeboard:"Notice Board",expenses:"Expense Tracker",documents:"Documents",activity:"Activity Log",summary:"Summary",about:"About SIPR",control:"Control Panel"};
+    var pt={dashboard:"Dashboard",payments:"Monthly Payments",investments:"Investments",transactions:"Transactions",members:"Members",wallet:"My Wallet",goals:"Goals & Targets",noticeboard:"Notice Board",expenses:"Expense Tracker",documents:"Documents",activity:"Activity Log",summary:"Summary",about:"About SIPR",control:"Control Panel"};
     var pt2=$("page-title"),fb=$("fund-badge");
     if(pt2)pt2.textContent=pt[tab]||tab;
     if(fb)fb.textContent=fmt(A.stats().f);
@@ -429,6 +528,7 @@ var A={
     if(tab==="investments"){c.innerHTML=A.pInv();return;}
     if(tab==="transactions"){c.innerHTML=A.pTx();return;}
     if(tab==="members"){c.innerHTML=A.pMem();return;}
+    if(tab==="wallet"){c.innerHTML=A.pWallet();return;}
     if(tab==="goals"){c.innerHTML=A.pGoals();return;}
     if(tab==="noticeboard"){c.innerHTML=A.pNotice();A.loadNotice();return;}
     if(tab==="expenses"){c.innerHTML=A.pExpenses();return;}
@@ -458,7 +558,7 @@ var A={
   },
 
   // ── DATA LOAD ──
-  loadAll:function(){A.loadTxs();A.loadInvs();},
+  loadAll:function(){A.loadTxs();A.loadInvs();A.loadWallets();},
   loadMembers:function(cb){
     db.collection("members").get().then(function(snap){
       if(snap.empty){S.mems=DEFAULT_MEMBERS.slice();if(cb)cb();return;}
@@ -1655,6 +1755,184 @@ document.addEventListener("DOMContentLoaded",function(){
 
 // Show login on load
 (function(){var lp=$("login-page");if(lp)lp.style.display="flex";})();
+</script>
+</body>
+</html>
+    db.collection("pendingApprovals").doc(docId).update({status:"approved"}).then(function(){
+      db.collection("members").doc(memberId).update({status:"active"}).then(function(){
+        A.loadPendingApprovals();toast("Registration approved!");
+      });
+    }).catch(function(e){toast(e.message,false);});
+  },
+  rejectReg:function(docId,memberId){
+    if(!confirm("Reject this registration?"))return;
+    db.collection("pendingApprovals").doc(docId).update({status:"rejected"}).then(function(){
+      db.collection("members").doc(memberId).update({status:"rejected"}).then(function(){
+        A.loadPendingApprovals();toast("Registration rejected.");
+      });
+    }).catch(function(e){toast(e.message,false);});
+  },
+  showTitlePerms:function(sid,title){
+    var el=$("tp-"+sid);if(!el)return;
+    var ta=TITLE_ACCESS[title]||TITLE_ACCESS["Research Officer"];
+    var h="<div style='font-size:9px;letter-spacing:1px;color:var(--mut);font-weight:700;margin-bottom:6px'>PERMISSIONS</div><div style='display:flex;flex-wrap:wrap;gap:5px'>";
+    ta.p.forEach(function(pp){h+="<span style='background:"+ta.c+"15;color:"+ta.c+";border:1px solid "+ta.c+"30;padding:3px 9px;border-radius:99px;font-size:11px;font-weight:600'>✓ "+pp+"</span>";});
+    h+="</div>";el.innerHTML=h;
+  },
+  saveMem:function(email,sid,locked){
+    var nm=$("nm-"+sid)?$("nm-"+sid).value.trim():"";
+    var ph=$("ph-"+sid)?$("ph-"+sid).value.trim():"";
+    var gm=$("gm-"+sid)?$("gm-"+sid).value.trim():"";
+    var ad=$("ad-"+sid)?$("ad-"+sid).value.trim():"";
+    var tl=$("tl-"+sid)?$("tl-"+sid).value:"";
+    var upd={name:nm,phone:ph,gmail:gm,address:ad,_registered:true};
+    if(!locked&&tl)upd.title=tl;
+    var mem=S.mems.find(function(m){return m.email===email;});
+    if(!mem){toast("Member not found",false);return;}
+    db.collection("members").doc(mem.id).update(upd).then(function(){
+      Object.assign(mem,upd);
+      if(email===S.email){S.name=nm;A.labels();}
+      A.logAct("save_member",nm);toast("Profile saved!");
+      A.render("control");
+    }).catch(function(){
+      db.collection("members").doc(mem.id).set(Object.assign({},mem,upd)).then(function(){Object.assign(mem,upd);toast("Profile saved!");A.render("control");}).catch(function(e){toast("Error: "+e.message,false);});
+    });
+  },
+  changeRole:function(email,nr){
+    var mem=S.mems.find(function(m){return m.email===email;});
+    var rn={admin:"Admin",manager:"Manager",member:"Member"};
+    var msg="Change "+(mem?mem.name:email)+" to "+rn[nr]+"?";
+    if(email===S.email&&nr!=="admin")msg="WARNING: You will lose Admin access!\n\nAre you sure?";
+    if(!confirm(msg))return;
+    ROLE_MAP[email]=nr;
+    if(mem){
+      mem.role=nr;
+      db.collection("members").doc(mem.id).update({role:nr,_roleNotif:{newRole:nr,changedAt:now()}}).catch(function(){});
+    }
+    if(email===S.email){S.role=nr;A.labels();A.buildNav();A.go("dashboard");}
+    else{toast((mem?mem.name:email)+" is now "+rn[nr]+"!");A.render("control");}
+    A.logAct("change_role",(mem?mem.name:email)+" → "+rn[nr]);
+  },
+  resetMembers:function(){
+    if(!confirm("Reset all member data to defaults?\nThis will clear phones, gmails, addresses but NOT transactions."))return;
+    var batch=db.batch();
+    DEFAULT_MEMBERS.forEach(function(m){
+      var existing=S.mems.find(function(x){return x.id===m.id;});
+      var keep=existing?{googleUid:existing.googleUid||"",role:existing.role||"member",status:existing.status||"active"}:{};
+      batch.set(db.collection("members").doc(m.id),Object.assign({},m,keep));
+    });
+    batch.commit().then(function(){S.mems=DEFAULT_MEMBERS.slice();A.render("control");A.logAct("reset_members","All members reset");toast("Members reset!");}).catch(function(e){toast("Error: "+e.message,false);});
+  },
+  approveReg:function(docId,memberId){
+    if(!confirm("Approve this registration?"))return;
+    db.collection("pendingApprovals").doc(docId).update({status:"approved"}).then(function(){
+      return db.collection("members").doc(memberId).update({status:"active"});
+    }).then(function(){
+      toast("Registration approved!");
+      A.loadPendingApprovals();
+    }).catch(function(e){toast("Error: "+e.message,false);});
+  },
+  rejectReg:function(docId,memberId){
+    if(!confirm("Reject and remove this registration?"))return;
+    db.collection("pendingApprovals").doc(docId).update({status:"rejected"}).then(function(){
+      return db.collection("members").doc(memberId).update({status:"rejected"});
+    }).then(function(){
+      toast("Registration rejected.");
+      A.loadPendingApprovals();
+    }).catch(function(e){toast("Error: "+e.message,false);});
+  },
+  showTitlePerms:function(sid,title){
+    var el=$("tp-"+sid);if(!el)return;
+    var ta=TITLE_ACCESS[title]||TITLE_ACCESS["Research Officer"];
+    var h="<div style='font-size:9px;letter-spacing:1px;color:var(--mut);font-weight:700;margin-bottom:6px'>PERMISSIONS</div><div style='display:flex;flex-wrap:wrap;gap:5px'>";
+    ta.p.forEach(function(pp){h+="<span style='background:"+ta.c+"15;color:"+ta.c+";border:1px solid "+ta.c+"30;padding:3px 9px;border-radius:99px;font-size:11px;font-weight:600'>✓ "+pp+"</span>";});
+    h+="</div>";
+    el.innerHTML=h;
+  },
+  saveMem:function(email,sid,locked){
+    var nm=$("nm-"+sid)?$("nm-"+sid).value.trim():"";
+    var ph=$("ph-"+sid)?$("ph-"+sid).value.trim():"";
+    var gm=$("gm-"+sid)?$("gm-"+sid).value.trim():"";
+    var ad=$("ad-"+sid)?$("ad-"+sid).value.trim():"";
+    var tl=$("tl-"+sid)?$("tl-"+sid).value:"";
+    var upd={name:nm,phone:ph,gmail:gm,address:ad,_registered:true};
+    if(!locked&&tl)upd.title=tl;
+    var mem=S.mems.find(function(m){return m.email===email;});
+    if(!mem){toast("Member not found",false);return;}
+    db.collection("members").doc(mem.id).update(upd).then(function(){
+      Object.assign(mem,upd);
+      if(email===S.email){S.name=nm;A.labels();}
+      A.logAct("save_member",nm);
+      toast("Profile saved!");
+      A.render("control");
+    }).catch(function(){
+      db.collection("members").doc(mem.id).set(Object.assign({},mem,upd)).then(function(){
+        Object.assign(mem,upd);
+        toast("Profile saved!");
+        A.render("control");
+      }).catch(function(e){toast("Error: "+e.message,false);});
+    });
+  },
+  changeRole:function(email,nr){
+    var mem=S.mems.find(function(m){return m.email===email;});
+    var rn={admin:"Admin",manager:"Manager",member:"Member"};
+    var msg="Change "+(mem?mem.name:email)+" to "+rn[nr]+"?";
+    if(email===S.email&&nr!=="admin")msg="⚠ WARNING: You will lose Admin access!\n\nAre you sure?";
+    if(!confirm(msg))return;
+    ROLE_MAP[email]=nr;
+    // Persist to member doc
+    if(mem){
+      db.collection("members").doc(mem.id).update({role:nr,_roleNotif:{newRole:nr,at:now()}}).catch(function(){});
+      mem.role=nr;
+    }
+    if(email===S.email){S.role=nr;A.labels();A.buildNav();A.go("dashboard");}
+    else{toast((mem?mem.name:email)+" is now "+rn[nr]+"!");A.render("control");}
+    A.logAct("change_role",(mem?mem.name:email)+" → "+rn[nr]);
+  },
+  resetMembers:function(){
+    if(!confirm("Reset all member data to defaults?\n\nTransaction history is NOT deleted."))return;
+    var batch=db.batch();
+    DEFAULT_MEMBERS.forEach(function(m){batch.set(db.collection("members").doc(m.id),m);});
+    batch.commit().then(function(){S.mems=DEFAULT_MEMBERS.slice();A.render("control");A.logAct("reset_members","All members reset");toast("Members reset!");}).catch(function(e){toast("Error: "+e.message,false);});
+  },
+  regModal:function(m){
+    var sid=(m.id||m.email).replace(/[@.\-]/g,"_");
+    var h="<div class='modal-bg'><div class='modal-box'>";
+    h+="<div style='font-weight:800;font-size:20px;margin-bottom:6px'>Welcome to SIPR, "+m.name+"!</div>";
+    h+="<div style='font-size:13px;color:var(--mut);margin-bottom:22px'>Complete your profile to get started.</div>";
+    h+="<div style='display:flex;flex-direction:column;gap:14px'>";
+    h+="<div><label class='lbl'>Phone Number</label><input type='tel' id='rg-ph' class='inp' placeholder='01XXXXXXXXX'/></div>";
+    h+="<div><label class='lbl'>Gmail Address</label><input type='email' id='rg-gm' class='inp' placeholder='yourname@gmail.com'/></div>";
+    h+="<div><label class='lbl'>Address</label><input type='text' id='rg-ad' class='inp' placeholder='City, Bangladesh'/></div>";
+    h+="<button onclick='A.saveReg(\""+m.email+"\",\""+sid+"\")' class='bp' style='width:100%;padding:13px'>Save Profile</button>";
+    h+="</div></div></div>";
+    $("modal-wrap").innerHTML=h;
+  },
+  saveReg:function(email,sid){
+    var ph=($("rg-ph")||{value:""}).value.trim(),gm=($("rg-gm")||{value:""}).value.trim(),ad=($("rg-ad")||{value:""}).value.trim();
+    if(!ph){toast("Phone required",false);return;}
+    var mem=S.mems.find(function(m){return m.email===email;});
+    if(!mem){A.closeM();return;}
+    db.collection("members").doc(mem.id).update({phone:ph,gmail:gm,address:ad,_registered:true}).then(function(){
+      Object.assign(mem,{phone:ph,gmail:gm,address:ad,_registered:true});
+      A.closeM();toast("Profile saved!");
+    }).catch(function(e){toast("Error: "+e.message,false);});
+  },
+  closeM:function(){$("modal-wrap").innerHTML="";}
+};
+
+// ── GLOBAL EVENT LISTENERS ──
+document.addEventListener("DOMContentLoaded",function(){
+  document.addEventListener("click",function(e){
+    var d=$("prof-drop"),d2=$("prof-drop2"),wd=$("wallet-drop");
+    if(d&&d.style.display==="block"&&!e.target.closest("#desk-av-btn"))d.style.display="none";
+    if(d2&&d2.style.display==="block"&&!e.target.closest("#mob-av-btn"))d2.style.display="none";
+    if(wd&&wd.style.display==="block"&&!e.target.closest("#wallet-badge"))wd.style.display="none";
+  });
+});
+
+// ── START ──
+A.init();
 </script>
 </body>
 </html>
