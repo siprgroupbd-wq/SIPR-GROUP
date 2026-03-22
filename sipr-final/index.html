@@ -140,9 +140,14 @@ textarea.inp{resize:vertical;}
 <!-- LOADING -->
 <div id="loading-page" style="display:flex;">
   <div style="text-align:center">
-    <div style="width:48px;height:48px;border-radius:14px;background:linear-gradient(135deg,var(--gbr),var(--grn));display:flex;align-items:center;justify-content:center;font-size:24px;font-weight:900;color:#fff;margin:0 auto 16px">S</div>
-    <div style="font-size:14px;font-weight:700;color:var(--mut)">Loading SIPR...</div>
-    <div class="spinner" style="margin:16px auto 0"></div>
+    <div style="width:56px;height:56px;border-radius:16px;background:linear-gradient(135deg,var(--gbr),var(--grn));display:flex;align-items:center;justify-content:center;font-size:26px;font-weight:900;color:#fff;margin:0 auto 16px">S</div>
+    <div style="font-size:15px;font-weight:700;color:var(--txt);margin-bottom:4px">SIPR GROUP</div>
+    <div style="font-size:12px;color:var(--mut);margin-bottom:20px">Loading...</div>
+    <div class="spinner" style="margin:0 auto 20px"></div>
+    <div id="loading-retry" style="display:none">
+      <div style="font-size:12px;color:var(--mut);margin-bottom:10px">Taking too long?</div>
+      <button onclick="location.reload()" style="padding:10px 24px;border-radius:10px;border:1px solid var(--gbr);background:var(--gdm);color:var(--grn);font-size:13px;font-weight:700;cursor:pointer;font-family:inherit">Retry</button>
+    </div>
   </div>
 </div>
 
@@ -338,17 +343,39 @@ var A={
   // ══ FIREBASE AUTH ══
   init:function(){
     showOnly("loading-page");
+    var _authDone=false;
+    // Safety timeout — if Firebase takes >6s, go to login
+    var _authTimer=setTimeout(function(){
+      if(!_authDone){_authDone=true;showOnly("login-page");}
+    },6000);
     fauth.onAuthStateChanged(function(user){
+      if(_authDone)return;
+      _authDone=true;
+      clearTimeout(_authTimer);
       if(user){
         A.handleAuthUser(user);
       } else {
         showOnly("login-page");
       }
     });
+    // Show retry button after 4s if still loading
+    setTimeout(function(){
+      var lr=$("loading-retry");
+      if(lr&&$("loading-page")&&$("loading-page").style.display!=="none")lr.style.display="block";
+    },4000);
   },
   handleAuthUser:function(user){
     showOnly("loading-page");
+    // Timeout if Firestore hangs
+    var _hdone=false;
+    var _htimer=setTimeout(function(){
+      if(!_hdone){_hdone=true;showOnly("login-page");toast("Connection timeout. Check internet.",false);}
+    },8000);
+    var _origCb=function(){
+      if(_hdone)return;_hdone=true;clearTimeout(_htimer);
+    };
     A.loadMembers(function(){
+      _origCb();
       var mem=S.mems.find(function(m){return m.googleUid===user.uid;})||S.mems.find(function(m){return m.email===user.email;});
       if(mem){
         if(mem.status==="pending"){var pb=$("pending-banner");if(pb){$("loading-page").style.display="none";pb.style.display="flex";}return;}
