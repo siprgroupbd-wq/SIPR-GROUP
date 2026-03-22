@@ -123,9 +123,10 @@ textarea.inp{resize:vertical;}
 .divider{display:flex;align-items:center;gap:12px;color:var(--mut);font-size:11px;font-weight:600;}
 .divider::before,.divider::after{content:'';flex:1;height:1px;background:var(--bor);}
 /* Mobile nav fix */
-#mob-menu-btn{display:none;background:var(--sur2);border:1px solid var(--bor);border-radius:8px;padding:7px 10px;cursor:pointer;font-size:18px;color:var(--txt);flex-shrink:0;}
-@media(max-width:820px){#mob-menu-btn{display:block;}#desk-nav{transform:translateX(-100%);transition:transform .25s;}#desk-nav.mob-open{transform:translateX(0);box-shadow:4px 0 32px #00000080;}#mob-nav-overlay{display:block!important;}}
-#mob-nav-overlay{display:none;position:fixed;inset:0;background:#00000060;z-index:99;}
+#mob-menu-btn{display:none;align-items:center;justify-content:center;background:var(--sur2);border:1px solid var(--bor);border-radius:8px;padding:8px 12px;cursor:pointer;font-size:20px;color:var(--txt);flex-shrink:0;touch-action:manipulation;line-height:1;}
+@media(max-width:820px){#mob-menu-btn{display:flex!important;}#desk-nav{transform:translateX(-240px);transition:transform .28s cubic-bezier(.4,0,.2,1);}#desk-nav.mob-open{transform:translateX(0)!important;box-shadow:12px 0 48px #00000099;}#desk-content{margin-left:0!important;padding:14px 14px 90px!important;}#wallet-badge{display:none!important;}#fund-badge{display:none!important;}}
+#mob-nav-overlay{display:none;position:fixed;inset:0;background:#00000070;z-index:199;}
+#mob-nav-overlay.active{display:block!important;}
 /* Passbook */
 .pb-entry{display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid var(--bor);}
 .pb-entry:last-child{border-bottom:none;}
@@ -254,27 +255,23 @@ textarea.inp{resize:vertical;}
       <div id="top-bar">
         <button id="mob-menu-btn" onclick="A.togMobNav()">☰</button>
         <h2 id="page-title">Dashboard</h2>
-        <div style="display:flex;align-items:center;gap:10px">
-          <div id="fund-badge" style="font-size:13px;font-weight:800;color:var(--grn)"></div>
-          <div id="wallet-badge" onclick="A.togWallet()">
-            <span style="font-size:14px">💰</span>
-            <div>
-              <div id="wallet-avail" style="font-size:12px;font-weight:800;color:var(--grn);line-height:1">—</div>
-              <div style="font-size:9px;color:var(--mut);font-weight:600">MY WALLET</div>
-            </div>
-            <div id="wallet-drop">
-              <div style="font-size:10px;letter-spacing:2px;color:var(--mut);font-weight:700;margin-bottom:12px">MY WALLET</div>
-              <div id="wallet-drop-body"></div>
-              <button onclick="event.stopPropagation();A.go('wallet');A.closeWallet();" style="width:100%;margin-top:12px;padding:9px;border-radius:10px;border:1px solid var(--gbr);background:var(--gdm);color:var(--grn);font-size:12px;font-weight:700;cursor:pointer;font-family:inherit">View Full Wallet →</button>
-            </div>
-          </div>
-          <div id="mob-av-btn" onclick="A.togDrop()" style="position:relative;cursor:pointer">
+        <div style="display:flex;align-items:center;gap:8px;flex-shrink:0">
+          <div id="fund-badge" style="font-size:12px;font-weight:800;color:var(--grn)"></div>
+          <div id="mob-av-btn" onclick="A.togDrop()" style="position:relative;cursor:pointer;touch-action:manipulation">
             <div id="mob-av"></div>
-            <div id="prof-drop2" style="display:none;position:absolute;top:44px;right:0;background:var(--sur);border:1px solid var(--bor);border-radius:14px;padding:8px;min-width:180px;z-index:200;box-shadow:0 16px 48px #00000080">
-              <div id="drop-info2" style="padding:8px;border-bottom:1px solid var(--bor);margin-bottom:6px"></div>
-              <button onclick="A.logout()" style="width:100%;padding:9px 12px;background:#1a040688;border:1px solid #7f1d1d44;border-radius:8px;color:#ef4444;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit">Sign Out</button>
+            <div id="prof-drop2" style="display:none;position:absolute;top:50px;right:0;background:var(--sur);border:1px solid var(--bor);border-radius:16px;padding:14px;min-width:230px;z-index:300;box-shadow:0 16px 48px #000000aa">
+              <div id="drop-info2" style="padding:4px;border-bottom:1px solid var(--bor);margin-bottom:12px"></div>
+              <div id="drop-wallet2" style="margin-bottom:12px"></div>
+              <button onclick="A.go('wallet');A.closeDrops()" style="width:100%;padding:9px 12px;background:var(--gdm);border:1px solid var(--gbr);border-radius:8px;color:var(--grn);font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;margin-bottom:6px;text-align:left;touch-action:manipulation">💰 My Wallet &amp; Passbook</button>
+              <button onclick="A.changePassModal()" style="width:100%;padding:9px 12px;background:var(--sur2);border:1px solid var(--bor);border-radius:8px;color:var(--txt);font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;margin-bottom:6px;text-align:left;touch-action:manipulation">🔑 Change Password</button>
+              <button onclick="A.logout()" style="width:100%;padding:9px 12px;background:#1a040688;border:1px solid #7f1d1d44;border-radius:8px;color:#ef4444;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;touch-action:manipulation">Sign Out</button>
             </div>
           </div>
+        </div>
+        <div id="wallet-badge" onclick="A.togWallet()" style="display:none">
+          <span style="font-size:14px">💰</span>
+          <div><div id="wallet-avail" style="font-size:11px;font-weight:800;color:var(--grn);line-height:1">—</div><div style="font-size:8px;color:var(--mut);font-weight:600">WALLET</div></div>
+          <div id="wallet-drop"><div style="font-size:10px;letter-spacing:2px;color:var(--mut);font-weight:700;margin-bottom:12px">MY WALLET</div><div id="wallet-drop-body"></div><button onclick="event.stopPropagation();A.go('wallet');A.closeWallet();" style="width:100%;margin-top:12px;padding:9px;border-radius:10px;border:1px solid var(--gbr);background:var(--gdm);color:var(--grn);font-size:12px;font-weight:700;cursor:pointer;font-family:inherit">View Full Wallet →</button></div>
         </div>
       </div>
       <div id="page-content"></div>
@@ -479,10 +476,14 @@ var A={
     var di=$("drop-info"),di2=$("drop-info2");if(di)di.innerHTML=dinfo;if(di2)di2.innerHTML=dinfo;
     var fb=$("fund-badge");if(fb){fb.textContent=fmt(A.stats().f);fb.style.display=mob()?"none":"block";}
     A.updateWalletBadge();
+    var dw=$("drop-wallet"),dw2=$("drop-wallet2");var w2=A.getMyWallet();
+    var wi="<div style='background:var(--gdm);border:1px solid var(--gbr);border-radius:12px;padding:12px 14px'><div style='font-size:9px;color:var(--mut);font-weight:700;letter-spacing:1px;margin-bottom:6px'>MY WALLET</div><div style='font-size:17px;font-weight:900;color:var(--grn);margin-bottom:2px'>"+fmt(w2.available)+"</div><div style='font-size:10px;color:var(--mut)'>Available"+(w2.locked>0?" · <span style=\'color:var(--gold)\'>"+fmt(w2.locked)+" locked</span>":"")+"</div></div>";
+    if(dw)dw.innerHTML=wi;if(dw2)dw2.innerHTML=wi;
   },
   togDrop:function(){var d=$("prof-drop"),d2=$("prof-drop2");if(mob()){if(d2)d2.style.display=d2.style.display==="block"?"none":"block";}else{if(d)d.style.display=d.style.display==="block"?"none":"block";}},
-  togMobNav:function(){var dn=$("desk-nav");if(dn)dn.classList.toggle("mob-open");},
-  closeMobNav:function(){var dn=$("desk-nav");if(dn)dn.classList.remove("mob-open");},
+  togMobNav:function(){var dn=$("desk-nav"),ov=$("mob-nav-overlay");if(!dn)return;if(dn.classList.contains("mob-open")){dn.classList.remove("mob-open");if(ov)ov.classList.remove("active");}else{dn.classList.add("mob-open");if(ov)ov.classList.add("active");}},
+  closeMobNav:function(){var dn=$("desk-nav"),ov=$("mob-nav-overlay");if(dn)dn.classList.remove("mob-open");if(ov)ov.classList.remove("active");},
+  closeDrops:function(){var d=$("prof-drop"),d2=$("prof-drop2");if(d)d.style.display="none";if(d2)d2.style.display="none";A.closeMobNav();if(A.closeWallet)A.closeWallet();},
   togWallet:function(){var wd=$("wallet-drop");if(wd)wd.style.display=wd.style.display==="block"?"none":"block";},
   closeWallet:function(){var wd=$("wallet-drop");if(wd)wd.style.display="none";},
   moreMenu:function(){
@@ -559,7 +560,7 @@ var A={
   updateWalletBadge:function(){
     var wb=$("wallet-avail");if(!wb)return;
     var w=A.getMyWallet();wb.textContent=fmt(w.available);
-    var winfo="<div style='background:var(--sur2);border-radius:10px;padding:10px;border:1px solid var(--bor);margin-bottom:4px'><div style='font-size:9px;color:var(--mut);font-weight:700;letter-spacing:1px;margin-bottom:2px'>MY WALLET</div><div style='display:flex;justify-content:space-between'><div style='font-size:12px;font-weight:700;color:var(--grn)'>"+fmt(w.available)+"</div>"+(w.locked>0?"<div style='font-size:11px;color:var(--gold)'>"+fmt(w.locked)+" locked</div>":"")+"</div></div>";
+    var winfo="<div style='background:var(--gdm);border:1px solid var(--gbr);border-radius:12px;padding:12px 14px'><div style='font-size:9px;color:var(--mut);font-weight:700;letter-spacing:1px;margin-bottom:6px'>MY WALLET</div><div style='font-size:17px;font-weight:900;color:var(--grn);margin-bottom:2px'>"+fmt(w.available)+"</div><div style='font-size:10px;color:var(--mut)'>Available"+(w.locked>0?" · "+fmt(w.locked)+" locked":"")+"</div><button onclick=\"A.go('wallet');A.closeDrops()\" style='width:100%;margin-top:8px;padding:7px;border-radius:8px;border:1px solid var(--gbr);background:#0a122688;color:var(--grn);font-size:11px;font-weight:700;cursor:pointer;font-family:inherit'>View Passbook →</button></div>";margin-bottom:4px'><div style='font-size:9px;color:var(--mut);font-weight:700;letter-spacing:1px;margin-bottom:2px'>MY WALLET</div><div style='display:flex;justify-content:space-between'><div style='font-size:12px;font-weight:700;color:var(--grn)'>"+fmt(w.available)+"</div>"+(w.locked>0?"<div style='font-size:11px;color:var(--gold)'>"+fmt(w.locked)+" locked</div>":"")+"</div></div>";
     var dw=$("drop-wallet"),dw2=$("drop-wallet2");if(dw)dw.innerHTML=winfo;if(dw2)dw2.innerHTML=winfo;
     var db2=$("wallet-drop-body");if(!db2)return;
     db2.innerHTML="<div style='display:flex;gap:8px;margin-bottom:10px'><div style='flex:1;background:var(--gdm);border:1px solid var(--gbr);border-radius:10px;padding:10px;text-align:center'><div style='font-size:9px;color:var(--mut);font-weight:700;letter-spacing:1px;margin-bottom:3px'>AVAILABLE</div><div style='font-size:14px;font-weight:900;color:var(--grn)'>"+fmt(w.available)+"</div></div><div style='flex:1;background:#1c0e00;border:1px solid #78350f44;border-radius:10px;padding:10px;text-align:center'><div style='font-size:9px;color:var(--mut);font-weight:700;letter-spacing:1px;margin-bottom:3px'>LOCKED</div><div style='font-size:14px;font-weight:900;color:var(--gold)'>"+fmt(w.locked)+"</div></div></div>"+(w.history.length?"<div style='font-size:10px;color:var(--mut);font-weight:700;margin-bottom:6px'>RECENT</div>"+w.history.slice(-3).reverse().map(function(e){var c={salary:"var(--gold)",profit_share:"var(--purple)",fine:"var(--red)",deposit:"var(--grn)"}[e.type]||"var(--grn)";return"<div style='display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--bor);font-size:11px'><span style='color:var(--mut)'>"+e.label+"</span><span style='color:"+c+";font-weight:700'>"+(e.type==="fine"?"-":"+")+fmt(e.amount)+"</span></div>";}).join(""):"<div style='text-align:center;padding:8px;font-size:12px;color:var(--mut)'>No transactions yet</div>");
