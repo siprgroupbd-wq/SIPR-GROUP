@@ -326,8 +326,8 @@ function linkCode(){
   db.collection("members").doc(mem.id).update({googleUid:user.uid,googleEmail:user.email,_registered:true}).then(function(){
     Object.assign(mem,{googleUid:user.uid,googleEmail:user.email});
     S.email=mem.email;S.name=mem.name||user.displayName;S.uid=user.uid;
-    var ADMIN_EMAILS=["jaziro@sipr.com"];
-    S.role=ADMIN_EMAILS.indexOf(mem.email)>=0?"admin":(mem.role||"member");
+    var ADMIN_E2=["jaziro@sipr.com"];
+    S.role=ADMIN_E2.indexOf(mem.email)>=0?"admin":(mem.role||"member");
     $("pg-invite").style.display="none";
     initApp();toast("Welcome to SIPR, "+S.name+"! 🎉");
   }).catch(function(e){showErr("ierr","Error: "+e.message);});
@@ -343,13 +343,9 @@ fa.onAuthStateChanged(function(user){
     if(mem){
       if(mem.status==="pending"){$("pg-login").style.display="flex";showErr("lerr","Your registration is pending admin approval.");fa.signOut();return;}
       S.email=mem.email;S.name=mem.name||user.displayName||user.email;S.uid=user.uid;
-      // Safety: admin email always gets admin role regardless of Firestore value
-      var ADMIN_EMAILS=["jaziro@sipr.com"];
-      S.role=ADMIN_EMAILS.indexOf(mem.email)>=0?"admin":(mem.role||"member");
-      // Auto-repair: if admin email but Firestore doesn't have role:admin, fix it silently
-      if(ADMIN_EMAILS.indexOf(mem.email)>=0&&mem.role!=="admin"){
-        db.collection("members").doc(mem.id).update({role:"admin"}).catch(function(){});
-      }
+      var ADMIN_E=["jaziro@sipr.com"];
+      S.role=ADMIN_E.indexOf(mem.email)>=0?"admin":(mem.role||"member");
+      if(ADMIN_E.indexOf(mem.email)>=0&&mem.role!=="admin")db.collection("members").doc(mem.id).update({role:"admin"}).catch(function(){});
       $("pg-login").style.display="none";$("pg-invite").style.display="none";
       initApp();
     } else {
@@ -427,7 +423,6 @@ function toggleProf(){var d=$("prof-drop");if(d)d.style.display=d.style.display=
 function closeProf(){var d=$("prof-drop");if(d)d.style.display="none";}
 function closeModal(){var m=$("modal");if(m)m.innerHTML="";}
 function goPage(tab){
-  // Reset project detail view when navigating away
   if(tab!=="investments"&&S.currentInv){S.currentInv=null;var bb=$("back-btn");if(bb)bb.style.display="none";}
   S.tab=tab;buildNav();
   var titles={dashboard:"Dashboard",payments:"Monthly Payments",investments:"Projects",transactions:"Transactions",members:"Members",wallet:"My Wallet",goals:"Goals",noticeboard:"Notice Board",expenses:"Expenses",documents:"Documents",activity:"Activity Log",about:"About SIPR",control:"Control Panel"};
@@ -453,10 +448,9 @@ function pDash(){
   var pn=ps.filter(function(m){return m.paid;}).length;
   var up=ps.filter(function(m){return !m.paid;});
   var dom=new Date().getDate(),mn=DM[new Date().getMonth()];
-  var isOD=dom>10&&up.length>0;
+  var isOD=dom>10&&up.length>0,rate=Math.round(pn/S.mems.length*100);
   var GOAL=50000,gp=pct(s.f,GOAL),w=getMyWallet();
   var ai=S.invs.filter(function(i){return i.status==="active";});
-  var RORD={admin:0,finance:1,secretary:2,member:3};
   var h="<div class='fc'>";
   // Hero fund balance
   h+="<div class='hero'><div style='font-size:10px;letter-spacing:3px;color:var(--mut);font-weight:700;margin-bottom:7px'><span class='live'></span>SIPR GROUP · FUND BALANCE</div>";
@@ -468,28 +462,18 @@ function pDash(){
   h+="</div></div>";
   // 2 col
   h+="<div style='display:grid;grid-template-columns:"+(mob()?"1fr":"1fr 1fr")+";gap:12px'>";
-  // LEFT: Members total contribution
-  var contribs=S.mems.slice().sort(function(a,b){var ra=RORD[a.role||"member"]||3,rb=RORD[b.role||"member"]||3;return ra!==rb?ra-rb:a.name.localeCompare(b.name);}).map(function(m){var tot=S.txs.filter(function(t){return txMatch(t,m)&&t.type==="deposit";}).reduce(function(s,t){return s+Number(t.amount);},0);var thisM=ps.find(function(x){return x.id===m.id;});return Object.assign({},m,{total:tot,paid:thisM?thisM.paid:false});});
+  // Members total contribution card (replaces monthly payment card)
+  var RORD2={admin:0,finance:1,secretary:2,member:3};
+  var contribs=S.mems.slice().sort(function(a,b){var ra=RORD2[a.role||"member"]||3,rb=RORD2[b.role||"member"]||3;return ra!==rb?ra-rb:a.name.localeCompare(b.name);}).map(function(m){var tot=S.txs.filter(function(t){return txMatch(t,m)&&t.type==="deposit";}).reduce(function(s,t){return s+Number(t.amount);},0);var thisM=ps.find(function(x){return x.id===m.id;});return Object.assign({},m,{total:tot,paid:thisM?thisM.paid:false});});
   var grandTotal=contribs.reduce(function(s,m){return s+m.total;},0);
   h+="<div class='card' style='padding:0;overflow:hidden'>";
   h+="<div style='padding:11px 15px;border-bottom:1px solid var(--bor);display:flex;justify-content:space-between;align-items:center'>";
   h+="<div style='font-size:10px;letter-spacing:2px;color:var(--mut);font-weight:700'>👥 TOTAL CONTRIBUTIONS</div>";
   h+="<div style='font-size:11px;font-weight:800;color:var(--grn)'>"+fmt(grandTotal)+"</div></div>";
   h+="<div style='padding:3px 0'>";
-  contribs.forEach(function(m){
-    var share=grandTotal>0?Math.round(m.total/grandTotal*100):0;
-    h+="<div style='display:flex;align-items:center;padding:7px 13px;border-bottom:1px solid var(--bor);gap:8px'>"+av(m.name,22);
-    h+="<div style='flex:1;min-width:0'>";
-    h+="<div style='font-size:12px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap'>"+m.name+"</div>";
-    h+="<div style='height:3px;background:var(--s2);border-radius:99px;margin-top:3px;overflow:hidden'><div style='height:100%;width:"+share+"%;background:var(--grn);border-radius:99px'></div></div>";
-    h+="</div>";
-    h+="<div style='text-align:right;flex-shrink:0'>";
-    h+="<div style='font-size:12px;font-weight:800;color:var(--grn)'>"+fmt(m.total)+"</div>";
-    h+="<div style='font-size:9px;color:var(--mut)'>"+share+"%"+(m.paid?" · <span style=\"color:#22c55e\">✓</span>":" · <span style=\"color:#ef4444\">Pending</span>")+"</div>";
-    h+="</div></div>";
-  });
+  contribs.forEach(function(m){var share=grandTotal>0?Math.round(m.total/grandTotal*100):0;h+="<div style='display:flex;align-items:center;padding:7px 13px;border-bottom:1px solid var(--bor);gap:8px'>"+av(m.name,22)+"<div style='flex:1;min-width:0'><div style='font-size:12px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap'>"+m.name+"</div><div style='height:3px;background:var(--s2);border-radius:99px;margin-top:3px;overflow:hidden'><div style='height:100%;width:"+share+"%;background:var(--grn);border-radius:99px'></div></div></div><div style='text-align:right;flex-shrink:0'><div style='font-size:12px;font-weight:800;color:var(--grn)'>"+fmt(m.total)+"</div><div style='font-size:10px;color:var(--mut)'>"+share+"%"+(m.paid?" · ✓":" · Pending")+"</div></div></div>";});
   h+="</div><div style='padding:8px 11px'><button onclick='goPage(\"payments\")' style='width:100%;padding:8px;border-radius:9px;border:1px solid var(--gbr);background:var(--gdm);color:var(--grn);font-size:12px;font-weight:700;cursor:pointer;font-family:inherit'>Monthly Report →</button></div></div>";
-  // RIGHT stats
+  // Right stats
   h+="<div style='display:flex;flex-direction:column;gap:10px'>";
   h+="<div class='g2' style='gap:8px'>";
   h+="<div class='sc' style='background:var(--gdm);border-color:var(--gbr);text-align:center'><div style='color:var(--mut);font-size:9px;letter-spacing:1px;font-weight:700;margin-bottom:4px'>PAID</div><div style='color:var(--grn);font-weight:900;font-size:20px'>"+pn+"/"+S.mems.length+"</div></div>";
@@ -559,51 +543,55 @@ function waReport(){var ps=payS(S.payY,S.payM),pn=ps.filter(function(m){return m
 function printReport(){var ps=payS(S.payY,S.payM),pn=ps.filter(function(m){return m.paid;}).length,collected=ps.reduce(function(s,m){return s+(m.paid?m.paidAmt:0);},0);var rows=ps.map(function(m,i){return"<tr style='background:"+(i%2===0?"#f8fafb":"#fff")+"'><td style='padding:9px 13px;color:#64748b;font-size:12px'>"+(m.paid?fd(m.paidDate):"—")+"</td><td style='padding:9px 13px;font-weight:600'>"+m.name+"</td><td style='padding:9px 13px;text-align:center'><span style='padding:3px 11px;border-radius:99px;font-size:11px;font-weight:700;background:"+(m.paid?"#dcfce7":"#fee2e2")+";color:"+(m.paid?"#15803d":"#dc2626")+"'>"+(m.paid?"✓ Paid":"✗ Pending")+"</span></td><td style='padding:9px 13px;text-align:right;font-weight:700;color:"+(m.paid?"#15803d":"#dc2626")+"'>"+(m.paid?fmt(m.paidAmt):"BDT "+DUE+" due")+"</td></tr>";}).join("");var html="<!DOCTYPE html><html><head><title>SIPR Report</title><style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:Arial,sans-serif}.np{display:flex}@media print{.np{display:none!important}}</style></head><body><div style='max-width:660px;margin:0 auto;padding:30px'><div style='border-bottom:3px solid #4f8ef7;padding-bottom:14px;margin-bottom:20px'><div style='font-size:11px;color:#4f8ef7;font-weight:700;letter-spacing:3px;margin-bottom:4px'>SIPR GROUP — PAYMENT REPORT</div><div style='font-size:24px;font-weight:900;color:#1a2233'>"+MF[S.payM]+" "+S.payY+"</div></div><table style='width:100%;border-collapse:collapse;border:1px solid #e2e8f0'><thead><tr style='background:#1a2233'><th style='padding:10px 13px;text-align:left;color:#fff;font-size:10px'>DATE PAID</th><th style='padding:10px 13px;text-align:left;color:#fff;font-size:10px'>MEMBER</th><th style='padding:10px 13px;text-align:center;color:#fff;font-size:10px'>STATUS</th><th style='padding:10px 13px;text-align:right;color:#fff;font-size:10px'>AMOUNT</th></tr></thead><tbody>"+rows+"</tbody><tfoot><tr style='background:#f1f5f9'><td colspan='2' style='padding:11px 13px;font-weight:800;color:#1a2233'>TOTAL</td><td></td><td style='padding:11px 13px;text-align:right;font-weight:900;color:#15803d;font-size:14px'>"+fmt(collected)+"</td></tr></tfoot></table><div class='np' style='margin-top:18px;justify-content:center;gap:10px'><button onclick='window.print()' style='padding:10px 22px;background:#1a2233;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer'>🖨 Print/PDF</button><button onclick='window.close()' style='padding:10px 18px;background:#f1f5f9;color:#1a2233;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer'>Close</button></div></div></body></html>";var w=window.open("","_blank","width=760,height=620");w.document.write(html);w.document.close();}
 function expCSV(){var rows=[["Date","Type","Member","Amount (BDT)","Note"]];S.txs.slice().reverse().forEach(function(t){rows.push([t.date,t.type,txName(t),t.amount,t.note||""]);});var csv=rows.map(function(r){return r.map(function(c){return'"'+String(c).replace(/"/g,'""')+'"';}).join(",");}).join("\n");var blob=new Blob([csv],{type:"text/csv"});var url=URL.createObjectURL(blob);var a=document.createElement("a");a.href=url;a.download="SIPR_"+new Date().toISOString().split("T")[0]+".csv";a.click();URL.revokeObjectURL(url);toast("CSV exported!");}
 
-// ═══════════ INVESTMENTS (Full-page project navigation) ═══════════
-function openInvDetail(id){S.currentInv=id;var pt=$("pg-title");if(pt){var inv=S.invs.find(function(x){return x.id===id;});if(inv)pt.textContent=inv.name;}var bb=$("back-btn");if(bb)bb.style.display="flex";render();}
-function closeInvDetail(){S.currentInv=null;var pt=$("pg-title");if(pt)pt.textContent="Projects";var bb=$("back-btn");if(bb)bb.style.display="none";render();}
-
+// ═══════════ INVESTMENTS — full page navigation ═══════════
+function openInvDetail(id){
+  S.currentInv=id;
+  var inv=S.invs.find(function(x){return x.id===id;});
+  var pt=$("pg-title");if(pt&&inv)pt.textContent=inv.name;
+  var bb=$("back-btn");if(bb)bb.style.display="flex";
+  render();
+}
+function closeInvDetail(){
+  S.currentInv=null;
+  var pt=$("pg-title");if(pt)pt.textContent="Projects";
+  var bb=$("back-btn");if(bb)bb.style.display="none";
+  render();
+}
 function pInv(){
-  // If viewing a single project — full page
   if(S.currentInv){
     var inv=S.invs.find(function(x){return x.id===S.currentInv;});
     if(!inv){S.currentInv=null;return pInv();}
     return pInvDetail(inv);
   }
-  // Project list
+  var IS2={active:{L:"Active",C:"#4f8ef7"},planning:{L:"Planning",C:"#f59e0b"},completed:{L:"Completed",C:"#8b5cf6"},paused:{L:"Paused",C:"#56607a"},loss:{L:"Loss",C:"#ef4444"}};
+  var dep=S.invs.reduce(function(s,x){return s+Number(x.capitalDeployed||x.amount||0);},0);
+  var ret=S.invs.reduce(function(s,x){return s+Number(x.actualReturn||0);},0);
   var h="<div class='fc'>";
   h+="<div style='display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px'><h2 style='font-size:22px;font-weight:800'>Projects</h2>";
   if(isAdmin())h+="<button class='btn-a' onclick='openInv(null)'>+ New Project</button>";
   h+="</div>";
-  var dep=S.invs.reduce(function(s,x){return s+Number(x.capitalDeployed||x.amount||0);},0);
-  var ret=S.invs.reduce(function(s,x){return s+Number(x.actualReturn||0);},0);
   h+="<div class='g3'><div class='sc' style='background:var(--gdm);border-color:var(--gbr);text-align:center'><div class='lbl2' style='margin-bottom:5px'>DEPLOYED</div><div style='color:var(--gold);font-weight:900;font-size:17px'>"+fmt(dep)+"</div></div><div class='sc' style='text-align:center'><div class='lbl2' style='margin-bottom:5px'>RETURNED</div><div style='color:var(--purple);font-weight:900;font-size:17px'>"+fmt(ret)+"</div></div><div class='sc' style='text-align:center'><div class='lbl2' style='margin-bottom:5px'>ACTIVE</div><div style='color:var(--grn);font-weight:900;font-size:22px'>"+S.invs.filter(function(x){return x.status==="active";}).length+"</div></div></div>";
   if(!S.invs.length){
     h+="<div class='card' style='text-align:center;padding:48px;color:var(--mut)'><div style='font-size:44px;opacity:.3;margin-bottom:12px'>📈</div><div style='font-size:15px;font-weight:700;margin-bottom:8px'>No projects yet</div>";
     if(isAdmin())h+="<button class='btn-p' onclick='openInv(null)' style='padding:11px 24px;margin-top:4px'>+ Create First Project</button>";
     h+="</div>";
   } else {
-    var IS2={active:{L:"Active",C:"#4f8ef7"},planning:{L:"Planning",C:"#f59e0b"},completed:{L:"Completed",C:"#8b5cf6"},paused:{L:"Paused",C:"#56607a"},loss:{L:"Loss",C:"#ef4444"}};
     h+="<div style='display:flex;flex-direction:column;gap:10px'>";
     S.invs.forEach(function(inv){
-      var dep2=Number(inv.capitalDeployed||inv.amount||0),ret2=Number(inv.actualReturn||0),exp=Number(inv.expectedReturn||0);
+      var dep2=Number(inv.capitalDeployed||inv.amount||0),ret2=Number(inv.actualReturn||0);
       var cols2=inv.collections||[];
       var totalColKg=cols2.reduce(function(s,c){return s+Number(c.kg||0);},0);
       var totalSoldKg=cols2.reduce(function(s,c){return s+Number(c.soldKg||0);},0);
-      var stockKg=totalColKg-totalSoldKg;
       var totalRevenue=cols2.reduce(function(s,c){return s+Number(c.revenue||0);},0);
+      var stockKg=totalColKg-totalSoldKg;
       var st=IS2[inv.status]||IS2.planning;
-      // Clickable project card — tap to open full page
-      h+="<div class='card' style='cursor:pointer;transition:box-shadow .15s' onclick='openInvDetail(\""+inv.id+"\")'>";
+      h+="<div class='card' style='cursor:pointer' onclick='openInvDetail(\""+inv.id+"\")'>";
       h+="<div style='display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:8px;margin-bottom:12px'>";
-      h+="<div><div style='display:flex;align-items:center;gap:8px;margin-bottom:3px'>";
-      h+="<span style='font-weight:900;font-size:16px'>"+inv.name+"</span>";
-      h+="<span style='padding:2px 9px;border-radius:99px;font-size:11px;font-weight:700;color:"+st.C+";background:"+st.C+"18'>"+st.L+"</span></div>";
+      h+="<div><div style='display:flex;align-items:center;gap:8px;margin-bottom:3px'><span style='font-weight:900;font-size:16px'>"+inv.name+"</span><span style='padding:2px 9px;border-radius:99px;font-size:11px;font-weight:700;color:"+st.C+";background:"+st.C+"18'>"+st.L+"</span></div>";
       h+="<div style='font-size:12px;color:var(--mut)'>"+(inv.sector||"")+(inv.date?" · Started "+fd(inv.date):"")+"</div></div>";
       h+="<div style='text-align:right'><div style='color:var(--gold);font-weight:900;font-size:16px'>"+fmt(dep2)+"</div>"+(ret2>0?"<div style='font-size:11px;color:var(--grn);font-weight:700'>+"+fmt(ret2)+" returned</div>":"")+"</div></div>";
-      // Quick stats row
       h+="<div style='display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--bor);border-radius:9px;overflow:hidden;margin-bottom:10px'>";
-      [["STOCK",stockKg.toFixed(1)+"kg","var(--gold)"],["SOLD",totalSoldKg.toFixed(1)+"kg","var(--grn)"],["REVENUE",fmt(totalRevenue),"var(--purple)"],["LOG ENTRIES",cols2.length,"var(--teal)"]].forEach(function(x){h+="<div style='background:var(--s2);padding:8px 4px;text-align:center'><div style='font-size:8px;letter-spacing:1px;color:var(--mut);font-weight:700;margin-bottom:2px'>"+x[0]+"</div><div style='font-size:11px;font-weight:800;color:"+x[2]+"'>"+x[1]+"</div></div>";});
+      [["STOCK",stockKg.toFixed(1)+" kg","var(--gold)"],["SOLD",totalSoldKg.toFixed(1)+" kg","var(--grn)"],["REVENUE",fmt(totalRevenue),"var(--purple)"],["ENTRIES",cols2.length,"var(--teal)"]].forEach(function(x){h+="<div style='background:var(--s2);padding:8px 4px;text-align:center'><div style='font-size:8px;letter-spacing:1px;color:var(--mut);font-weight:700;margin-bottom:2px'>"+x[0]+"</div><div style='font-size:11px;font-weight:800;color:"+x[2]+"'>"+x[1]+"</div></div>";});
       h+="</div>";
       h+="<div style='text-align:right;font-size:11px;color:var(--mut);font-weight:600'>Tap to open →</div>";
       h+="</div>";
@@ -612,10 +600,9 @@ function pInv(){
   }
   h+="</div>";return h;
 }
-
 function pInvDetail(inv){
   var dep2=Number(inv.capitalDeployed||inv.amount||0),ret2=Number(inv.actualReturn||0),exp=Number(inv.expectedReturn||0),pl=ret2-dep2,pp=exp>0?Math.min(ret2/exp*100,100):0;
-  var IS2={active:{L:"Active",C:"#4f8ef7",B:"#0a1226"},planning:{L:"Planning",C:"#f59e0b",B:"#1c0e00"},completed:{L:"Completed",C:"#8b5cf6",B:"#1a0f3a"},paused:{L:"Paused",C:"#56607a",B:"#13161e"},loss:{L:"Loss",C:"#ef4444",B:"#1a0404"}};
+  var IS2={active:{L:"Active",C:"#4f8ef7"},planning:{L:"Planning",C:"#f59e0b"},completed:{L:"Completed",C:"#8b5cf6"},paused:{L:"Paused",C:"#56607a"},loss:{L:"Loss",C:"#ef4444"}};
   var st=IS2[inv.status]||IS2.planning;
   var cols2=inv.collections||[];
   var totalColKg=cols2.reduce(function(s,c){return s+Number(c.kg||0);},0);
@@ -624,17 +611,14 @@ function pInvDetail(inv){
   var totalRevenue=cols2.reduce(function(s,c){return s+Number(c.revenue||0);},0);
   var tab2=inv._tab||"log";
   var h="<div class='fc'>";
-  // Project header card
   h+="<div class='hero'>";
   h+="<div style='display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:10px;margin-bottom:14px'>";
-  h+="<div><div style='display:flex;align-items:center;gap:8px;margin-bottom:4px'><span style='font-weight:900;font-size:18px'>"+inv.name+"</span><span style='padding:3px 10px;border-radius:99px;font-size:11px;font-weight:700;color:"+st.C+";background:"+st.C+"18;border:1px solid "+st.C+"30'>"+st.L+"</span></div>";
+  h+="<div><div style='display:flex;align-items:center;gap:8px;margin-bottom:4px'><span style='font-weight:900;font-size:18px'>"+inv.name+"</span><span style='padding:3px 10px;border-radius:99px;font-size:11px;font-weight:700;color:"+st.C+";background:"+st.C+"18'>"+st.L+"</span></div>";
   h+="<div style='font-size:12px;color:var(--mut)'>"+(inv.sector||"")+(inv.partner?" · "+inv.partner:"")+(inv.date?" · Started "+fd(inv.date):"")+"</div></div>";
   h+="<div style='text-align:right'><div style='color:var(--gold);font-weight:900;font-size:20px'>"+fmt(dep2)+"</div>"+(pl!==0?"<div style='font-size:12px;color:"+(pl>0?"var(--grn)":"var(--red)")+";font-weight:700'>"+(pl>0?"+":"")+fmt(pl)+" P&L</div>":"")+"</div></div>";
-  // 4 stat boxes
   h+="<div style='display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:rgba(255,255,255,.08);border-radius:10px;overflow:hidden'>";
   [["STOCK",stockKg.toFixed(1)+" kg","var(--gold)"],["SOLD",totalSoldKg.toFixed(1)+" kg","var(--grn)"],["REVENUE",fmt(totalRevenue),"var(--purple)"],["ENTRIES",cols2.length,"var(--teal)"]].forEach(function(x){h+="<div style='background:rgba(0,0,0,.2);padding:10px 6px;text-align:center'><div style='font-size:9px;letter-spacing:1px;color:rgba(255,255,255,.5);font-weight:700;margin-bottom:3px'>"+x[0]+"</div><div style='font-size:13px;font-weight:900;color:"+x[2]+"'>"+x[1]+"</div></div>";});
   h+="</div></div>";
-  // Admin action buttons
   if(isAdmin()){
     h+="<div style='display:flex;gap:7px;flex-wrap:wrap'>";
     h+="<button class='btn-a' onclick='openCollection(\""+inv.id+"\")'>📦 + Daily Log</button>";
@@ -643,26 +627,19 @@ function pInvDetail(inv){
     h+="<button class='btn-d' onclick='delInv(\""+inv.id+"\")'>Delete</button>";
     h+="</div>";
   }
-  // Tabs
   h+="<div style='display:flex;gap:0;border-bottom:1px solid var(--bor);background:var(--sur);border-radius:12px 12px 0 0;overflow:hidden'>";
-  [{id:"log",lb:"📦 Daily Log"},{id:"overview",lb:"📊 Overview"},{id:"sales",lb:"💵 Sales"},{id:"milestones",lb:"🎯 Milestones"}].forEach(function(tb){var isAct=tab2===tb.id;h+="<button onclick='S.invs.find(function(x){return x.id==\""+inv.id+"\"})._tab=\""+tb.id+"\";render()' style='padding:11px 14px;border:none;border-bottom:2px solid "+(isAct?"var(--grn)":"transparent")+";background:"+(isAct?"var(--gdm)":"none")+";font-family:inherit;font-size:12px;font-weight:700;cursor:pointer;color:"+(isAct?"var(--grn)":"var(--mut)")+";touch-action:manipulation'>"+tb.lb+"</button>";});
+  [{id:"log",lb:"📦 Daily Log"},{id:"overview",lb:"📊 Overview"},{id:"sales",lb:"💵 Sales"},{id:"milestones",lb:"🎯 Milestones"}].forEach(function(tb){var act=tab2===tb.id;h+="<button onclick='(function(){var x=S.invs.find(function(i){return i.id==\""+inv.id+"\"});if(x)x._tab=\""+tb.id+"\";render();})()' style='padding:11px 14px;border:none;border-bottom:2px solid "+(act?"var(--grn)":"transparent")+";background:"+(act?"var(--gdm)":"none")+";font-family:inherit;font-size:12px;font-weight:700;cursor:pointer;color:"+(act?"var(--grn)":"var(--mut)")+";touch-action:manipulation'>"+tb.lb+"</button>";});
   h+="</div>";
-  // Tab content
-  h+="<div class='card' style='border-radius:0 0 12px 12px;margin-top:-1px'>";
+  h+="<div class='card' style='border-radius:0 0 12px 12px;margin-top:0'>";
   if(tab2==="log"){
-    // DAILY LOG — main feature
     h+="<div style='display:flex;justify-content:space-between;align-items:center;margin-bottom:14px'>";
-    h+="<div><div style='font-size:11px;letter-spacing:2px;color:var(--mut);font-weight:700'>DAILY COLLECTION LOG</div><div style='font-size:11px;color:var(--mut);margin-top:2px'>Track stock collected, sold & profit each day</div></div>";
+    h+="<div><div style='font-size:11px;letter-spacing:2px;color:var(--mut);font-weight:700'>DAILY COLLECTION LOG</div><div style='font-size:11px;color:var(--mut);margin-top:2px'>Stock collected, sold & profit per day</div></div>";
     if(isAdmin()||canWrite())h+="<button class='btn-a' onclick='openCollection(\""+inv.id+"\")'>+ Add Entry</button>";
     h+="</div>";
     if(!cols2.length){
-      h+="<div style='text-align:center;padding:36px;color:var(--mut)'>";
-      h+="<div style='font-size:36px;margin-bottom:10px;opacity:.4'>📦</div>";
-      h+="<div style='font-weight:700;margin-bottom:6px'>No log entries yet</div>";
-      h+="<div style='font-size:12px'>Tap '+ Add Entry' to start tracking daily collections</div></div>";
+      h+="<div style='text-align:center;padding:36px;color:var(--mut)'><div style='font-size:36px;margin-bottom:10px;opacity:.4'>📦</div><div style='font-weight:700;margin-bottom:6px'>No log entries yet</div><div style='font-size:12px'>Tap + Add Entry to start tracking</div></div>";
     } else {
-      // Running totals header
-      h+="<div style='display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px'>";
+      h+="<div class='g3' style='margin-bottom:14px'>";
       h+="<div class='sc' style='text-align:center;padding:10px'><div style='font-size:9px;color:var(--mut);font-weight:700;margin-bottom:3px'>TOTAL COLLECTED</div><div style='color:var(--teal);font-weight:900;font-size:15px'>"+totalColKg.toFixed(1)+" kg</div></div>";
       h+="<div class='sc' style='text-align:center;padding:10px'><div style='font-size:9px;color:var(--mut);font-weight:700;margin-bottom:3px'>IN STOCK</div><div style='color:var(--gold);font-weight:900;font-size:15px'>"+stockKg.toFixed(1)+" kg</div></div>";
       h+="<div class='sc' style='text-align:center;padding:10px'><div style='font-size:9px;color:var(--mut);font-weight:700;margin-bottom:3px'>TOTAL REVENUE</div><div style='color:var(--purple);font-weight:900;font-size:15px'>"+fmt(totalRevenue)+"</div></div></div>";
@@ -672,9 +649,9 @@ function pInvDetail(inv){
         var rev=Number(c2.revenue||0),cost=Number(c2.cost||0),profit=rev-cost;
         h+="<div style='background:var(--s2);border-radius:11px;padding:13px;border:1px solid var(--bor)'>";
         h+="<div style='display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px;flex-wrap:wrap;gap:6px'>";
-        h+="<div><div style='font-weight:800;font-size:13px'>"+fd(c2.date)+"</div>"+(c2.source?"<div style='font-size:11px;color:var(--mut)'>Source: "+c2.source+"</div>":"")+"</div>";
+        h+="<div><div style='font-weight:800;font-size:13px'>"+fd(c2.date)+"</div>"+(c2.source?"<div style='font-size:11px;color:var(--mut)'>"+c2.source+"</div>":"")+"</div>";
         h+="<div style='display:flex;gap:5px;align-items:center'>";
-        if(profit>0)h+="<span style='background:#0a2a1488;color:#22c55e;border:1px solid #14532d44;border-radius:99px;padding:3px 9px;font-size:11px;font-weight:700'>+"+fmt(profit)+" profit</span>";
+        if(profit>0)h+="<span style='background:#0a2a1488;color:#22c55e;border:1px solid #14532d44;border-radius:99px;padding:3px 9px;font-size:11px;font-weight:700'>+"+fmt(profit)+"</span>";
         if(isAdmin())h+="<button onclick='delCollection(\""+inv.id+"\","+(cols2.length-1-ci)+")' class='btn-d' style='padding:3px 8px;font-size:11px'>✕</button>";
         h+="</div></div>";
         h+="<div style='display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--bor);border-radius:8px;overflow:hidden'>";
@@ -703,63 +680,14 @@ function pInvDetail(inv){
     if(!salesData.length)h+="<div style='text-align:center;padding:28px;color:var(--mut)'>No sales yet. Add entries in Daily Log tab.</div>";
     else{h+="<div class='sw'><table class='tbl'><thead><tr><th>Date</th><th>Sold (kg)</th><th style='text-align:right'>Price/kg</th><th style='text-align:right'>Revenue</th><th>Notes</th></tr></thead><tbody>";salesData.slice().reverse().forEach(function(c2){h+="<tr><td style='color:var(--mut);font-size:12px'>"+fd(c2.date)+"</td><td style='color:var(--grn);font-weight:700'>"+Number(c2.soldKg||0).toFixed(1)+" kg</td><td style='text-align:right;color:var(--gold)'>"+(c2.pricePerKg?fmt(c2.pricePerKg):"—")+"</td><td style='text-align:right;color:var(--purple);font-weight:700'>"+fmt(c2.revenue||0)+"</td><td style='color:var(--mut);font-size:12px'>"+(c2.saleNote||"—")+"</td></tr>";});h+="</tbody></table></div>";}
   } else if(tab2==="milestones"){
-    h+="<div style='display:flex;justify-content:space-between;align-items:center;margin-bottom:12px'><div style='font-size:11px;color:var(--mut);font-weight:700'>MILESTONES</div>"+(isAdmin()?"<button class='btn-a' onclick='openMilestone(\""+inv.id+"\")'>+ Add</button>":"")+"</div>";
     var ms=inv.milestones||[];
+    h+="<div style='display:flex;justify-content:space-between;align-items:center;margin-bottom:12px'><div style='font-size:11px;color:var(--mut);font-weight:700'>MILESTONES</div>"+(isAdmin()?"<button class='btn-a' onclick='openMilestone(\""+inv.id+"\")'>+ Add</button>":"")+"</div>";
     if(!ms.length)h+="<div style='text-align:center;padding:28px;color:var(--mut)'>No milestones yet.</div>";
-    else{h+="<div style='background:var(--s2);border-radius:11px;padding:4px 14px;border:1px solid var(--bor)'>";ms.forEach(function(m,i){h+="<div style='display:flex;align-items:center;gap:10px;padding:10px 0;"+(i<ms.length-1?"border-bottom:1px solid var(--bor)":"")+"'><div style='width:22px;height:22px;border-radius:50%;background:"+(m.done?"var(--grn)":"var(--bor)")+";display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;color:"+(m.done?"#fff":"var(--mut)")+";flex-shrink:0'>"+(m.done?"✓":(i+1))+"</div><div style='flex:1'><div style='font-size:13px;font-weight:600;color:"+(m.done?"var(--grn)":"var(--txt)")+"'>"+m.title+"</div>"+(m.note?"<div style='font-size:11px;color:var(--mut)'>"+m.note+"</div>":"")+"</div>"+(m.date?"<div style='font-size:11px;color:var(--mut)'>"+fd(m.date)+"</div>":"")+(isAdmin()?"<button onclick='toggleMilestone(\""+inv.id+"\","+i+")' class='btn-s' style='padding:4px 8px;font-size:11px'>"+(m.done?"Undo":"Done")+"</button>":"")+"</div>";});h+="</div>";}
+    else{h+="<div style='display:flex;flex-direction:column;gap:0;background:var(--s2);border-radius:11px;border:1px solid var(--bor);overflow:hidden'>";ms.forEach(function(m,i){h+="<div style='display:flex;align-items:center;gap:10px;padding:11px 13px;"+(i>0?"border-top:1px solid var(--bor)":"")+"'><div style='width:22px;height:22px;border-radius:50%;background:"+(m.done?"var(--grn)":"var(--bor)")+";display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;color:"+(m.done?"#fff":"var(--mut)")+";flex-shrink:0'>"+(m.done?"✓":(i+1))+"</div><div style='flex:1'><div style='font-size:13px;font-weight:600;color:"+(m.done?"var(--grn)":"var(--txt)")+"'>"+m.title+"</div>"+(m.note?"<div style='font-size:11px;color:var(--mut)'>"+m.note+"</div>":"")+"</div>"+(m.date?"<div style='font-size:11px;color:var(--mut);flex-shrink:0'>"+fd(m.date)+"</div>":"")+(isAdmin()?"<button onclick='toggleMilestone(\""+inv.id+"\","+i+")' class='btn-s' style='padding:4px 8px;font-size:11px;flex-shrink:0'>"+(m.done?"Undo":"Done")+"</button>":"")+"</div>";});h+="</div>";}
   }
   h+="</div></div>";return h;
 }
-  if(!S.invs.length){
-    h+="<div class='card' style='text-align:center;padding:48px;color:var(--mut)'><div style='font-size:44px;opacity:.3;margin-bottom:12px'>📈</div><div style='font-size:15px;font-weight:700;margin-bottom:8px'>No projects yet</div>";
-    if(isAdmin())h+="<button class='btn-p' onclick='openInv(null)' style='padding:11px 24px;margin-top:4px'>+ Create First Project</button>";
-    h+="</div>";
-  } else {
-    h+="<div class='tab-row'>";
-    ["all","active","planning","completed","paused","loss"].forEach(function(f){var cnt=f==="all"?S.invs.length:S.invs.filter(function(x){return x.status===f;}).length;if(cnt>0||f==="all")h+="<button class='tab"+((S.invF||"all")===f?" active":"")+"' onclick='S.invF=\""+f+"\";render()'>"+f.charAt(0).toUpperCase()+f.slice(1)+" ("+cnt+")</button>";});
-    h+="</div>";
-    var IS2={active:{L:"Active",C:"#4f8ef7",B:"#0a1226"},planning:{L:"Planning",C:"#f59e0b",B:"#1c0e00"},completed:{L:"Completed",C:"#8b5cf6",B:"#1a0f3a"},paused:{L:"Paused",C:"#56607a",B:"#13161e"},loss:{L:"Loss",C:"#ef4444",B:"#1a0404"}};
-    var filtered=(!S.invF||S.invF==="all")?S.invs:S.invs.filter(function(x){return x.status===S.invF;});
-    filtered.forEach(function(inv){
-      var dep2=Number(inv.capitalDeployed||inv.amount||0),ret2=Number(inv.actualReturn||0),exp=Number(inv.expectedReturn||0),pl=ret2-dep2,pp=exp>0?Math.min(ret2/exp*100,100):0;
-      var st=IS2[inv.status]||IS2.planning;
-      // Collection stats
-      var cols2=inv.collections||[];
-      var totalColKg=cols2.reduce(function(s,c){return s+Number(c.kg||0);},0);
-      var totalSoldKg=cols2.reduce(function(s,c){return s+Number(c.soldKg||0);},0);
-      var totalRevenue=cols2.reduce(function(s,c){return s+Number(c.revenue||0);},0);
-      var stockKg=totalColKg-totalSoldKg;
-      h+="<div class='card' style='padding:0;overflow:hidden'>";
-      // Header
-      h+="<div style='padding:16px 18px;background:linear-gradient(135deg,var(--gdm),#0d1424);border-bottom:1px solid var(--bor)'>";
-      h+="<div style='display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:10px'>";
-      h+="<div><div style='display:flex;align-items:center;gap:8px;margin-bottom:4px'><span style='font-weight:900;font-size:17px'>"+inv.name+"</span><span class='bdg' style='background:"+st.B+";color:"+st.C+"'>"+st.L+"</span></div>";
-      h+="<div style='font-size:12px;color:var(--mut)'>"+(inv.sector||"")+(inv.partner?" · "+inv.partner:"")+(inv.date?" · Started "+fd(inv.date):"")+"</div></div>";
-      h+="<div style='text-align:right'><div style='color:var(--gold);font-weight:900;font-size:18px'>"+fmt(dep2)+"</div>"+(pl!==0?"<div style='font-size:12px;color:"+(pl>0?"var(--grn)":"var(--red)")+";font-weight:700'>"+(pl>0?"+":"")+fmt(pl)+" P&L</div>":"")+"</div></div>";
-      if(inv.description)h+="<div style='font-size:12px;color:var(--mut);margin-top:8px;line-height:1.6'>"+inv.description+"</div>";
-      h+="</div>";
-      // Body tabs
-      h+="<div style='padding:0 18px'>";
-      h+="<div style='display:flex;gap:0;border-bottom:1px solid var(--bor);margin-bottom:14px'>";
-      ["overview","collection","sales","milestones"].forEach(function(tb){var isActive=(inv._tab||"overview")===tb;h+="<button onclick='S.invs.find(function(x){return x.id==\""+inv.id+"\"})._tab=\""+tb+"\";render()' style='padding:10px 14px;border:none;background:none;font-family:inherit;font-size:12px;font-weight:700;cursor:pointer;color:"+(isActive?"var(--grn)":"var(--mut)")+";border-bottom:2px solid "+(isActive?"var(--grn)":"transparent")+";touch-action:manipulation'>"+{overview:"📊 Overview",collection:"📦 Collection",sales:"💵 Sales",milestones:"🎯 Milestones"}[tb]+"</button>";});
-      h+="</div>";
-      var tab2=inv._tab||"overview";
-      if(tab2==="overview"){
-        h+="<div class='g4' style='margin-bottom:14px'>";
-        h+="<div class='stat-box'><div class='lbl2'>CAPITAL</div><div class='val' style='color:var(--gold)'>"+fmt(dep2)+"</div></div>";
-        h+="<div class='stat-box'><div class='lbl2'>RETURNED</div><div class='val' style='color:var(--grn)'>"+fmt(ret2)+"</div></div>";
-        h+="<div class='stat-box'><div class='lbl2'>EXPECTED</div><div class='val' style='color:var(--purple)'>"+fmt(exp)+"</div></div>";
-        h+="<div class='stat-box'><div class='lbl2'>P&L</div><div class='val' style='color:"+(pl>=0?"var(--grn)":"var(--red)")+"'>"+(pl>=0?"+":"")+fmt(pl)+"</div></div></div>";
-        if(exp>0){h+="<div style='margin-bottom:14px'><div style='display:flex;justify-content:space-between;font-size:11px;color:var(--mut);margin-bottom:5px'><span>Return Progress</span><span>"+fmt(ret2)+" / "+fmt(exp)+" ("+pp.toFixed(0)+"%)</span></div><div class='pbar' style='height:8px'><div class='pfill' style='width:"+pp+"%'></div></div></div>";}
-        if(cols2.length){
-          h+="<div class='g4' style='margin-bottom:14px'>";
-          h+="<div class='stat-box'><div class='lbl2'>TOTAL COLLECTED</div><div class='val' style='color:var(--teal)'>"+totalColKg.toFixed(1)+" kg</div></div>";
-          h+="<div class='stat-box'><div class='lbl2'>SOLD</div><div class='val' style='color:var(--grn)'>"+totalSoldKg.toFixed(1)+" kg</div></div>";
-          h+="<div class='stat-box'><div class='lbl2'>IN STOCK</div><div class='val' style='color:var(--gold)'>"+stockKg.toFixed(1)+" kg</div></div>";
-          h+="<div class='stat-box'><div class='lbl2'>REVENUE</div><div class='val' style='color:var(--purple)'>"+fmt(totalRevenue)+"</div></div></div>";
-        }
-        if(inv.teamMembers&&inv.teamMembers.length)h+="<div style='margin-bottom:14px'><div style='font-size:10px;color:var(--mut);font-weight:700;margin-bottom:6px'>TEAM</div><div style='display:flex;gap:5px;flex-wrap:wrap'>"+inv.teamMembers.map(function(t){return"<span style='background:var(--s2);border:1px solid var(--bor);border-radius:99px;padding:4px 11px;font-size:12px'>"+t+"</span>";}).join("")+"</div></div>";
-        if(inv.notes)h+="<div style='font-size:12px;color:var(--mut);padding:10px 12px;background:var(--s2);border-radius:8px;line-height:1.6;margin-bottom:12px'>"+inv.notes+"</div>";
+
 function openInv(id){
   var inv=id?S.invs.find(function(x){return x.id===id;}):null;
   var IS_K=["active","planning","completed","paused","loss"];
@@ -872,8 +800,7 @@ function pMem(){
       h+="<div class='g4' style='margin-bottom:11px'>";
       h+="<div class='sc' style='text-align:center;padding:10px'><div style='color:var(--mut);font-size:9px;font-weight:700;margin-bottom:3px'>CONTRIBUTED</div><div style='color:var(--grn);font-weight:800;font-size:13px'>"+fmt(m.total)+"</div></div>";
       h+="<div class='sc' style='text-align:center;padding:10px'><div style='color:var(--mut);font-size:9px;font-weight:700;margin-bottom:3px'>SHARE</div><div style='font-weight:800;font-size:13px'>"+p.toFixed(1)+"%</div></div>";
-      var canSeeWallet=isAdmin()||(m.email===S.email);
-      h+="<div class='sc' style='background:var(--gdm);border-color:var(--gbr);text-align:center;padding:10px'><div style='color:var(--mut);font-size:9px;font-weight:700;margin-bottom:3px'>WALLET</div><div style='color:var(--grn);font-weight:800;font-size:13px'>"+(canSeeWallet?fmt(mw.available):"🔒 Private")+"</div></div>";
+      h+="<div class='sc' style='background:var(--gdm);border-color:var(--gbr);text-align:center;padding:10px'><div style='color:var(--mut);font-size:9px;font-weight:700;margin-bottom:3px'>WALLET</div><div style='color:var(--grn);font-weight:800;font-size:13px'>"+(isAdmin()||(m.email===S.email)?fmt(mw.available):"🔒 Private")+"</div></div>";
       h+="<div class='sc' style='text-align:center;padding:10px'><div style='color:var(--mut);font-size:9px;font-weight:700;margin-bottom:3px'>GOOGLE</div><div style='font-size:11px;font-weight:700;color:"+(m.googleUid?"var(--grn)":"var(--mut)")+"'>"+(m.googleUid?"✓ Linked":"Not linked")+"</div></div></div>";
       h+="<div class='g2' style='gap:8px;margin-bottom:10px'>";
       [["ID",m.id],["Phone",m.phone||"Not set"],["Email",m.email],["Address",m.address||"Not set"]].forEach(function(r){h+="<div style='background:var(--s2);border-radius:9px;padding:9px 11px;border:1px solid var(--bor)'><div style='font-size:9px;color:var(--mut);font-weight:700;margin-bottom:2px'>"+r[0]+"</div><div style='font-size:11px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap'>"+r[1]+"</div></div>";});
@@ -881,8 +808,8 @@ function pMem(){
       if(isAdmin()){
         h+="<div style='display:flex;gap:7px;flex-wrap:wrap'>";
         h+="<button class='btn-s' onclick='openEditMember(\""+m.id+"\")'>✏ Edit Profile</button>";
-        h+="<button onclick='openSendMsg(\""+m.id+"\",\""+m.name.replace(/"/g,"&quot;")+"\",\""+(m.phone||"")+"\")' style='padding:6px 11px;border-radius:8px;border:1px solid var(--gbr);background:var(--gdm);color:var(--grn);font-size:12px;font-weight:700;cursor:pointer'>💬 Send Message</button>";
-        h+="<button onclick='openFine(\""+m.id+"\",\""+m.name.replace(/"/g,"&quot;")+"\")' style='padding:6px 11px;border-radius:8px;border:1px solid #7f1d1d;background:#1a0404;color:#ef4444;font-size:12px;font-weight:700;cursor:pointer'>⚠ Issue Fine</button>";
+        h+="<button onclick='openSendMsg(\""+m.name.replace(/"/g,"&quot;")+"\",\""+(m.phone||"")+"\")' style='padding:6px 11px;border-radius:8px;border:1px solid var(--gbr);background:var(--gdm);color:var(--grn);font-size:12px;font-weight:700;cursor:pointer;font-family:inherit'>💬 Send Message</button>";
+        h+="<button onclick='openFine(\""+m.id+"\",\""+m.name.replace(/"/g,"&quot;")+"\")' style='padding:6px 11px;border-radius:8px;border:1px solid #7f1d1d;background:#1a0404;color:#ef4444;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit'>⚠ Fine</button>";
         if(!m.locked)h+="<button onclick='removeMember(\""+m.id+"\",\""+m.name.replace(/"/g,"&quot;")+"\")' class='btn-d'>🗑 Remove</button>";
         h+="</div>";
       }
@@ -893,24 +820,28 @@ function pMem(){
   h+="</div>";return h;
 }
 
-// Add member modal
-function openSendMsg(mid,name,phone){
+// Send WhatsApp message to member
+function openSendMsg(name,phone){
+  window._msgTemplates=[
+    "Assalamu Alaikum "+name+",\n\nFriendly reminder: your monthly contribution of BDT 500 is pending.\n\nbKash: 01845526909 (Shoeb)\nDeadline: 10th of the month.\n\n— Jahed Aziz, SIPR Group",
+    "Assalamu Alaikum "+name+",\n\nSIPR Group meeting is scheduled. Please confirm your attendance.\n\n— Jahed Aziz, SIPR Group",
+    "Assalamu Alaikum "+name+",\n\n"
+  ];
+  var labels=["💸 Payment Reminder","📅 Meeting Notice","✏ Custom"];
   var h="<div class='modal-bg' onclick='if(event.target===this)closeModal()'><div class='modal-box'>";
-  h+="<div style='display:flex;justify-content:space-between;align-items:center;margin-bottom:18px'><div style='font-weight:800;font-size:17px'>Send Message to "+name+"</div><button onclick='closeModal()' style='background:none;border:none;color:var(--mut);font-size:20px;cursor:pointer'>✕</button></div>";
+  h+="<div style='display:flex;justify-content:space-between;align-items:center;margin-bottom:18px'><div style='font-weight:800;font-size:17px'>Send Message — "+name+"</div><button onclick='closeModal()' style='background:none;border:none;color:var(--mut);font-size:20px;cursor:pointer'>✕</button></div>";
   h+="<div class='fc'>";
-  h+="<div style='background:var(--gdm);border:1px solid var(--gbr);border-radius:10px;padding:11px 13px;font-size:12px;color:var(--mut)'>📱 Phone: <strong style='color:var(--txt)'>"+( phone||"Not set — add phone in profile first")+"</strong></div>";
-  h+="<div><label class='lbl'>Quick Templates</label><div style='display:flex;flex-wrap:wrap;gap:6px'>";
-  [["Payment Reminder","Assalamu Alaikum "+name+",\n\nFriendly reminder: your monthly contribution of BDT 500 is pending.\n\nbKash: 01845526909 (Shoeb)\nDeadline: 10th of the month.\n\n— Jahed Aziz, SIPR Group"],["Meeting Notice","Assalamu Alaikum "+name+",\n\nSIPR Group meeting is scheduled. Please confirm your attendance.\n\n— Jahed Aziz, SIPR Group"],["Custom",""]].forEach(function(t){h+="<button onclick='document.getElementById(\"msg-body\").value=\""+t[1].replace(/\n/g,"\\n").replace(/"/g,"&quot;")+"\"' style='padding:5px 10px;border-radius:7px;border:1px solid var(--bor);background:var(--s2);color:var(--txt);font-size:11px;font-weight:600;cursor:pointer;font-family:inherit'>"+t[0]+"</button>";});
+  if(phone){h+="<div style='background:var(--gdm);border:1px solid var(--gbr);border-radius:10px;padding:10px 13px;font-size:12px;color:var(--mut)'>📱 <strong style=\"color:var(--txt)\">"+phone+"</strong></div>";}
+  else{h+="<div style='background:#1a040488;border:1px solid #7f1d1d44;border-radius:10px;padding:10px 13px;font-size:12px;color:#f87171'>⚠ No phone number. Add in Edit Profile first.</div>";}
+  h+="<div><div class='lbl' style='margin-bottom:7px'>Templates</div><div style='display:flex;flex-wrap:wrap;gap:6px'>";
+  labels.forEach(function(lb,i){h+="<button onclick='setMsgTemplate("+i+")' style='padding:5px 10px;border-radius:7px;border:1px solid var(--bor);background:var(--s2);color:var(--txt);font-size:11px;font-weight:600;cursor:pointer;font-family:inherit'>"+lb+"</button>";});
   h+="</div></div>";
-  h+="<div><label class='lbl'>Message</label><textarea id='msg-body' class='inp' rows='5' placeholder='Type your message here...'></textarea></div>";
-  if(phone){
-    h+="<button onclick='sendMsgWa(\""+phone+"\")' style='width:100%;padding:12px;background:#25d366;border:none;border-radius:10px;color:#fff;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit'>💬 Send via WhatsApp</button>";
-  } else {
-    h+="<div style='background:#1a040488;border:1px solid #7f1d1d;border-radius:10px;padding:12px;text-align:center;color:#f87171;font-size:13px;font-weight:600'>No phone number set for "+name+".<br/>Add phone in Edit Profile first.</div>";
-  }
+  h+="<div><label class='lbl'>Message</label><textarea id='msg-body' class='inp' rows='6' placeholder='Type your message...'>"+(phone?window._msgTemplates[0]:"")+"</textarea></div>";
+  if(phone){h+="<button onclick='sendMsgWa(\""+phone+"\")' style='width:100%;padding:12px;background:#25d366;border:none;border-radius:10px;color:#fff;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit'>💬 Send via WhatsApp</button>";}
   h+="</div></div></div>";
   $("modal").innerHTML=h;
 }
+function setMsgTemplate(i){var el=$("msg-body");if(el&&window._msgTemplates)el.value=window._msgTemplates[i]||"";}
 function sendMsgWa(phone){
   var msg=($("msg-body")||{value:""}).value.trim();
   if(!msg){toast("Write a message first",false);return;}
@@ -918,6 +849,9 @@ function sendMsgWa(phone){
   window.open("https://wa.me/880"+phone.replace(/^0/,"")+"?text="+encodeURIComponent(msg),"_blank");
   toast("Opening WhatsApp...");
 }
+
+// Add member modal
+function openAddMember(){
   var h="<div class='modal-bg' onclick='if(event.target===this)closeModal()'><div class='modal-box'>";
   h+="<div style='display:flex;justify-content:space-between;align-items:center;margin-bottom:18px'><div style='font-weight:800;font-size:17px'>Add New Member</div><button onclick='closeModal()' style='background:none;border:none;color:var(--mut);font-size:20px;cursor:pointer'>✕</button></div>";
   h+="<div class='fc'>";
@@ -1034,7 +968,7 @@ function pActivity(){return"<div class='fc'><div><h2 style='font-size:22px;font-
 function loadActivity(){db.collection("activity").orderBy("ts","desc").limit(80).get().then(function(snap){var el=$("act-list");if(!el)return;if(snap.empty){el.innerHTML="<div class='card' style='text-align:center;padding:40px;color:var(--mut)'>No activity yet.</div>";return;}var acts=snap.docs.map(function(d){return Object.assign({id:d.id},d.data());});var groups={},order=[];acts.forEach(function(a){var d=a.iso?a.iso.split("T")[0]:"Unknown";if(!groups[d]){groups[d]=[];order.push(d);}groups[d].push(a);});var icons={add_transaction:"💸",edit_transaction:"✏️",delete_transaction:"🗑",add_investment:"📈",edit_investment:"✏️",delete_investment:"🗑",post_announcement:"📢",submit_proposal:"📋",distribute_profit:"💰",issue_fine:"⚠",save_member:"💾",change_role:"🔄",reset_members:"♻️",add_member:"➕",remove_member:"➖",add_collection:"📦",add_sale:"💵"};var h="";order.forEach(function(date){h+="<div style='font-size:10px;letter-spacing:2px;color:var(--mut);font-weight:700;padding:7px 0;margin-bottom:3px'>"+fd(date)+"</div><div class='card' style='padding:0;overflow:hidden;margin-bottom:10px'>";groups[date].forEach(function(a,i){var ic=icons[a.action]||"📌";h+="<div style='display:flex;align-items:center;gap:10px;padding:10px 13px;"+(i>0?"border-top:1px solid var(--bor)":"")+"'><div style='width:30px;height:30px;border-radius:9px;background:var(--s2);display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0'>"+ic+"</div><div style='flex:1;min-width:0'><div style='font-size:13px;font-weight:600'>"+a.action.replace(/_/g," ")+"</div><div style='font-size:11px;color:var(--mut)'>"+(a.detail||"")+"</div></div><div style='text-align:right;flex-shrink:0'><div style='font-size:12px;font-weight:600'>"+a.by+"</div><div style='font-size:10px;color:var(--mut)'>"+(a.iso?a.iso.split("T")[1].slice(0,5):"")+"</div></div></div>";});h+="</div>";});el.innerHTML=h;});}
 
 // ═══════════ ABOUT ═══════════
-function pAbout(){var RORD={admin:0,finance:1,secretary:2,member:3};var sortedMems=S.mems.slice().sort(function(a,b){var ra=RORD[a.role||"member"]||3,rb=RORD[b.role||"member"]||3;return ra!==rb?ra-rb:a.name.localeCompare(b.name);});var h="<div class='fc'><div class='hero' style='text-align:center'><div style='font-size:10px;letter-spacing:3px;color:var(--mut);font-weight:700;margin-bottom:14px'>SIPR GROUP</div><div style='font-size:32px;font-weight:900;letter-spacing:-1px;margin-bottom:7px'>Invest. Grow. Prosper.</div><div style='color:var(--mut);font-size:13px'>Founded February 2026 · Boalkhali, Chittagong · "+S.mems.length+" Members</div></div><div class='g2 g2-mob' style='gap:12px'><div class='card'><div style='color:var(--grn);font-size:10px;letter-spacing:2px;font-weight:700;margin-bottom:9px'>MISSION</div><div style='color:var(--mut);font-size:13px;line-height:1.8'>Build a self-sustaining investment group where every member saves, invests, and grows wealth through collective action.</div></div><div class='card'><div style='color:var(--gold);font-size:10px;letter-spacing:2px;font-weight:700;margin-bottom:9px'>VISION</div><div style='color:var(--mut);font-size:13px;line-height:1.8'>Become a formal business within 12 months operating a profitable plastic recycling business along the Karnafuli River.</div></div></div><div class='card'><div style='font-size:11px;letter-spacing:2px;color:var(--mut);font-weight:700;margin-bottom:14px'>FOUNDING MEMBERS</div><div style='display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:9px'>"+sortedMems.map(function(m){var rc={admin:"var(--red)",finance:"var(--gold)",secretary:"var(--teal)",member:"var(--mut)"}[m.role||"member"]||"var(--mut)";return"<div style='background:var(--s2);border-radius:11px;padding:12px;text-align:center;border:1px solid var(--bor)'><div style='display:flex;justify-content:center;margin-bottom:7px'>"+av(m.name,38)+"</div><div style='font-weight:700;font-size:12px'>"+m.name+"</div><div style='font-size:10px;color:"+rc+";margin-top:2px;font-weight:600'>"+m.title+"</div></div>";}).join("")+"</div></div></div>";return h;}
+function pAbout(){var RORD={admin:0,finance:1,secretary:2,member:3};var sm=S.mems.slice().sort(function(a,b){var ra=RORD[a.role||"member"]||3,rb=RORD[b.role||"member"]||3;return ra!==rb?ra-rb:a.name.localeCompare(b.name);});var h="<div class='fc'><div class='hero' style='text-align:center'><div style='font-size:10px;letter-spacing:3px;color:var(--mut);font-weight:700;margin-bottom:14px'>SIPR GROUP</div><div style='font-size:32px;font-weight:900;letter-spacing:-1px;margin-bottom:7px'>Invest. Grow. Prosper.</div><div style='color:var(--mut);font-size:13px'>Founded February 2026 · Boalkhali, Chittagong · "+S.mems.length+" Members</div></div><div class='g2 g2-mob' style='gap:12px'><div class='card'><div style='color:var(--grn);font-size:10px;letter-spacing:2px;font-weight:700;margin-bottom:9px'>MISSION</div><div style='color:var(--mut);font-size:13px;line-height:1.8'>Build a self-sustaining investment group where every member saves, invests, and grows wealth through collective action.</div></div><div class='card'><div style='color:var(--gold);font-size:10px;letter-spacing:2px;font-weight:700;margin-bottom:9px'>VISION</div><div style='color:var(--mut);font-size:13px;line-height:1.8'>Become a formal business within 12 months operating a profitable plastic recycling business along the Karnafuli River.</div></div></div><div class='card'><div style='font-size:11px;letter-spacing:2px;color:var(--mut);font-weight:700;margin-bottom:14px'>FOUNDING MEMBERS</div><div style='display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:9px'>"+sm.map(function(m){var rc={admin:"var(--red)",finance:"var(--gold)",secretary:"var(--teal)",member:"var(--mut)"}[m.role||"member"]||"var(--mut)";return"<div style='background:var(--s2);border-radius:11px;padding:12px;text-align:center;border:1px solid var(--bor)'><div style='display:flex;justify-content:center;margin-bottom:7px'>"+av(m.name,38)+"</div><div style='font-weight:700;font-size:12px'>"+m.name+"</div><div style='font-size:10px;color:"+rc+";margin-top:2px;font-weight:600'>"+m.title+"</div></div>";}).join("")+"</div></div></div>";return h;}
 
 // ═══════════ CONTROL PANEL ═══════════
 function pControl(){
