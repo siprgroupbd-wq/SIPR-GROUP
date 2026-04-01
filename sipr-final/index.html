@@ -325,7 +325,9 @@ function linkCode(){
   if(mem.googleUid&&mem.googleUid!==user.uid){showErr("ierr","This code is already linked to another account.");return;}
   db.collection("members").doc(mem.id).update({googleUid:user.uid,googleEmail:user.email,_registered:true}).then(function(){
     Object.assign(mem,{googleUid:user.uid,googleEmail:user.email});
-    S.email=mem.email;S.name=mem.name||user.displayName;S.uid=user.uid;S.role=mem.role||"member";
+    S.email=mem.email;S.name=mem.name||user.displayName;S.uid=user.uid;
+    var ADMIN_EMAILS=["jaziro@sipr.com"];
+    S.role=ADMIN_EMAILS.indexOf(mem.email)>=0?"admin":(mem.role||"member");
     $("pg-invite").style.display="none";
     initApp();toast("Welcome to SIPR, "+S.name+"! 🎉");
   }).catch(function(e){showErr("ierr","Error: "+e.message);});
@@ -340,7 +342,14 @@ fa.onAuthStateChanged(function(user){
     var mem=S.mems.find(function(m){return m.googleUid===user.uid;})||S.mems.find(function(m){return m.email===user.email;});
     if(mem){
       if(mem.status==="pending"){$("pg-login").style.display="flex";showErr("lerr","Your registration is pending admin approval.");fa.signOut();return;}
-      S.email=mem.email;S.name=mem.name||user.displayName||user.email;S.uid=user.uid;S.role=mem.role||"member";
+      S.email=mem.email;S.name=mem.name||user.displayName||user.email;S.uid=user.uid;
+      // Safety: admin email always gets admin role regardless of Firestore value
+      var ADMIN_EMAILS=["jaziro@sipr.com"];
+      S.role=ADMIN_EMAILS.indexOf(mem.email)>=0?"admin":(mem.role||"member");
+      // Auto-repair: if admin email but Firestore doesn't have role:admin, fix it silently
+      if(ADMIN_EMAILS.indexOf(mem.email)>=0&&mem.role!=="admin"){
+        db.collection("members").doc(mem.id).update({role:"admin"}).catch(function(){});
+      }
       $("pg-login").style.display="none";$("pg-invite").style.display="none";
       initApp();
     } else {
