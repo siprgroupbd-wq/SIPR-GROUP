@@ -263,7 +263,6 @@ var NAVS=[
   {id:"investments",ic:"📈",lb:"Projects"},
   {id:"transactions",ic:"⇅",lb:"Transactions"},
   {id:"members",ic:"○",lb:"Members"},
-  {id:"wallet",ic:"💰",lb:"My Wallet"},
   {id:"goals",ic:"◎",lb:"Goals"},
   {id:"noticeboard",ic:"🔔",lb:"Notice Board"},
   {id:"expenses",ic:"💸",lb:"Expenses"},
@@ -533,8 +532,8 @@ function pPay(){
   var up=ps.filter(function(m){return !m.paid;});
   var rate=Math.round(pn/S.mems.length*100),collected=ps.reduce(function(s,m){return s+(m.paid?m.paidAmt:0);},0);
   var todayD=new Date(),isOD=todayD.getDate()>10&&todayD.getMonth()===S.payM&&todayD.getFullYear()===S.payY;
-  var h="<div class='fc'><div style='display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px'><h2 style='font-size:22px;font-weight:800'>Monthly Payments</h2>";
-  h+="<div style='display:flex;gap:7px'>"+(canWrite()?"<button class='btn-a' onclick='openTx(null,\"deposit\")'>+ Add Payment</button>":"")+(canRemind()?"<button class='btn-wa' onclick='bulkWa()'>💬 Remind All</button>":"")+"<button onclick='expCSV()' style='padding:8px 13px;border-radius:9px;border:1px solid var(--gbr);background:var(--gdm);color:var(--grn);font-size:12px;font-weight:700;cursor:pointer;font-family:inherit'>📥 CSV</button></div></div>";
+  var h="<div class='fc'><div style='display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px'>";
+  h+="<div style='display:flex;gap:7px'>"+(canWrite()?"<button class='btn-a' onclick='openTx(null,\"deposit\")'>+ Add Payment</button>":"")+(canRemind()?"<button class='btn-wa' onclick='openRemindModal()'>💬 Remind All</button>":"")+"<button onclick='expCSV()' style='padding:8px 13px;border-radius:9px;border:1px solid var(--gbr);background:var(--gdm);color:var(--grn);font-size:12px;font-weight:700;cursor:pointer;font-family:inherit'>📥 CSV</button></div></div>";
   h+="<div class='card' style='padding:11px 13px'><div style='display:flex;align-items:center;gap:8px;flex-wrap:wrap'>";
   h+="<select class='inp' style='width:auto;padding:7px 10px' onchange='S.payM=parseInt(this.value);render()'>";
   DM.forEach(function(m,i){h+="<option value='"+i+"'"+(i===S.payM?" selected":"")+">"+m+"</option>";});
@@ -557,7 +556,7 @@ function pPay(){
     ps.forEach(function(m){h+="<tr style='"+(m.paid?"":"background:rgba(239,68,68,.04)")+"'><td style='color:var(--mut);font-size:12px'>"+(m.paid?fd(m.paidDate):"—")+"</td><td><div style='display:flex;align-items:center;gap:7px'>"+avM(m,24)+"<span style='font-weight:700;font-size:13px'>"+m.name+"</span></div></td><td style='text-align:center;color:"+(m.paid?"var(--grn)":"#ef4444")+";font-weight:700'>"+(m.paid?"✓ Paid":"✗ Pending")+"</td><td style='text-align:right;font-weight:700;color:"+(m.paid?"var(--grn)":"#ef4444")+"'>"+(m.paid?fmt(m.paidAmt):"BDT "+DUE+" due")+"</td></tr>";});
     h+="</tbody><tfoot><tr><td colspan='2' style='padding:10px 13px;color:var(--grn);font-weight:700'>TOTAL</td><td></td><td style='padding:10px 13px;text-align:right;color:var(--grn);font-weight:900;font-size:14px'>"+fmt(collected)+"</td></tr></tfoot></table></div></div>";
     if(up.length>0){
-      h+="<div class='card' style='border-color:"+(isOD?"#7f1d1d":"var(--bor)")+"'><div style='display:flex;justify-content:space-between;align-items:center;margin-bottom:11px;flex-wrap:wrap;gap:8px'><div style='color:#ef4444;font-size:10px;font-weight:700;letter-spacing:1px'>"+up.length+" PENDING</div><div style='display:flex;gap:6px'>"+(canRemind()&&up.some(function(m){return m.phone;})?"<button onclick='bulkWa()' style='padding:7px 11px;border-radius:8px;border:1px solid #25d366;background:#071a0f;color:#25d366;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit'>💬 Send All</button>":"")+"</div></div>";
+      h+="<div class='card' style='border-color:"+(isOD?"#7f1d1d":"var(--bor)")+"'><div style='display:flex;justify-content:space-between;align-items:center;margin-bottom:11px;flex-wrap:wrap;gap:8px'><div style='color:#ef4444;font-size:10px;font-weight:700;letter-spacing:1px'>"+up.length+" PENDING</div><div style='display:flex;gap:6px'>"+(canRemind()&&up.some(function(m){return m.phone;})?"<button onclick='openRemindModal()' style='padding:7px 11px;border-radius:8px;border:1px solid #25d366;background:#071a0f;color:#25d366;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit'>💬 Send All</button>":"")+"</div></div>";
       h+="<div style='display:flex;flex-direction:column;gap:6px'>";
       up.forEach(function(m){h+="<div style='display:flex;align-items:center;gap:8px;padding:9px 10px;background:var(--s2);border-radius:9px;border:1px solid "+(isOD?"#3d1010":"var(--bor)")+"'>"+avM(m,28)+"<div style='flex:1'><div style='font-size:13px;font-weight:700'>"+m.name+"</div><div style='font-size:11px;color:var(--mut)'>Pending "+fmt(DUE)+"</div></div>"+(m.phone&&canRemind()?"<button onclick='wa(\""+m.phone+"\",\""+m.name+"\")' class='btn-wa'>💬</button>":"<span style='font-size:10px;color:var(--mut)'>"+(!m.phone?"No phone":"")+"</span>")+"</div>";});
       h+="</div></div>";
@@ -583,6 +582,51 @@ function wa(phone,name){
   window.open("https://wa.me/"+num+"?text="+encodeURIComponent(msg),"_blank");
 }
 function bulkWa(){var up=payS(S.payY,S.payM).filter(function(m){return !m.paid&&m.phone;});if(!up.length){toast("No pending members with phones",false);return;}var i=0;function nx(){if(i>=up.length)return;var m=up[i++];wa(m.phone,m.name);setTimeout(nx,1500);}nx();toast("Sending to "+up.length+" members...");}
+function openRemindModal(){
+  var up=payS(S.payY,S.payM).filter(function(m){return !m.paid&&m.phone;});
+  var defMsg="Assalamu Alaikum {name},\n\nThis is a reminder that your SIPR monthly contribution of BDT 500 for "+MF[S.payM]+" "+S.payY+" is still pending.\n\nPlease send via bKash to: 01845526909 (Shoeb)\nDeadline: 10th of the month.\n\nJazakAllah Khair.\n— SIPR Group";
+  var h="<div class='modal-bg' onclick='if(event.target===this)closeModal()'><div class='modal-box'>";
+  h+="<div style='display:flex;justify-content:space-between;align-items:center;margin-bottom:16px'>";
+  h+="<div><div style='font-weight:800;font-size:17px'>💬 Send Reminders</div><div style='font-size:12px;color:var(--mut2);margin-top:2px'>"+up.length+" pending members with phone</div></div>";
+  h+="<button onclick='closeModal()' style='background:none;border:none;color:var(--mut);font-size:22px;cursor:pointer'>✕</button></div>";
+  h+="<div style='margin-bottom:14px'>";
+  h+="<label class='lbl'>Edit message — use {name} for member name</label>";
+  h+="<textarea id='rm-msg' class='inp' rows='7' style='font-size:13px;line-height:1.6'>"+defMsg+"</textarea>";
+  h+="</div>";
+  if(!up.length){
+    h+="<div style='text-align:center;padding:20px;color:var(--mut2);background:var(--s2);border-radius:12px;font-size:13px'>No pending members with phone numbers saved.</div>";
+  } else {
+    h+="<div style='background:var(--s2);border-radius:12px;padding:10px 14px;border:1px solid var(--bor);margin-bottom:14px'>";
+    h+="<div style='font-size:10px;color:var(--mut2);font-weight:700;letter-spacing:1.5px;margin-bottom:8px'>WILL SEND TO</div>";
+    h+="<div style='display:flex;flex-wrap:wrap;gap:6px'>";
+    up.forEach(function(m){h+="<span style='background:var(--gdm);border:1px solid var(--gbr);border-radius:99px;padding:4px 10px;font-size:12px;font-weight:600'>"+m.name+"</span>";});
+    h+="</div></div>";
+    h+="<div style='display:flex;gap:8px'>";
+    h+="<button onclick='sendAllReminders()' style='flex:1;padding:13px;border-radius:12px;border:1px solid #25d366;background:#071a0f;color:#25d366;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit'>💬 Send All ("+up.length+")</button>";
+    h+="</div>";
+  }
+  h+="</div></div>";
+  $("modal").innerHTML=h;
+}
+function sendAllReminders(){
+  var msg=($("rm-msg")||{value:""}).value;
+  if(!msg.trim()){toast("Message cannot be empty",false);return;}
+  var up=payS(S.payY,S.payM).filter(function(m){return !m.paid&&m.phone;});
+  if(!up.length){toast("No pending members with phones",false);return;}
+  closeModal();
+  var i=0;
+  function nx(){
+    if(i>=up.length)return;
+    var m=up[i++];
+    var d=m.phone.replace(/\D/g,'');
+    var num=d.startsWith('880')?d:d.startsWith('0')?'88'+d:'880'+d;
+    var personMsg=msg.replace(/\{name\}/g,m.name);
+    window.open("https://wa.me/"+num+"?text="+encodeURIComponent(personMsg),"_blank");
+    setTimeout(nx,1500);
+  }
+  nx();
+  toast("Opening "+up.length+" WhatsApp chat"+(up.length>1?"s":"")+"...");
+}
 function waReport(){var ps=payS(S.payY,S.payM),pn=ps.filter(function(m){return m.paid;}).length,up=ps.filter(function(m){return !m.paid;});var collected=ps.reduce(function(s,m){return s+(m.paid?m.paidAmt:0);},0);var txt="📊 *SIPR GROUP — Payment Report*\n📅 "+MF[S.payM]+" "+S.payY+"\n━━━━━━━━━━━━\n\n✅ *Paid ("+pn+"/"+S.mems.length+")*\n";ps.filter(function(m){return m.paid;}).forEach(function(m){txt+="  ✓ "+m.name+" — "+fmt(m.paidAmt)+"\n";});if(up.length){txt+="\n⏳ *Pending ("+up.length+")*\n";up.forEach(function(m){txt+="  ✗ "+m.name+"\n";});}txt+="\n💰 *Total: "+fmt(collected)+"*\nbKash: 01845526909 · Deadline: 10th\n— Jahed Aziz, SIPR Group";window.open("https://wa.me/?text="+encodeURIComponent(txt),"_blank");}
 function printReport(){var ps=payS(S.payY,S.payM),pn=ps.filter(function(m){return m.paid;}).length,collected=ps.reduce(function(s,m){return s+(m.paid?m.paidAmt:0);},0);var rows=ps.map(function(m,i){return"<tr style='background:"+(i%2===0?"#f8fafb":"#fff")+"'><td style='padding:9px 13px;color:#64748b;font-size:12px'>"+(m.paid?fd(m.paidDate):"—")+"</td><td style='padding:9px 13px;font-weight:600'>"+m.name+"</td><td style='padding:9px 13px;text-align:center'><span style='padding:3px 11px;border-radius:99px;font-size:11px;font-weight:700;background:"+(m.paid?"#dcfce7":"#fee2e2")+";color:"+(m.paid?"#15803d":"#dc2626")+"'>"+(m.paid?"✓ Paid":"✗ Pending")+"</span></td><td style='padding:9px 13px;text-align:right;font-weight:700;color:"+(m.paid?"#15803d":"#dc2626")+"'>"+(m.paid?fmt(m.paidAmt):"BDT "+DUE+" due")+"</td></tr>";}).join("");var html="<!DOCTYPE html><html><head><title>SIPR Report</title><style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:Arial,sans-serif}.np{display:flex}@media print{.np{display:none!important}}</style></head><body><div style='max-width:660px;margin:0 auto;padding:30px'><div style='border-bottom:3px solid #4f8ef7;padding-bottom:14px;margin-bottom:20px'><div style='font-size:11px;color:#4f8ef7;font-weight:700;letter-spacing:3px;margin-bottom:4px'>SIPR GROUP — PAYMENT REPORT</div><div style='font-size:24px;font-weight:900;color:#1a2233'>"+MF[S.payM]+" "+S.payY+"</div></div><table style='width:100%;border-collapse:collapse;border:1px solid #e2e8f0'><thead><tr style='background:#1a2233'><th style='padding:10px 13px;text-align:left;color:#fff;font-size:10px'>DATE PAID</th><th style='padding:10px 13px;text-align:left;color:#fff;font-size:10px'>MEMBER</th><th style='padding:10px 13px;text-align:center;color:#fff;font-size:10px'>STATUS</th><th style='padding:10px 13px;text-align:right;color:#fff;font-size:10px'>AMOUNT</th></tr></thead><tbody>"+rows+"</tbody><tfoot><tr style='background:#f1f5f9'><td colspan='2' style='padding:11px 13px;font-weight:800;color:#1a2233'>TOTAL</td><td></td><td style='padding:11px 13px;text-align:right;font-weight:900;color:#15803d;font-size:14px'>"+fmt(collected)+"</td></tr></tfoot></table><div class='np' style='margin-top:18px;justify-content:center;gap:10px'><button onclick='window.print()' style='padding:10px 22px;background:#1a2233;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer'>🖨 Print/PDF</button><button onclick='window.close()' style='padding:10px 18px;background:#f1f5f9;color:#1a2233;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer'>Close</button></div></div></body></html>";var w=window.open("","_blank","width=760,height=620");w.document.write(html);w.document.close();}
 function expCSV(){var rows=[["Date","Type","Member","Amount (BDT)","Note"]];S.txs.slice().reverse().forEach(function(t){rows.push([t.date,t.type,txName(t),t.amount,t.note||""]);});var csv=rows.map(function(r){return r.map(function(c){return'"'+String(c).replace(/"/g,'""')+'"';}).join(",");}).join("\n");var blob=new Blob([csv],{type:"text/csv"});var url=URL.createObjectURL(blob);var a=document.createElement("a");a.href=url;a.download="SIPR_"+new Date().toISOString().split("T")[0]+".csv";a.click();URL.revokeObjectURL(url);toast("CSV exported!");}
@@ -901,7 +945,7 @@ function pProject(id){
     h+="<div style='margin-bottom:22px'>";
     h+="<div style='display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px'>";
     h+="<div><div style='font-size:14px;font-weight:800'>Suppliers</div><div style='font-size:12px;color:var(--mut2);margin-top:2px'>Who you buy from</div></div>";
-    if(isAdmin())h+="<button class='btn-a' onclick='openContact(this.dataset.id,\'supplier\',null)' data-id='"+inv.id+"'>+ Add Supplier</button>";
+    if(isAdmin())h+="<button class='btn-a' onclick='openContact(\""+inv.id+"\",\"supplier\",null)'>+ Add Supplier</button>";
     h+="</div>";
     if(!suppliers.length)h+="<div style='text-align:center;padding:28px;color:var(--mut2);background:var(--s2);border-radius:12px;border:1px solid var(--bor);font-size:13px;margin-bottom:8px'>No suppliers added yet. Tap + Add Supplier.</div>";
     else suppliers.forEach(function(s2,si){
@@ -910,13 +954,13 @@ function pProject(id){
       h+="<div style='font-size:12px;color:var(--mut2);margin-top:3px'>"+(s2.phone?"📞 "+s2.phone+"  ":"")+(s2.productType||"")+(s2.buyPricePerKg?" · Buy ৳"+s2.buyPricePerKg+"/kg":"")+"</div>";
       if(s2.note)h+="<div style='font-size:11px;color:var(--mut2);margin-top:2px;font-style:italic'>"+s2.note+"</div>";
       h+="</div><span class='bdg' style='background:"+(s2.active?"#031a1499":"#1a040499")+";color:"+(s2.active?"var(--teal)":"var(--red)")+"'>"+(s2.active?"Active":"Inactive")+"</span>";
-      if(isAdmin())h+="<div style='display:flex;gap:5px'><button onclick='openContact(this.dataset.id,'supplier',"+si+")' class='btn-s' style='font-size:11px'>Edit</button><button onclick='delContact(this.dataset.id,'supplier',"+si+")' class='btn-d' style='font-size:11px'>✕</button></div>";
+      if(isAdmin())h+="<div style='display:flex;gap:5px'><button onclick='openContact(\""+inv.id+"\",\"supplier\","+si+")' class='btn-s' style='font-size:11px'>Edit</button><button onclick='delContact(\""+inv.id+"\",\"supplier\","+si+")' class='btn-d' style='font-size:11px'>✕</button></div>";
       h+="</div>";
     });
     h+="</div>";
     h+="<div style='display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px'>";
     h+="<div><div style='font-size:14px;font-weight:800'>Buyers</div><div style='font-size:12px;color:var(--mut2);margin-top:2px'>Who you sell to</div></div>";
-    if(isAdmin())h+="<button class='btn-a' onclick='openContact(this.dataset.id,\'buyer\',null)' data-id='"+inv.id+"'>+ Add Buyer</button>";
+    if(isAdmin())h+="<button class='btn-a' onclick='openContact(\""+inv.id+"\",\"buyer\",null)'>+ Add Buyer</button>";
     h+="</div>";
     if(!buyers.length)h+="<div style='text-align:center;padding:28px;color:var(--mut2);background:var(--s2);border-radius:12px;border:1px solid var(--bor);font-size:13px'>No buyers added yet. Tap + Add Buyer.</div>";
     else buyers.forEach(function(b2,bi){
@@ -925,7 +969,7 @@ function pProject(id){
       h+="<div style='font-size:12px;color:var(--mut2);margin-top:3px'>"+(b2.phone?"📞 "+b2.phone+"  ":"")+(b2.productType||"")+(b2.sellPricePerKg?" · Sell ৳"+b2.sellPricePerKg+"/kg":"")+"</div>";
       if(b2.note)h+="<div style='font-size:11px;color:var(--mut2);margin-top:2px;font-style:italic'>"+b2.note+"</div>";
       h+="</div><span class='bdg' style='background:"+(b2.active?"#1a0e0099":"#1a040499")+";color:"+(b2.active?"var(--gold)":"var(--red)")+"'>"+(b2.active?"Active":"Inactive")+"</span>";
-      if(isAdmin())h+="<div style='display:flex;gap:5px'><button onclick='openContact(this.dataset.id,'buyer',"+bi+")' class='btn-s' style='font-size:11px'>Edit</button><button onclick='delContact(this.dataset.id,'buyer',"+bi+")' class='btn-d' style='font-size:11px'>✕</button></div>";
+      if(isAdmin())h+="<div style='display:flex;gap:5px'><button onclick='openContact(\""+inv.id+"\",\"buyer\","+bi+")' class='btn-s' style='font-size:11px'>Edit</button><button onclick='delContact(\""+inv.id+"\",\"buyer\","+bi+")' class='btn-d' style='font-size:11px'>✕</button></div>";
       h+="</div>";
     });
 
@@ -1174,6 +1218,7 @@ function pMem(){
       h+="<div class='g2' style='gap:8px;margin-bottom:10px'>";
       [["ID",m.id],["Phone",m.phone||"Not set"],["Email",m.email],["Address",m.address||"Not set"]].forEach(function(r){h+="<div style='background:var(--s2);border-radius:9px;padding:9px 11px;border:1px solid var(--bor)'><div style='font-size:9px;color:var(--mut);font-weight:700;margin-bottom:2px'>"+r[0]+"</div><div style='font-size:11px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap'>"+r[1]+"</div></div>";});
       h+="</div>";
+      if(m.waLink)h+="<a href='"+m.waLink+"' target='_blank' style='display:flex;align-items:center;gap:8px;padding:10px 13px;background:#071a0f;border:1px solid #25d36633;border-radius:11px;text-decoration:none;margin-bottom:10px'><span style='font-size:18px'>💬</span><div><div style='color:#25d366;font-weight:700;font-size:13px'>Open WhatsApp Chat</div><div style='color:#25d36688;font-size:11px'>"+m.waLink+"</div></div></a>";
       if(isAdmin()){
         h+="<div style='display:flex;gap:7px;flex-wrap:wrap'>";
         h+="<button class='btn-s' onclick='openEditMember(\""+m.id+"\")'>✏ Edit Profile</button>";
@@ -1404,6 +1449,7 @@ function pControl(){
     h+="<div class='g2' style='margin-bottom:12px'>";
     h+="<div><label class='lbl'>Name</label><input id='nm-"+sid+"' type='text' class='inp' value='"+m.name+"'/></div>";
     h+="<div><label class='lbl'>Phone</label><input id='ph-"+sid+"' type='text' class='inp' value='"+(m.phone||"")+"'/></div></div>";
+    h+="<div style='margin-bottom:12px'><label class='lbl'>WhatsApp Link (wa.me/880XXXXXXXXXX)</label><input id='wa-"+sid+"' type='text' class='inp' value='"+(m.waLink||"")+"' placeholder='https://wa.me/8801XXXXXXXXX'/></div>";
     // Title
     h+="<div style='margin-bottom:12px'><label class='lbl'>Title"+(m.locked?" 🔒":"")+"</label>";
     if(m.locked)h+="<div class='inp' style='color:var(--mut)'>"+m.title+"</div>";
@@ -1444,7 +1490,7 @@ function saveMemCtrl(mid,sid,locked){
   var permKeys=["sendPaymentReminder","sendNotices","uploadDocuments","addTransaction","manageProjects"];
   var permissions={};
   permKeys.forEach(function(pk){var el=$("perm-"+pk+"-"+sid);permissions[pk]=el?el.checked:false;});
-  var upd={name:nm,phone:ph,role:rl,permissions:permissions};
+  var upd={name:nm,phone:ph,waLink:($("wa-"+sid)||{value:""}).value.trim(),role:rl,permissions:permissions};
   if(!locked&&$("tl-"+sid))upd.title=$("tl-"+sid).value.trim()||mem.title;
   db.collection("members").doc(mid).update(upd).then(function(){
     Object.assign(mem,upd);
