@@ -556,10 +556,10 @@ function pPay(){
     ps.forEach(function(m){h+="<tr style='"+(m.paid?"":"background:rgba(239,68,68,.04)")+"'><td style='color:var(--mut);font-size:12px'>"+(m.paid?fd(m.paidDate):"—")+"</td><td><div style='display:flex;align-items:center;gap:7px'>"+avM(m,24)+"<span style='font-weight:700;font-size:13px'>"+m.name+"</span></div></td><td style='text-align:center;color:"+(m.paid?"var(--grn)":"#ef4444")+";font-weight:700'>"+(m.paid?"✓ Paid":"✗ Pending")+"</td><td style='text-align:right;font-weight:700;color:"+(m.paid?"var(--grn)":"#ef4444")+"'>"+(m.paid?fmt(m.paidAmt):"BDT "+DUE+" due")+"</td></tr>";});
     h+="</tbody><tfoot><tr><td colspan='2' style='padding:10px 13px;color:var(--grn);font-weight:700'>TOTAL</td><td></td><td style='padding:10px 13px;text-align:right;color:var(--grn);font-weight:900;font-size:14px'>"+fmt(collected)+"</td></tr></tfoot></table></div></div>";
     if(up.length>0){
-      h+="<div class='card' style='border-color:"+(isOD?"#7f1d1d":"var(--bor)")+"'><div style='display:flex;justify-content:space-between;align-items:center;margin-bottom:11px;flex-wrap:wrap;gap:8px'><div style='color:#ef4444;font-size:10px;font-weight:700;letter-spacing:1px'>"+up.length+" PENDING</div><div style='display:flex;gap:6px'>"+(canRemind()&&up.some(function(m){return m.phone;})?"<button onclick='openRemindModal()' style='padding:7px 11px;border-radius:8px;border:1px solid #25d366;background:#071a0f;color:#25d366;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit'>💬 Send All</button>":"")+"</div></div>";
-      h+="<div style='display:flex;flex-direction:column;gap:6px'>";
-      up.forEach(function(m){h+="<div style='display:flex;align-items:center;gap:8px;padding:9px 10px;background:var(--s2);border-radius:9px;border:1px solid "+(isOD?"#3d1010":"var(--bor)")+"'>"+avM(m,28)+"<div style='flex:1'><div style='font-size:13px;font-weight:700'>"+m.name+"</div><div style='font-size:11px;color:var(--mut)'>Pending "+fmt(DUE)+"</div></div>"+(m.phone&&canRemind()?"<button onclick='wa(\""+m.phone+"\",\""+m.name+"\")' class='btn-wa'>💬</button>":"<span style='font-size:10px;color:var(--mut)'>"+(!m.phone?"No phone":"")+"</span>")+"</div>";});
-      h+="</div></div>";
+      h+="<div style='display:flex;align-items:center;justify-content:space-between;padding:12px 16px;background:"+(isOD?"#0e0404":"var(--s2)")+";border:1px solid "+(isOD?"#7f1d1d":"var(--bor)")+";border-radius:13px'>";
+      h+="<div style='display:flex;align-items:center;gap:10px'><span style='font-size:20px'>"+(isOD?"⚠️":"⏳")+"</span><div><div style='font-weight:700;font-size:14px;color:"+(isOD?"#f87171":"var(--txt)")+"'>"+up.length+" member"+(up.length>1?"s":"")+" pending</div><div style='font-size:12px;color:var(--mut2);margin-top:2px'>"+up.map(function(m){return m.name;}).join(", ")+"</div></div></div>";
+      h+="<button onclick='openRemindModal()' style='padding:9px 16px;border-radius:10px;border:1px solid #25d366;background:#071a0f;color:#25d366;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;flex-shrink:0'>💬 Send All</button>";
+      h+="</div>";
     }
   } else {
     var allKeys={};S.txs.filter(function(t){return t.type==="deposit";}).forEach(function(t){var d=new Date(t.date);allKeys[d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")]=true;});
@@ -770,7 +770,7 @@ function pProject(id){
   var st=ST[inv.status]||ST.planning;
   var dep2=Number(inv.capitalDeployed||inv.amount||0),ret2=Number(inv.actualReturn||0),exp=Number(inv.expectedReturn||0),pl=ret2-dep2,pp=exp>0?Math.min(Math.round(ret2/exp*100),100):0;
   var cols2=inv.collections||[];
-  var totalColKg=cols2.reduce(function(s,c){return s+Number(c.kg||0);},0);
+  var totalColKg=cols2.reduce(function(s,c){return s+Number(c.kg||0);},0);var colUnit=cols2.length&&cols2[0].unit?cols2[0].unit:"kg";
   var totalSoldKg=cols2.reduce(function(s,c){return s+Number(c.soldKg||0);},0);
   var totalRevenue=cols2.reduce(function(s,c){return s+Number(c.revenue||0);},0);
   var stockKg=totalColKg-totalSoldKg;
@@ -822,9 +822,9 @@ function pProject(id){
     h+="<div class='stat-box'><div class='lbl2'>P&amp;L</div><div class='val' style='color:"+(pl>=0?"var(--green)":"var(--red)")+"'>"+(pl>=0?"+":"")+fmt(pl)+"</div></div></div>";
     if(cols2.length){
       h+="<div class='g4' style='margin-bottom:18px'>";
-      h+="<div class='stat-box'><div class='lbl2'>Collected</div><div class='val' style='color:var(--teal)'>"+totalColKg.toFixed(1)+" kg</div></div>";
-      h+="<div class='stat-box'><div class='lbl2'>Sold</div><div class='val' style='color:var(--green)'>"+totalSoldKg.toFixed(1)+" kg</div></div>";
-      h+="<div class='stat-box'><div class='lbl2'>In Stock</div><div class='val' style='color:var(--gold)'>"+stockKg.toFixed(1)+" kg</div></div>";
+      h+="<div class='stat-box'><div class='lbl2'>Collected</div><div class='val' style='color:var(--teal)'>"+totalColKg.toFixed(2)+" "+colUnit+"</div></div>";
+      h+="<div class='stat-box'><div class='lbl2'>Sold</div><div class='val' style='color:var(--green)'>"+totalSoldKg.toFixed(2)+" "+colUnit+"</div></div>";
+      h+="<div class='stat-box'><div class='lbl2'>In Stock</div><div class='val' style='color:var(--gold)'>"+stockKg.toFixed(2)+" "+colUnit+"</div></div>";
       h+="<div class='stat-box'><div class='lbl2'>Revenue</div><div class='val' style='color:var(--purple)'>"+fmt(totalRevenue)+"</div></div></div>";
     }
     if(budget.totalBudget>0){
@@ -837,19 +837,19 @@ function pProject(id){
 
   } else if(tab2==="log"){
     h+="<div style='display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:8px'>";
-    h+="<div><div style='font-size:14px;font-weight:800'>Daily Collection Log</div><div style='font-size:12px;color:var(--mut2);margin-top:2px'>"+cols2.length+" entries · "+totalColKg.toFixed(1)+" kg total</div></div>";
+    h+="<div><div style='font-size:14px;font-weight:800'>Daily Collection Log</div><div style='font-size:12px;color:var(--mut2);margin-top:2px'>"+cols2.length+" entries · "+totalColKg.toFixed(2)+" "+colUnit+" total</div></div>";
     if(canManageProj())h+="<button class='btn-a' onclick='openCollection(this.dataset.id)' data-id='"+inv.id+"'>+ Add Entry</button>";
     h+="</div>";
     if(!cols2.length)h+="<div style='text-align:center;padding:48px;color:var(--mut2);border:1px dashed var(--bor);border-radius:14px'><div style='font-size:32px;opacity:.3;margin-bottom:10px'>📦</div><div style='font-weight:700'>No entries yet</div><div style='font-size:12px;margin-top:4px'>Start logging daily collection</div></div>";
     else{
-      h+="<div class='sw'><table class='tbl'><thead><tr><th>Date</th><th>Source</th><th style='text-align:right'>Collected</th><th style='text-align:right'>Sold</th><th style='text-align:right'>Stock</th><th style='text-align:right'>Price/kg</th><th style='text-align:right'>Revenue</th><th></th></tr></thead><tbody>";
+      h+="<div class='sw'><table class='tbl'><thead><tr><th>Date</th><th>Source</th><th>Item</th><th style='text-align:right'>Collected</th><th style='text-align:right'>Sold</th><th style='text-align:right'>Stock</th><th style='text-align:right'>Price/unit</th><th style='text-align:right'>Revenue</th><th></th></tr></thead><tbody>";
       cols2.slice().reverse().forEach(function(c2,ci){
-        var stock2=Number(c2.kg||0)-Number(c2.soldKg||0);
-        h+="<tr><td style='color:var(--mut2);font-size:12px;white-space:nowrap'>"+fd(c2.date)+"</td><td style='font-size:13px;font-weight:600'>"+(c2.source||"—")+"</td>";
-        h+="<td style='text-align:right;color:var(--teal);font-weight:700'>"+Number(c2.kg||0).toFixed(1)+" kg</td>";
-        h+="<td style='text-align:right;color:var(--green);font-weight:700'>"+Number(c2.soldKg||0).toFixed(1)+" kg</td>";
-        h+="<td style='text-align:right;color:var(--gold);font-weight:700'>"+stock2.toFixed(1)+" kg</td>";
-        h+="<td style='text-align:right;color:var(--mut2);font-size:12px'>"+(c2.pricePerKg?fmt(c2.pricePerKg):"—")+"</td>";
+        var u=c2.unit||"kg";var stock2=Number(c2.kg||0)-Number(c2.soldKg||0);
+        h+="<tr><td style='color:var(--mut2);font-size:12px;white-space:nowrap'>"+fd(c2.date)+"</td><td style='font-size:13px;font-weight:600'>"+(c2.source||"—")+"</td><td style='font-size:12px;color:var(--mut2)'>"+(c2.plasticType||"—")+"</td>";
+        h+="<td style='text-align:right;color:var(--teal);font-weight:700'>"+Number(c2.kg||0).toFixed(2)+" "+u+"</td>";
+        h+="<td style='text-align:right;color:var(--green);font-weight:700'>"+Number(c2.soldKg||0).toFixed(2)+" "+u+"</td>";
+        h+="<td style='text-align:right;color:var(--gold);font-weight:700'>"+stock2.toFixed(2)+" "+u+"</td>";
+        h+="<td style='text-align:right;color:var(--mut2);font-size:12px'>"+(c2.pricePerKg?fmt(c2.pricePerKg)+"/"+u:"—")+"</td>";
         h+="<td style='text-align:right;color:var(--purple);font-weight:700'>"+fmt(c2.revenue||0)+"</td>";
         h+="<td>"+(isAdmin()?"<button onclick='delCollection(this.dataset.id,"+(cols2.length-1-ci)+")' class='btn-d' style='padding:3px 8px;font-size:11px'>✕</button>":"")+"</td></tr>";
       });
@@ -871,7 +871,7 @@ function pProject(id){
     if(exp>0){h+="<div style='margin-top:16px'><div style='display:flex;justify-content:space-between;font-size:11px;color:var(--mut2);margin-bottom:6px'><span>Target progress</span><span>"+fmt(ret2)+" / "+fmt(exp)+"</span></div><div style='height:6px;background:#ffffff0a;border-radius:99px;overflow:hidden'><div style='height:100%;width:"+pp+"%;background:var(--green);border-radius:99px'></div></div></div>";}
     h+="</div>";
     // Revenue from sales
-    if(totalRevenue>0){h+="<div style='background:var(--s2);border-radius:14px;padding:14px 16px;border:1px solid var(--bor);margin-bottom:12px;display:flex;justify-content:space-between;align-items:center'><div><div style='font-size:10px;color:var(--mut2);font-weight:700;letter-spacing:1.5px'>TOTAL SALES REVENUE</div><div style='font-size:18px;font-weight:900;color:var(--purple);margin-top:4px'>"+fmt(totalRevenue)+"</div></div><div style='text-align:right'><div style='font-size:10px;color:var(--mut2)'>"+totalSoldKg.toFixed(1)+" kg sold</div><div style='font-size:12px;color:var(--mut2)'>"+(totalSoldKg>0?"Avg "+fmt(Math.round(totalRevenue/totalSoldKg))+"/kg":"")+"</div></div></div>";}
+    if(totalRevenue>0){h+="<div style='background:var(--s2);border-radius:14px;padding:14px 16px;border:1px solid var(--bor);margin-bottom:12px;display:flex;justify-content:space-between;align-items:center'><div><div style='font-size:10px;color:var(--mut2);font-weight:700;letter-spacing:1.5px'>TOTAL SALES REVENUE</div><div style='font-size:18px;font-weight:900;color:var(--purple);margin-top:4px'>"+fmt(totalRevenue)+"</div></div><div style='text-align:right'><div style='font-size:10px;color:var(--mut2)'>"+totalSoldKg.toFixed(2)+" "+colUnit+" sold</div><div style='font-size:12px;color:var(--mut2)'>"+(totalSoldKg>0?"Avg "+fmt(Math.round(totalRevenue/totalSoldKg))+"/"+colUnit:"")+"</div></div></div>";}
     // Budget categories
     var bcat=budget.categories||[];
     if(budget.totalBudget>0||bcat.length){
@@ -1030,20 +1030,24 @@ function openCollection(invId){
   var inv=S.invs.find(function(x){return x.id===invId;});if(!inv)return;
   var h="<div class='modal-bg' onclick='if(event.target===this)closeModal()'><div class='modal-box'>";
   h+="<div style='display:flex;justify-content:space-between;align-items:center;margin-bottom:18px'>";
-  h+="<div style='font-weight:800;font-size:17px'>Add Collection Entry</div>";
+  h+="<div style='font-weight:800;font-size:17px'>Add Entry</div>";
   h+="<button onclick='closeModal()' style='background:none;border:none;color:var(--mut);font-size:20px;cursor:pointer'>✕</button></div>";
   h+="<div style='background:var(--gdm);border:1px solid var(--gbr);border-radius:10px;padding:10px 13px;margin-bottom:14px'><div style='font-size:12px;color:var(--mut)'>Project</div><div style='font-size:14px;font-weight:800'>"+inv.name+"</div></div>";
   h+="<div class='fc'>";
   h+="<div><label class='lbl'>Date *</label><input id='cl-dt' type='date' class='inp' value='"+new Date().toISOString().split("T")[0]+"'/></div>";
-  h+="<div><label class='lbl'>Source / Location</label><input id='cl-src' type='text' class='inp' placeholder='e.g. Boalkhali market, School collection'/></div>";
-  h+="<div class='g2'><div><label class='lbl'>Total Collected (kg) *</label><input id='cl-kg' type='number' class='inp' step='0.1' placeholder='0.0'/></div><div><label class='lbl'>Plastic Type</label><input id='cl-tp' type='text' class='inp' placeholder='e.g. PET bottles'/></div></div>";
+  h+="<div><label class='lbl'>Source / Location</label><input id='cl-src' type='text' class='inp' placeholder='e.g. Boalkhali market, Supplier name'/></div>";
+  h+="<div class='g2'>";
+  h+="<div><label class='lbl'>Quantity Collected *</label><input id='cl-kg' type='number' class='inp' step='0.01' placeholder='0'/></div>";
+  h+="<div><label class='lbl'>Unit (kg / pcs / box / m...)</label><input id='cl-unit' type='text' class='inp' placeholder='e.g. kg, pcs, box, litre' value='"+(inv.defaultUnit||"")+"'/></div>";
+  h+="</div>";
+  h+="<div><label class='lbl'>Item / Product Type</label><input id='cl-tp' type='text' class='inp' placeholder='e.g. LED Bulb, PET Bottle, Wire...'/></div>";
   h+="<div style='background:var(--s2);border:1px solid var(--bor);border-radius:10px;padding:12px'>";
   h+="<div style='font-size:11px;color:var(--mut);font-weight:700;margin-bottom:10px'>SOLD THIS ENTRY (optional)</div>";
-  h+="<div class='g2'><div><label class='lbl'>Quantity Sold (kg)</label><input id='cl-sk' type='number' class='inp' step='0.1' placeholder='0.0' oninput='calcRevenue()'/></div><div><label class='lbl'>Price per kg (BDT)</label><input id='cl-pp' type='number' class='inp' placeholder='0' oninput='calcRevenue()'/></div></div>";
+  h+="<div class='g2'><div><label class='lbl'>Quantity Sold</label><input id='cl-sk' type='number' class='inp' step='0.01' placeholder='0' oninput='calcRevenue()'/></div><div><label class='lbl'>Price per unit (BDT)</label><input id='cl-pp' type='number' class='inp' placeholder='0' oninput='calcRevenue()'/></div></div>";
   h+="<div style='margin-top:10px'><label class='lbl'>Revenue (BDT) — auto calculated</label><input id='cl-rv' type='number' class='inp' placeholder='0'/></div>";
   h+="<div style='margin-top:10px'><label class='lbl'>Sale Notes</label><input id='cl-sn' type='text' class='inp' placeholder='Buyer name, location etc.'/></div>";
   h+="</div>";
-  h+="<div><label class='lbl'>Collection Notes</label><input id='cl-nt' type='text' class='inp' placeholder='Any notes...'/></div>";
+  h+="<div><label class='lbl'>Notes</label><input id='cl-nt' type='text' class='inp' placeholder='Any additional info...'/></div>";
   h+="<button class='btn-p' onclick='saveCollection(\""+invId+"\")'>Save Entry</button></div></div></div>";
   $("modal").innerHTML=h;
 }
@@ -1053,14 +1057,14 @@ function calcRevenue(){
   var rv=$("cl-rv");if(rv)rv.value=sk&&pp?Math.round(sk*pp):"";
 }
 function saveCollection(invId){
-  var dt=($("cl-dt")||{value:""}).value;var kg=($("cl-kg")||{value:""}).value;
-  if(!dt||!kg){toast("Date and collected kg required",false);return;}
-  var entry={date:dt,source:($("cl-src")||{value:""}).value.trim(),kg:Number(kg),plasticType:($("cl-tp")||{value:""}).value.trim(),soldKg:Number(($("cl-sk")||{value:0}).value)||0,pricePerKg:Number(($("cl-pp")||{value:0}).value)||0,revenue:Number(($("cl-rv")||{value:0}).value)||0,saleNote:($("cl-sn")||{value:""}).value.trim(),note:($("cl-nt")||{value:""}).value.trim(),addedBy:S.name,addedAt:now()};
+  var dt=($("cl-dt")||{value:""}).value;var qty=($("cl-kg")||{value:""}).value;
+  if(!dt||!qty){toast("Date and quantity required",false);return;}
+  var unit=($("cl-unit")||{value:""}).value.trim()||"units";
+  var entry={date:dt,source:($("cl-src")||{value:""}).value.trim(),kg:Number(qty),unit:unit,plasticType:($("cl-tp")||{value:""}).value.trim(),soldKg:Number(($("cl-sk")||{value:0}).value)||0,pricePerKg:Number(($("cl-pp")||{value:0}).value)||0,revenue:Number(($("cl-rv")||{value:0}).value)||0,saleNote:($("cl-sn")||{value:""}).value.trim(),note:($("cl-nt")||{value:""}).value.trim(),addedBy:S.name,addedAt:now()};
   var inv=S.invs.find(function(x){return x.id===invId;});if(!inv)return;
   var cols2=(inv.collections||[]).slice();cols2.push(entry);
-  // Also update actual return if revenue added
   var newReturn=Number(inv.actualReturn||0)+entry.revenue;
-  db.collection("investments").doc(invId).update({collections:cols2,actualReturn:newReturn}).then(function(){closeModal();logAct("add_collection",entry.kg+"kg from "+entry.source+" — "+inv.name);toast("Collection entry added!");}).catch(function(e){toast(e.message,false);});
+  db.collection("investments").doc(invId).update({collections:cols2,actualReturn:newReturn}).then(function(){closeModal();logAct("add_collection",qty+" "+unit+" — "+inv.name);toast("Entry added!");}).catch(function(e){toast(e.message,false);});
 }
 function delCollection(invId,idx){
   if(!confirm("Delete this entry?"))return;
