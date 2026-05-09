@@ -582,28 +582,48 @@ function wa(phone,name){
   window.open("https://wa.me/"+num+"?text="+encodeURIComponent(msg),"_blank");
 }
 function bulkWa(){var up=payS(S.payY,S.payM).filter(function(m){return !m.paid&&m.phone;});if(!up.length){toast("No pending members with phones",false);return;}var i=0;function nx(){if(i>=up.length)return;var m=up[i++];wa(m.phone,m.name);setTimeout(nx,1500);}nx();toast("Sending to "+up.length+" members...");}
+function normPhone(phone){
+  var d=phone.replace(/\D/g,'');
+  var num=d.startsWith('880')?d:d.startsWith('0')?'88'+d:'880'+d;
+  return num;
+}
+function validPhone(phone){
+  var num=normPhone(phone);
+  // Valid BD number: 13 digits, starts with 8801
+  return num.length===13&&num.startsWith('8801');
+}
 function openRemindModal(){
-  var up=payS(S.payY,S.payM).filter(function(m){return !m.paid&&m.phone;});
+  var ps=payS(S.payY,S.payM).filter(function(m){return !m.paid;});
+  var valid=ps.filter(function(m){return m.phone&&validPhone(m.phone);});
+  var noPhone=ps.filter(function(m){return !m.phone;});
+  var badPhone=ps.filter(function(m){return m.phone&&!validPhone(m.phone);});
   var defMsg="Assalamu Alaikum {name},\n\nThis is a reminder that your SIPR monthly contribution of BDT 500 for "+MF[S.payM]+" "+S.payY+" is still pending.\n\nPlease send via bKash to: 01845526909 (Shoeb)\nDeadline: 10th of the month.\n\nJazakAllah Khair.\n— SIPR Group";
   var h="<div class='modal-bg' onclick='if(event.target===this)closeModal()'><div class='modal-box'>";
   h+="<div style='display:flex;justify-content:space-between;align-items:center;margin-bottom:16px'>";
-  h+="<div><div style='font-weight:800;font-size:17px'>💬 Send Reminders</div><div style='font-size:12px;color:var(--mut2);margin-top:2px'>"+up.length+" pending members with phone</div></div>";
+  h+="<div><div style='font-weight:800;font-size:17px'>💬 Send Reminders</div><div style='font-size:12px;color:var(--mut2);margin-top:2px'>"+ps.length+" pending · "+valid.length+" can receive</div></div>";
   h+="<button onclick='closeModal()' style='background:none;border:none;color:var(--mut);font-size:22px;cursor:pointer'>✕</button></div>";
-  h+="<div style='margin-bottom:14px'>";
-  h+="<label class='lbl'>Edit message — use {name} for member name</label>";
-  h+="<textarea id='rm-msg' class='inp' rows='7' style='font-size:13px;line-height:1.6'>"+defMsg+"</textarea>";
-  h+="</div>";
-  if(!up.length){
-    h+="<div style='text-align:center;padding:20px;color:var(--mut2);background:var(--s2);border-radius:12px;font-size:13px'>No pending members with phone numbers saved.</div>";
-  } else {
-    h+="<div style='background:var(--s2);border-radius:12px;padding:10px 14px;border:1px solid var(--bor);margin-bottom:14px'>";
-    h+="<div style='font-size:10px;color:var(--mut2);font-weight:700;letter-spacing:1.5px;margin-bottom:8px'>WILL SEND TO</div>";
+  h+="<div style='margin-bottom:14px'><label class='lbl'>Edit message — {name} = member name</label>";
+  h+="<textarea id='rm-msg' class='inp' rows='7' style='font-size:13px;line-height:1.6'>"+defMsg+"</textarea></div>";
+  if(valid.length){
+    h+="<div style='background:var(--s2);border-radius:12px;padding:10px 14px;border:1px solid var(--bor);margin-bottom:12px'>";
+    h+="<div style='font-size:10px;color:var(--green);font-weight:700;letter-spacing:1.5px;margin-bottom:8px'>✓ WILL RECEIVE ("+valid.length+")</div>";
     h+="<div style='display:flex;flex-wrap:wrap;gap:6px'>";
-    up.forEach(function(m){h+="<span style='background:var(--gdm);border:1px solid var(--gbr);border-radius:99px;padding:4px 10px;font-size:12px;font-weight:600'>"+m.name+"</span>";});
+    valid.forEach(function(m){h+="<span style='background:var(--gdm);border:1px solid var(--gbr);border-radius:99px;padding:4px 11px;font-size:12px;font-weight:600'>"+m.name+"</span>";});
     h+="</div></div>";
-    h+="<div style='display:flex;gap:8px'>";
-    h+="<button onclick='sendAllReminders()' style='flex:1;padding:13px;border-radius:12px;border:1px solid #25d366;background:#071a0f;color:#25d366;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit'>💬 Send All ("+up.length+")</button>";
+  }
+  if(badPhone.length){
+    h+="<div style='background:#0e050288;border-radius:12px;padding:10px 14px;border:1px solid #7f1d1d44;margin-bottom:12px'>";
+    h+="<div style='font-size:10px;color:var(--red);font-weight:700;letter-spacing:1.5px;margin-bottom:6px'>⚠ INVALID NUMBER — WILL SKIP ("+badPhone.length+")</div>";
+    badPhone.forEach(function(m){h+="<div style='font-size:12px;color:var(--mut2);margin-bottom:3px'>"+m.name+" · <span style='color:var(--red)'>"+m.phone+"</span> (fix in Control Panel)</div>";});
     h+="</div>";
+  }
+  if(noPhone.length){
+    h+="<div style='font-size:12px;color:var(--mut);margin-bottom:12px'>No phone: "+noPhone.map(function(m){return m.name;}).join(", ")+"</div>";
+  }
+  if(valid.length){
+    h+="<button onclick='sendAllReminders()' style='width:100%;padding:13px;border-radius:12px;border:1px solid #25d366;background:#071a0f;color:#25d366;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit'>💬 Send to "+valid.length+" member"+(valid.length>1?"s":"")+"</button>";
+  } else {
+    h+="<div style='text-align:center;padding:16px;background:var(--s2);border-radius:12px;color:var(--mut2);font-size:13px'>No members with valid phone numbers.<br>Add phone numbers in Control Panel.</div>";
   }
   h+="</div></div>";
   $("modal").innerHTML=h;
@@ -611,21 +631,20 @@ function openRemindModal(){
 function sendAllReminders(){
   var msg=($("rm-msg")||{value:""}).value;
   if(!msg.trim()){toast("Message cannot be empty",false);return;}
-  var up=payS(S.payY,S.payM).filter(function(m){return !m.paid&&m.phone;});
-  if(!up.length){toast("No pending members with phones",false);return;}
+  var ps=payS(S.payY,S.payM).filter(function(m){return !m.paid&&m.phone&&validPhone(m.phone);});
+  if(!ps.length){toast("No valid phone numbers",false);return;}
   closeModal();
   var i=0;
   function nx(){
-    if(i>=up.length)return;
-    var m=up[i++];
-    var d=m.phone.replace(/\D/g,'');
-    var num=d.startsWith('880')?d:d.startsWith('0')?'88'+d:'880'+d;
+    if(i>=ps.length)return;
+    var m=ps[i++];
+    var num=normPhone(m.phone);
     var personMsg=msg.replace(/\{name\}/g,m.name);
     window.open("https://wa.me/"+num+"?text="+encodeURIComponent(personMsg),"_blank");
     setTimeout(nx,1500);
   }
   nx();
-  toast("Opening "+up.length+" WhatsApp chat"+(up.length>1?"s":"")+"...");
+  toast("Opening "+ps.length+" WhatsApp chat"+(ps.length>1?"s":"")+"...");
 }
 function waReport(){var ps=payS(S.payY,S.payM),pn=ps.filter(function(m){return m.paid;}).length,up=ps.filter(function(m){return !m.paid;});var collected=ps.reduce(function(s,m){return s+(m.paid?m.paidAmt:0);},0);var txt="📊 *SIPR GROUP — Payment Report*\n📅 "+MF[S.payM]+" "+S.payY+"\n━━━━━━━━━━━━\n\n✅ *Paid ("+pn+"/"+S.mems.length+")*\n";ps.filter(function(m){return m.paid;}).forEach(function(m){txt+="  ✓ "+m.name+" — "+fmt(m.paidAmt)+"\n";});if(up.length){txt+="\n⏳ *Pending ("+up.length+")*\n";up.forEach(function(m){txt+="  ✗ "+m.name+"\n";});}txt+="\n💰 *Total: "+fmt(collected)+"*\nbKash: 01845526909 · Deadline: 10th\n— Jahed Aziz, SIPR Group";window.open("https://wa.me/?text="+encodeURIComponent(txt),"_blank");}
 function printReport(){var ps=payS(S.payY,S.payM),pn=ps.filter(function(m){return m.paid;}).length,collected=ps.reduce(function(s,m){return s+(m.paid?m.paidAmt:0);},0);var rows=ps.map(function(m,i){return"<tr style='background:"+(i%2===0?"#f8fafb":"#fff")+"'><td style='padding:9px 13px;color:#64748b;font-size:12px'>"+(m.paid?fd(m.paidDate):"—")+"</td><td style='padding:9px 13px;font-weight:600'>"+m.name+"</td><td style='padding:9px 13px;text-align:center'><span style='padding:3px 11px;border-radius:99px;font-size:11px;font-weight:700;background:"+(m.paid?"#dcfce7":"#fee2e2")+";color:"+(m.paid?"#15803d":"#dc2626")+"'>"+(m.paid?"✓ Paid":"✗ Pending")+"</span></td><td style='padding:9px 13px;text-align:right;font-weight:700;color:"+(m.paid?"#15803d":"#dc2626")+"'>"+(m.paid?fmt(m.paidAmt):"BDT "+DUE+" due")+"</td></tr>";}).join("");var html="<!DOCTYPE html><html><head><title>SIPR Report</title><style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:Arial,sans-serif}.np{display:flex}@media print{.np{display:none!important}}</style></head><body><div style='max-width:660px;margin:0 auto;padding:30px'><div style='border-bottom:3px solid #4f8ef7;padding-bottom:14px;margin-bottom:20px'><div style='font-size:11px;color:#4f8ef7;font-weight:700;letter-spacing:3px;margin-bottom:4px'>SIPR GROUP — PAYMENT REPORT</div><div style='font-size:24px;font-weight:900;color:#1a2233'>"+MF[S.payM]+" "+S.payY+"</div></div><table style='width:100%;border-collapse:collapse;border:1px solid #e2e8f0'><thead><tr style='background:#1a2233'><th style='padding:10px 13px;text-align:left;color:#fff;font-size:10px'>DATE PAID</th><th style='padding:10px 13px;text-align:left;color:#fff;font-size:10px'>MEMBER</th><th style='padding:10px 13px;text-align:center;color:#fff;font-size:10px'>STATUS</th><th style='padding:10px 13px;text-align:right;color:#fff;font-size:10px'>AMOUNT</th></tr></thead><tbody>"+rows+"</tbody><tfoot><tr style='background:#f1f5f9'><td colspan='2' style='padding:11px 13px;font-weight:800;color:#1a2233'>TOTAL</td><td></td><td style='padding:11px 13px;text-align:right;font-weight:900;color:#15803d;font-size:14px'>"+fmt(collected)+"</td></tr></tfoot></table><div class='np' style='margin-top:18px;justify-content:center;gap:10px'><button onclick='window.print()' style='padding:10px 22px;background:#1a2233;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer'>🖨 Print/PDF</button><button onclick='window.close()' style='padding:10px 18px;background:#f1f5f9;color:#1a2233;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer'>Close</button></div></div></body></html>";var w=window.open("","_blank","width=760,height=620");w.document.write(html);w.document.close();}
