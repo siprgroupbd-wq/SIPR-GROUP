@@ -9,7 +9,7 @@
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <style>
-:root{--bg:#050709;--sur:#0b0d14;--s2:#0f1219;--bor:#181c28;--bor2:#1e2235;--txt:#e8eaf2;--mut:#434966;--mut2:#636b88;--grn:#3b82f6;--grn2:#1d4ed8;--gdm:#060e1c;--gbr:#0c1e40;--gold:#f59e0b;--purple:#8b5cf6;--red:#ef4444;--teal:#06b6d4;--green:#10b981;}
+:root{--bg:#050709;--sur:#0b0d14;--s2:#0f1219;--bor:#181c28;--bor2:#1e2235;--txt:#f0f2ff;--mut:#4a5280;--mut2:#7b82a8;--grn:#3b82f6;--grn2:#1d4ed8;--gdm:#060e1c;--gbr:#0c1e40;--gold:#fbbf24;--purple:#8b5cf6;--red:#ef4444;--teal:#06b6d4;--green:#34d399;}
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
 body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--bg);color:var(--txt);min-height:100vh;overflow-x:hidden;-webkit-font-smoothing:antialiased;}
 .page{display:none;}
@@ -598,6 +598,67 @@ function forwardReminder(){var msg=($("rm-msg")||{value:""}).value.trim();if(!ms
 function sendOne(ph,nm){var msg=($("rm-msg")||{value:""}).value.trim();if(!msg)return;window.open("https://wa.me/"+normPhone(ph)+"?text="+encodeURIComponent(msg.replace(/\{name\}/g,nm)),"_blank");}
 function bulkWa(){openRemindModal();}
 
+function openContact(invId,type,idx){
+  var inv=S.invs.find(function(x){return x.id===invId;});if(!inv)return;
+  var list=type===0?(inv.suppliers||[]):(inv.buyers||[]);
+  var item=idx!=null?list[idx]:null;
+  var typeName=type===0?"Supplier":"Buyer";
+  var h="<div class='modal-bg' onclick='if(event.target===this)closeModal()'><div class='modal-box'>";
+  h+="<div style='display:flex;justify-content:space-between;align-items:center;margin-bottom:16px'><div style='font-weight:800;font-size:17px'>"+(item?"Edit":"Add")+" "+typeName+"</div><button onclick='closeModal()' style='background:none;border:none;color:var(--mut);font-size:20px;cursor:pointer'>✕</button></div>";
+  h+="<div class='fc'>";
+  h+="<div><label class='lbl'>Name *</label><input id='ct-nm' type='text' class='inp' value='"+(item?item.name:"")+"' placeholder='Person or company'/></div>";
+  h+="<div><label class='lbl'>Phone</label><input id='ct-ph' type='text' class='inp' value='"+(item?item.phone||"":"")+"' placeholder='01XXXXXXXXX'/></div>";
+  h+="<div><label class='lbl'>Product / Item</label><input id='ct-pr' type='text' class='inp' value='"+(item?item.product||"":"")+"' placeholder='e.g. LED Bulb, Plastic'/></div>";
+  h+="<div><label class='lbl'>"+(type===0?"Buy":"Sell")+" Price per unit (BDT)</label><input id='ct-pp' type='number' class='inp' value='"+(item?item.price||"":"")+"' placeholder='0'/></div>";
+  h+="<div><label class='lbl'>Note</label><input id='ct-nt' type='text' class='inp' value='"+(item?item.note||"":"")+"' placeholder='Any details...'/></div>";
+  h+="<div style='display:flex;align-items:center;gap:10px;padding:10px;background:var(--s2);border-radius:10px;border:1px solid var(--bor)'><input type='checkbox' id='ct-ac' class='tog'"+(item&&item.active?" checked":!item?" checked":"")+"/><label for='ct-ac' style='font-size:13px;font-weight:600;cursor:pointer'>Active</label></div>";
+  h+="<button class='btn-p' onclick='saveContact(this.dataset.id,this.dataset.tp,this.dataset.ix)' data-id='"+invId+"' data-tp='"+type+"' data-ix='"+(idx!=null?idx:"null")+"''>Save "+typeName+"</button>";
+  h+="</div></div></div>";$("modal").innerHTML=h;
+}
+function saveContact(invId,type,idx){invId=invId||"";type=Number(type)||0;idx=idx==="null"?null:Number(idx);
+  var nm=($("ct-nm")||{value:""}).value.trim();if(!nm){toast("Name required",false);return;}
+  var item={name:nm,phone:($("ct-ph")||{value:""}).value.trim(),product:($("ct-pr")||{value:""}).value.trim(),price:Number(($("ct-pp")||{value:0}).value)||0,note:($("ct-nt")||{value:""}).value.trim(),active:($("ct-ac")||{checked:true}).checked};
+  var inv=S.invs.find(function(x){return x.id===invId;});if(!inv)return;
+  var field=type===0?"suppliers":"buyers";
+  var list=(inv[field]||[]).slice();
+  if(idx!=null)list[idx]=item;else list.push(item);
+  var upd={};upd[field]=list;
+  db.collection("investments").doc(invId).update(upd).then(function(){closeModal();toast("Saved!");}).catch(function(e){toast(e.message,false);});
+}
+function delContact(invId,type,idx){
+  if(!confirm("Delete this contact?"))return;
+  var inv=S.invs.find(function(x){return x.id===invId;});if(!inv)return;
+  var field=type===0?"suppliers":"buyers";
+  var list=(inv[field]||[]).slice();list.splice(idx,1);
+  var upd={};upd[field]=list;
+  db.collection("investments").doc(invId).update(upd).then(function(){toast("Deleted.");}).catch(function(e){toast(e.message,false);});
+}
+function openExtInv(invId){
+  var h="<div class='modal-bg' onclick='if(event.target===this)closeModal()'><div class='modal-box'>";
+  h+="<div style='display:flex;justify-content:space-between;align-items:center;margin-bottom:16px'><div style='font-weight:800;font-size:17px'>Add External Investor</div><button onclick='closeModal()' style='background:none;border:none;color:var(--mut);font-size:20px;cursor:pointer'>✕</button></div>";
+  h+="<div class='fc'>";
+  h+="<div><label class='lbl'>Investor Name *</label><input id='ei-nm' type='text' class='inp' placeholder='Full name'/></div>";
+  h+="<div><label class='lbl'>Organization (optional)</label><input id='ei-og' type='text' class='inp' placeholder='Company or group'/></div>";
+  h+="<div><label class='lbl'>Amount Invested (BDT) *</label><input id='ei-am' type='number' class='inp' placeholder='0'/></div>";
+  h+="<div><label class='lbl'>Date</label><input id='ei-dt' type='date' class='inp' value='"+new Date().toISOString().split("T")[0]+"'/></div>";
+  h+="<button class='btn-p' onclick='saveExtInv(this.dataset.id))' data-id='"+invId+">Save Investor</button>";
+  h+="</div></div></div>";$("modal").innerHTML=h;
+}
+function saveExtInv(invId){
+  var nm=($("ei-nm")||{value:""}).value.trim(),am=Number(($("ei-am")||{value:0}).value)||0;
+  if(!nm||!am){toast("Name and amount required",false);return;}
+  var item={name:nm,org:($("ei-og")||{value:""}).value.trim(),amount:am,date:($("ei-dt")||{value:""}).value};
+  var inv=S.invs.find(function(x){return x.id===invId;});if(!inv)return;
+  var list=(inv.externalInvestors||[]).slice();list.push(item);
+  db.collection("investments").doc(invId).update({externalInvestors:list}).then(function(){closeModal();toast("Investor added!");}).catch(function(e){toast(e.message,false);});
+}
+function delExtInv(invId,idx){
+  if(!confirm("Remove this investor?"))return;
+  var inv=S.invs.find(function(x){return x.id===invId;});if(!inv)return;
+  var list=(inv.externalInvestors||[]).slice();list.splice(idx,1);
+  db.collection("investments").doc(invId).update({externalInvestors:list}).then(function(){toast("Removed.");}).catch(function(e){toast(e.message,false);});
+}
+
 function waReport(){var ps=payS(S.payY,S.payM),pn=ps.filter(function(m){return m.paid;}).length,up=ps.filter(function(m){return !m.paid;});var collected=ps.reduce(function(s,m){return s+(m.paid?m.paidAmt:0);},0);var txt="📊 *SIPR GROUP — Payment Report*\n📅 "+MF[S.payM]+" "+S.payY+"\n━━━━━━━━━━━━\n\n✅ *Paid ("+pn+"/"+S.mems.length+")*\n";ps.filter(function(m){return m.paid;}).forEach(function(m){txt+="  ✓ "+m.name+" — "+fmt(m.paidAmt)+"\n";});if(up.length){txt+="\n⏳ *Pending ("+up.length+")*\n";up.forEach(function(m){txt+="  ✗ "+m.name+"\n";});}txt+="\n💰 *Total: "+fmt(collected)+"*\nbKash: 01845526909 · Deadline: 10th\n— Jahed Aziz, SIPR Group";window.open("https://wa.me/?text="+encodeURIComponent(txt),"_blank");}
 function printReport(){var ps=payS(S.payY,S.payM),pn=ps.filter(function(m){return m.paid;}).length,collected=ps.reduce(function(s,m){return s+(m.paid?m.paidAmt:0);},0);var rows=ps.map(function(m,i){return"<tr style='background:"+(i%2===0?"#f8fafb":"#fff")+"'><td style='padding:9px 13px;color:#64748b;font-size:12px'>"+(m.paid?fd(m.paidDate):"—")+"</td><td style='padding:9px 13px;font-weight:600'>"+m.name+"</td><td style='padding:9px 13px;text-align:center'><span style='padding:3px 11px;border-radius:99px;font-size:11px;font-weight:700;background:"+(m.paid?"#dcfce7":"#fee2e2")+";color:"+(m.paid?"#15803d":"#dc2626")+"'>"+(m.paid?"✓ Paid":"✗ Pending")+"</span></td><td style='padding:9px 13px;text-align:right;font-weight:700;color:"+(m.paid?"#15803d":"#dc2626")+"'>"+(m.paid?fmt(m.paidAmt):"BDT "+DUE+" due")+"</td></tr>";}).join("");var html="<!DOCTYPE html><html><head><title>SIPR Report</title><style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:Arial,sans-serif}.np{display:flex}@media print{.np{display:none!important}}</style></head><body><div style='max-width:660px;margin:0 auto;padding:30px'><div style='border-bottom:3px solid #4f8ef7;padding-bottom:14px;margin-bottom:20px'><div style='font-size:11px;color:#4f8ef7;font-weight:700;letter-spacing:3px;margin-bottom:4px'>SIPR GROUP — PAYMENT REPORT</div><div style='font-size:24px;font-weight:900;color:#1a2233'>"+MF[S.payM]+" "+S.payY+"</div></div><table style='width:100%;border-collapse:collapse;border:1px solid #e2e8f0'><thead><tr style='background:#1a2233'><th style='padding:10px 13px;text-align:left;color:#fff;font-size:10px'>DATE PAID</th><th style='padding:10px 13px;text-align:left;color:#fff;font-size:10px'>MEMBER</th><th style='padding:10px 13px;text-align:center;color:#fff;font-size:10px'>STATUS</th><th style='padding:10px 13px;text-align:right;color:#fff;font-size:10px'>AMOUNT</th></tr></thead><tbody>"+rows+"</tbody><tfoot><tr style='background:#f1f5f9'><td colspan='2' style='padding:11px 13px;font-weight:800;color:#1a2233'>TOTAL</td><td></td><td style='padding:11px 13px;text-align:right;font-weight:900;color:#15803d;font-size:14px'>"+fmt(collected)+"</td></tr></tfoot></table><div class='np' style='margin-top:18px;justify-content:center;gap:10px'><button onclick='window.print()' style='padding:10px 22px;background:#1a2233;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer'>Print/PDF</button><button onclick='window.close()' style='padding:10px 18px;background:#f1f5f9;color:#1a2233;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer'>Close</button></div></div></body></html>";var w=window.open("","_blank","width=760,height=620");w.document.write(html);w.document.close();}
 function expCSV(){var rows=[["Date","Type","Member","Amount (BDT)","Note"]];S.txs.slice().reverse().forEach(function(t){rows.push([t.date,t.type,txName(t),t.amount,t.note||""]);});var csv=rows.map(function(r){return r.map(function(c){return'"'+String(c).replace(/"/g,'""')+'"';}).join(",");}).join("\n");var blob=new Blob([csv],{type:"text/csv"});var url=URL.createObjectURL(blob);var a=document.createElement("a");a.href=url;a.download="SIPR_"+new Date().toISOString().split("T")[0]+".csv";a.click();URL.revokeObjectURL(url);toast("CSV exported!");}
@@ -689,7 +750,7 @@ function pProject(id){
   if(exp>0){h+="<div style='margin-top:14px'><div style='display:flex;justify-content:space-between;font-size:11px;color:var(--mut);margin-bottom:5px'><span>Return progress</span><span>"+fmt(ret2)+" / "+fmt(exp)+" · "+pp+"%</span></div><div style='height:4px;background:#ffffff0a;border-radius:99px;overflow:hidden'><div style='height:100%;width:"+pp+"%;background:"+st.C+";border-radius:99px'></div></div></div>";}
   h+="</div>";
   h+="<div class='proj-tab-bar'>";
-  [{k:"overview",l:"Overview"},{k:"log",l:"Daily Log"+(cols2.length?" ("+cols2.length+")":"")},{k:"sales",l:"Sales"},{k:"milestones",l:"Milestones"}].forEach(function(tb){
+  [{k:"overview",l:"Overview"},{k:"log",l:"Daily Log"+(cols2.length?" ("+cols2.length+")":"")},{k:"sales",l:"Sales"},{k:"contacts",l:"Contacts"},{k:"milestones",l:"Milestones"}].forEach(function(tb){
     h+="<button class='proj-tab"+(tab2===tb.k?" active":"")+"' onclick='S.projTab=this.dataset.tab;render()' data-tab='"+tb.k+"'>"+tb.l+"</button>";
   });
   h+="</div>";
@@ -709,7 +770,26 @@ function pProject(id){
       h+="<div class='stat-box'><div class='lbl2'>IN STOCK</div><div class='val' style='color:var(--gold)'>"+stockQty.toFixed(2)+" "+colUnit+"</div></div>";
       h+="<div class='stat-box'><div class='lbl2'>REVENUE</div><div class='val' style='color:var(--purple)'>"+fmt(totalRev)+"</div></div></div>";
     }
-    if(inv.teamMembers&&inv.teamMembers.length)h+="<div style='margin-bottom:12px'><div style='font-size:10px;color:var(--mut);font-weight:700;margin-bottom:6px'>TEAM</div><div style='display:flex;gap:5px;flex-wrap:wrap'>"+inv.teamMembers.map(function(t){return"<span style='background:var(--s2);border:1px solid var(--bor);border-radius:99px;padding:4px 11px;font-size:12px'>"+t+"</span>";}).join("")+"</div></div>";
+    if(inv.teamMembers&&inv.teamMembers.length){
+      h+="<div style='margin-bottom:12px'><div style='font-size:10px;color:var(--mut);font-weight:700;letter-spacing:1.5px;margin-bottom:8px'>TEAM</div><div style='display:flex;gap:6px;flex-wrap:wrap'>";
+      inv.teamMembers.forEach(function(t){
+        var nm=typeof t==="object"?t.name:t;
+        var rl=typeof t==="object"?t.role:"";
+        h+="<div style='background:var(--s2);border:1px solid var(--bor);border-radius:10px;padding:6px 12px;text-align:center'>";
+        h+="<div style='font-size:12px;font-weight:700'>"+nm+"</div>";
+        if(rl)h+="<div style='font-size:10px;color:var(--grn);margin-top:1px'>"+rl+"</div>";
+        h+="</div>";
+      });
+      h+="</div></div>";
+    }
+    var extInvs2=inv.externalInvestors||[];
+    if(extInvs2.length){
+      var extTotal=extInvs2.reduce(function(s,e){return s+Number(e.amount||0);},0);
+      h+="<div style='background:var(--gdm);border:1px solid var(--gbr);border-radius:12px;padding:12px 14px;margin-bottom:12px;display:flex;align-items:center;justify-content:space-between'>";
+      h+="<div><div style='font-size:10px;color:var(--mut);font-weight:700;letter-spacing:1.5px;margin-bottom:3px'>EXTERNAL INVESTMENT</div>";
+      h+="<div style='font-size:12px;color:var(--mut)'>"+extInvs2.map(function(e){return e.name;}).join(", ")+"</div></div>";
+      h+="<div style='font-size:16px;font-weight:900;color:var(--gold)'>"+fmt(extTotal)+"</div></div>";
+    }
     if(inv.notes)h+="<div style='font-size:13px;color:var(--mut);padding:11px 13px;background:var(--s2);border-radius:10px;line-height:1.6;border:1px solid var(--bor)'>"+inv.notes+"</div>";
 
   } else if(tab2==="log"){
@@ -742,6 +822,59 @@ function pProject(id){
     h+="<div class='stat-box'><div class='lbl2'>AVG PRICE</div><div class='val' style='color:var(--gold)'>"+(soldQty>0?fmt(Math.round(totalRev/soldQty)):"—")+"</div></div></div>";
     if(!salesData.length)h+="<div style='text-align:center;padding:40px;color:var(--mut)'>No sales recorded. Add sold quantities in Daily Log.</div>";
     else{h+="<div class='sw'><table class='tbl'><thead><tr><th>Date</th><th>Sold</th><th style='text-align:right'>Price/unit</th><th style='text-align:right'>Revenue</th><th>Note</th></tr></thead><tbody>";salesData.slice().reverse().forEach(function(e2){var u=e2.unit||"kg";h+="<tr><td style='color:var(--mut);font-size:12px'>"+fd(e2.date)+"</td><td style='color:var(--green);font-weight:700'>"+Number(e2.soldKg||0).toFixed(2)+" "+u+"</td><td style='text-align:right;color:var(--gold)'>"+(e2.pricePerKg?fmt(e2.pricePerKg):"—")+"</td><td style='text-align:right;color:var(--purple);font-weight:700'>"+fmt(e2.revenue||0)+"</td><td style='color:var(--mut);font-size:12px'>"+(e2.saleNote||"—")+"</td></tr>";});h+="</tbody></table></div>";}
+
+  } else if(tab2==="contacts"){
+    var suppliers=inv.suppliers||[];var buyers=inv.buyers||[];var extInvs=inv.externalInvestors||[];
+    // Suppliers
+    h+="<div style='margin-bottom:20px'>";
+    h+="<div style='display:flex;justify-content:space-between;align-items:center;margin-bottom:10px'>";
+    h+="<div style='font-size:13px;font-weight:800'>Suppliers <span style='font-size:11px;color:var(--mut);font-weight:400'>(who you buy from)</span></div>";
+    if(isAdmin())h+="<button class='btn-a' onclick='openContact(this.dataset.id,0)' data-id='"+inv.id+"'>+ Add Supplier</button>";
+    h+="</div>";
+    if(!suppliers.length)h+="<div style='text-align:center;padding:20px;color:var(--mut);background:var(--s2);border-radius:10px;font-size:13px'>No suppliers yet.</div>";
+    else suppliers.forEach(function(s,si){
+      h+="<div style='background:var(--s2);border-radius:12px;padding:12px 14px;border:1px solid var(--bor);margin-bottom:8px;display:flex;align-items:center;gap:12px;flex-wrap:wrap'>";
+      h+="<div style='flex:1;min-width:120px'><div style='font-weight:700;font-size:13px'>"+s.name+"</div>";
+      h+="<div style='font-size:11px;color:var(--mut);margin-top:2px'>"+(s.phone?"📞 "+s.phone+"  ":"")+(s.product?s.product+"  ":"")+(s.price?"Buy: ৳"+s.price+"/unit":"")+"</div>";
+      if(s.note)h+="<div style='font-size:11px;color:var(--mut);font-style:italic;margin-top:2px'>"+s.note+"</div>";
+      h+="</div>";
+      h+="<span class='bdg' style='background:"+(s.active?"#03120988":"#1a040488")+";color:"+(s.active?"var(--green)":"var(--red)")+"'>"+(s.active?"Active":"Inactive")+"</span>";
+      if(isAdmin())h+="<button onclick='openContact(this.dataset.id,0,"+si+")' data-id='"+inv.id+"' class='btn-s' style='font-size:11px'>Edit</button><button onclick='delContact(this.dataset.id,0,"+si+")' data-id='"+inv.id+"' class='btn-d' style='font-size:11px'>✕</button>";
+      h+="</div>";
+    });
+    h+="</div>";
+    // Buyers
+    h+="<div style='margin-bottom:20px'>";
+    h+="<div style='display:flex;justify-content:space-between;align-items:center;margin-bottom:10px'>";
+    h+="<div style='font-size:13px;font-weight:800'>Buyers <span style='font-size:11px;color:var(--mut);font-weight:400'>(who you sell to)</span></div>";
+    if(isAdmin())h+="<button class='btn-a' onclick='openContact(this.dataset.id,1)' data-id='"+inv.id+"'>+ Add Buyer</button>";
+    h+="</div>";
+    if(!buyers.length)h+="<div style='text-align:center;padding:20px;color:var(--mut);background:var(--s2);border-radius:10px;font-size:13px'>No buyers yet.</div>";
+    else buyers.forEach(function(b,bi){
+      h+="<div style='background:var(--s2);border-radius:12px;padding:12px 14px;border:1px solid var(--bor);margin-bottom:8px;display:flex;align-items:center;gap:12px;flex-wrap:wrap'>";
+      h+="<div style='flex:1;min-width:120px'><div style='font-weight:700;font-size:13px'>"+b.name+"</div>";
+      h+="<div style='font-size:11px;color:var(--mut);margin-top:2px'>"+(b.phone?"📞 "+b.phone+"  ":"")+(b.product?b.product+"  ":"")+(b.price?"Sell: ৳"+b.price+"/unit":"")+"</div>";
+      if(b.note)h+="<div style='font-size:11px;color:var(--mut);font-style:italic;margin-top:2px'>"+b.note+"</div>";
+      h+="</div>";
+      h+="<span class='bdg' style='background:"+(b.active?"#03120988":"#1a040488")+";color:"+(b.active?"var(--green)":"var(--red)")+"'>"+(b.active?"Active":"Inactive")+"</span>";
+      if(isAdmin())h+="<button onclick='openContact(this.dataset.id,1,"+bi+")' data-id='"+inv.id+"' class='btn-s' style='font-size:11px'>Edit</button><button onclick='delContact(this.dataset.id,1,"+bi+")' data-id='"+inv.id+"' class='btn-d' style='font-size:11px'>✕</button>";
+      h+="</div>";
+    });
+    h+="</div>";
+    // External Investors
+    h+="<div style='display:flex;justify-content:space-between;align-items:center;margin-bottom:10px'>";
+    h+="<div style='font-size:13px;font-weight:800'>External Investors <span style='font-size:11px;color:var(--mut);font-weight:400'>(outside SIPR)</span></div>";
+    if(isAdmin())h+="<button class='btn-a' onclick='openExtInv(this.dataset.id)' data-id='"+inv.id+"'>+ Add</button>";
+    h+="</div>";
+    if(!extInvs.length)h+="<div style='text-align:center;padding:20px;color:var(--mut);background:var(--s2);border-radius:10px;font-size:13px'>No external investors.</div>";
+    else extInvs.forEach(function(ei,eii){
+      h+="<div style='background:var(--gdm);border-radius:12px;padding:12px 14px;border:1px solid var(--gbr);margin-bottom:8px;display:flex;align-items:center;gap:12px;flex-wrap:wrap'>";
+      h+="<div style='flex:1'><div style='font-weight:700;font-size:13px'>"+ei.name+"</div>";
+      h+="<div style='font-size:11px;color:var(--mut);margin-top:2px'>"+(ei.org?ei.org+"  ":"")+(ei.date?fd(ei.date):"")+"</div></div>";
+      h+="<div style='font-size:15px;font-weight:900;color:var(--gold)'>"+fmt(ei.amount)+"</div>";
+      if(isAdmin())h+="<button onclick='delExtInv(this.dataset.id,"+eii+")' data-id='"+inv.id+"' class='btn-d' style='font-size:11px'>✕</button>";
+      h+="</div>";
+    });
 
   } else if(tab2==="milestones"){
     h+="<div style='display:flex;justify-content:space-between;align-items:center;margin-bottom:12px'><div style='font-size:14px;font-weight:800'>Milestones</div>"+(isAdmin()?"<button class='btn-a' onclick='openMilestone(this.dataset.id)' data-id='"+inv.id+"'>+ Add</button>":"")+"</div>";
@@ -899,12 +1032,31 @@ function delInv(id){if(!confirm("Delete this project? All collection data will b
 // ═══════════ TRANSACTIONS ═══════════
 function pTx(){
   var txs=S.txs.filter(function(t){return(S.fT==="all"||t.type===S.fT)&&(S.fMem==="all"||txName(t)===S.fMem);});
-  var h="<div class='fc'><div style='display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px'><h2 style='font-size:22px;font-weight:800'>Transactions</h2>"+(canWrite()?"<button class='btn-a' onclick='openTx(null,null)'>+ Add Record</button>":"")+"</div>";
+  var h="<div class='fc'><div style='display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px'><h2 style='font-size:22px;font-weight:800'>Transactions</h2>"+(canWrite()?"<button class='btn-a' onclick='openTx(null,null)'>+ Add Record</button>":"")+
+"</div>";
   h+="<div class='card' style='padding:11px 13px'><div style='display:flex;align-items:center;gap:8px;flex-wrap:wrap'>";
   h+="<select class='inp' style='width:auto;padding:7px 10px' onchange='S.fT=this.value;render()'><option value='all'>All Types</option>"+Object.keys(TC).map(function(k){return"<option value='"+k+"'"+(S.fT===k?" selected":"")+">"+TC[k].L+"</option>";}).join("")+"</select>";
   h+="<select class='inp' style='width:auto;padding:7px 10px' onchange='S.fMem=this.value;render()'><option value='all'>All Members</option>"+S.mems.map(function(m){return"<option"+(S.fMem===m.name?" selected":"")+">"+m.name+"</option>";}).join("")+"</select></div></div>";
   if(!txs.length)h+="<div class='card' style='text-align:center;padding:48px;color:var(--mut)'>No transactions found.</div>";
-  else{h+="<div class='card' style='padding:0;overflow:hidden'><div class='sw'><table class='tbl'><thead><tr><th>Date</th><th>Type</th><th>Member</th><th>Amount</th><th>Note</th><th></th></tr></thead><tbody>";txs.forEach(function(t){h+="<tr><td style='color:var(--mut);font-size:11px;white-space:nowrap'>"+fd(t.date)+"</td><td>"+txbdg(t.type)+"</td><td style='font-weight:600'>"+txName(t)+"</td><td style='font-weight:700;color:"+(TC[t.type]||TC.deposit).C+"'>"+(t.type==="invest"||t.type==="expense"||t.type==="fine"?"-":"+")+fmt(t.amount)+"</td><td style='color:var(--mut);font-size:12px;max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap'>"+(t.note||"—")+"</td><td>"+(canWrite()?"<div style='display:flex;gap:4px'><button class='btn-s' onclick='openTx(\""+t.id+"\",null)' style='padding:4px 8px'>Edit</button>"+(isAdmin()?"<button class='btn-d' onclick='delTx(\""+t.id+"\")' style='padding:4px 8px'>Del</button>":"")+"</div>":"")+"</td></tr>";});h+="</tbody></table></div></div>";}
+  else{
+    h+="<div style='display:flex;flex-direction:column;gap:8px'>";
+    txs.forEach(function(t){
+      var c2=TC[t.type]||TC.deposit;
+      var isNeg="invest,expense,fine".split(",").indexOf(t.type)>=0;
+      h+="<div style='background:var(--sur);border:1px solid var(--bor);border-radius:13px;padding:13px 14px'>";
+      h+="<div style='display:flex;align-items:center;gap:10px'>";
+      h+="<div style='width:36px;height:36px;border-radius:10px;background:"+c2.B+";border:1px solid "+c2.BD+";display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0'>"+c2.I+"</div>";
+      h+="<div style='flex:1;min-width:0'>";
+      h+="<div style='font-size:13px;font-weight:700'>"+txName(t)+"</div>";
+      h+="<div style='font-size:11px;color:var(--mut);margin-top:1px'>"+fd(t.date)+" · <span style='color:"+c2.C+"'>"+c2.L+"</span>"+(t.note?" · "+t.note:"")+"</div>";
+      h+="</div>";
+      h+="<div style='text-align:right;flex-shrink:0'>";
+      h+="<div style='font-size:15px;font-weight:900;color:"+c2.C+"'>"+(isNeg?"-":"+")+fmt(t.amount)+"</div>";
+      if(canWrite())h+="<div style='display:flex;gap:4px;margin-top:5px;justify-content:flex-end'><button class='btn-s' onclick='openTx(this.dataset.id,null)' data-id='"+t.id+"' style='padding:3px 8px;font-size:11px'>Edit</button>"+(isAdmin()?"<button class='btn-d' onclick='delTx(this.dataset.id)' data-id='"+t.id+"' style='padding:3px 8px;font-size:11px'>Del</button>":"")+"</div>";
+      h+="</div></div></div>";
+    });
+    h+="</div>";
+  }
   h+="</div>";return h;
 }
 function openTx(id,type){var t=id?S.txs.find(function(x){return x.id===id;}):null;var h="<div class='modal-bg' onclick='if(event.target===this)closeModal()'><div class='modal-box'><div style='display:flex;justify-content:space-between;align-items:center;margin-bottom:18px'><div style='font-weight:800;font-size:17px'>"+(t?"Edit":"Add")+" Transaction</div><button onclick='closeModal()' style='background:none;border:none;color:var(--mut);font-size:20px;cursor:pointer'>✕</button></div><div class='fc'><div><label class='lbl'>Type</label><select id='tx-ty' class='inp'>"+Object.keys(TC).map(function(k){return"<option value='"+k+"'"+(t?t.type===k?" selected":"":type===k?" selected":k==="deposit"&&!type?" selected":"")+">"+TC[k].L+"</option>";}).join("")+"</select></div><div><label class='lbl'>Member</label><select id='tx-mb' class='inp'>"+S.mems.map(function(m){return"<option"+(t&&txName(t)===m.name?" selected":"")+">"+m.name+"</option>";}).join("")+"</select></div><div class='g2'><div><label class='lbl'>Amount (BDT)</label><input id='tx-am' type='number' class='inp' value='"+(t?t.amount:"")+"'/></div><div><label class='lbl'>Date</label><input id='tx-dt' type='date' class='inp' value='"+(t?t.date:new Date().toISOString().split("T")[0])+"'/></div></div><div><label class='lbl'>Note</label><input id='tx-nt' type='text' class='inp' value='"+(t?t.note||"":"")+"' placeholder='Optional'/></div><button class='btn-p' onclick='saveTx(\""+( t?t.id:"")+"\")'>Save</button></div></div></div>";$("modal").innerHTML=h;}
