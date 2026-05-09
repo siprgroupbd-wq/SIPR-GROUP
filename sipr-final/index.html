@@ -9,7 +9,7 @@
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <style>
-:root{--bg:#050709;--sur:#0b0d14;--s2:#0f1219;--bor:#181c28;--bor2:#1e2235;--txt:#f0f2ff;--mut:#4a5280;--mut2:#7b82a8;--grn:#3b82f6;--grn2:#1d4ed8;--gdm:#060e1c;--gbr:#0c1e40;--gold:#fbbf24;--purple:#8b5cf6;--red:#ef4444;--teal:#06b6d4;--green:#34d399;}
+:root{--bg:#04091f;--sur:#070f2b;--s2:#0b1538;--bor:#172045;--bor2:#1e2d58;--txt:#e8eeff;--mut:#4a5888;--mut2:#7b85b8;--grn:#818cf8;--grn2:#4f46e5;--gdm:#060c28;--gbr:#1e1b4b;--gold:#fbbf24;--purple:#a78bfa;--red:#f87171;--teal:#34d3b5;--green:#34d399;--orange:#fb923c;}
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
 body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--bg);color:var(--txt);min-height:100vh;overflow-x:hidden;-webkit-font-smoothing:antialiased;}
 .page{display:none;}
@@ -290,8 +290,21 @@ function avPhoto(name,sz,photo){
   return"<div style='width:"+sz+"px;height:"+sz+"px;border-radius:50%;flex-shrink:0;background:linear-gradient(135deg,hsl("+h2+",40%,20%),hsl("+((h2+50)%360)+",50%,30%));display:flex;align-items:center;justify-content:center;color:#fff;font-weight:800;font-size:"+Math.round(sz*.35)+"px'>"+ini+"</div>";
 }
 function avM(m,sz){return avPhoto(m.name,sz,m.photo||m.photoData);}
-function canRemind(){return S.role==="admin"||S.role==="finance";}
-function canManageProj(){return S.role==="admin"||S.role==="finance";}
+function canRemind(){
+  if(S.role==="admin")return true;
+  var me=S.mems.find(function(m){return m.email===S.email;});
+  return me&&me.permissions&&me.permissions.sendReminders;
+}
+function canManageProj(){
+  if(S.role==="admin"||S.role==="finance")return true;
+  var me=S.mems.find(function(m){return m.email===S.email;});
+  return me&&me.permissions&&me.permissions.manageProjects;
+}
+function isProjectManager(inv){
+  if(S.role==="admin")return true;
+  return inv&&inv.projectManagerId&&(S.mems.find(function(m){return m.email===S.email&&m.id===inv.projectManagerId;})!=null);
+}
+
 
 function txbdg(t){var c=TC[t]||TC.deposit;return "<span class='bdg' style='background:"+c.B+";color:"+c.C+";border:1px solid "+c.BD+"'>"+c.I+" "+c.L+"</span>";}
 var _tt;
@@ -531,7 +544,15 @@ function pPay(){
     h+="<div><div style='color:var(--grn);font-size:10px;font-weight:700;letter-spacing:2px;margin-bottom:3px'>PAYMENT REPORT</div><div style='font-weight:900;font-size:16px'>"+MF[S.payM]+" "+S.payY+"</div></div>";
     h+="<div style='display:flex;gap:6px'><button onclick='printReport()' style='padding:7px 11px;border-radius:8px;border:1px solid var(--gbr);background:var(--gdm);color:var(--grn);font-size:11px;font-weight:700;cursor:pointer;font-family:inherit'>📎 PDF</button><button onclick='waReport()' style='padding:7px 11px;border-radius:8px;border:1px solid #25d366;background:#0a2e1a;color:#25d366;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit'>💬 WA</button></div></div>";
     h+="<div class='sw'><table class='tbl'><thead><tr><th>DATE PAID</th><th>MEMBER</th><th style='text-align:center'>STATUS</th><th style='text-align:right'>AMOUNT</th></tr></thead><tbody>";
-    ps.forEach(function(m){h+="<tr style='"+(m.paid?"":"background:rgba(239,68,68,.04)")+"'><td style='color:var(--mut);font-size:12px'>"+(m.paid?fd(m.paidDate):"—")+"</td><td><div style='display:flex;align-items:center;gap:7px'>"+av(m.name,24)+"<span style='font-weight:700;font-size:13px'>"+m.name+"</span></div></td><td style='text-align:center;color:"+(m.paid?"var(--grn)":"#ef4444")+";font-weight:700'>"+(m.paid?"✓ Paid":"✗ Pending")+"</td><td style='text-align:right;font-weight:700;color:"+(m.paid?"var(--grn)":"#ef4444")+"'>"+(m.paid?fmt(m.paidAmt):"BDT "+DUE+" due")+"</td></tr>";});
+    ps.forEach(function(m){
+  h+="<tr style='"+(m.paid?"":"background:linear-gradient(90deg,rgba(248,113,113,.04),transparent)")+"'>";
+  h+="<td style='color:var(--mut);font-size:12px'>"+(m.paid?fd(m.paidDate):"—")+"</td>";
+  h+="<td><div style='display:flex;align-items:center;gap:8px'>";
+  if(!m.paid)h+="<span style='width:8px;height:8px;border-radius:50%;background:#f87171;box-shadow:0 0 6px #f87171,0 0 12px #f8717155;flex-shrink:0;animation:pulse 2s infinite'></span>";
+  h+=av(m.name,26)+"<span style='font-weight:700;font-size:13px'>"+m.name+"</span></div></td>";
+  h+="<td style='text-align:center'>"+(m.paid?"<span style='background:#03120988;color:var(--green);border:1px solid #34d39944;border-radius:99px;padding:3px 10px;font-size:11px;font-weight:700'>✓ Paid</span>":"<span style='background:#1a040488;color:#f87171;border:1px solid #f8717144;border-radius:99px;padding:3px 10px;font-size:11px;font-weight:700'>Pending</span>")+"</td>";
+  h+="<td style='text-align:right;font-weight:700;color:"+(m.paid?"var(--green)":"#f87171")+"'>"+(m.paid?fmt(m.paidAmt):"BDT "+DUE+" due")+"</td></tr>";
+});
     h+="</tbody><tfoot><tr><td colspan='2' style='padding:10px 13px;color:var(--grn);font-weight:700'>TOTAL</td><td></td><td style='padding:10px 13px;text-align:right;color:var(--grn);font-weight:900;font-size:14px'>"+fmt(collected)+"</td></tr></tfoot></table></div></div>";
     if(up.length>0){
       h+="<div style='display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;padding:12px 16px;background:"+(isOD?"#0e0404":"var(--s2)")+";border:1px solid "+(isOD?"#7f1d1d44":"var(--bor)")+";border-radius:13px'>";
@@ -770,17 +791,27 @@ function pProject(id){
       h+="<div class='stat-box'><div class='lbl2'>IN STOCK</div><div class='val' style='color:var(--gold)'>"+stockQty.toFixed(2)+" "+colUnit+"</div></div>";
       h+="<div class='stat-box'><div class='lbl2'>REVENUE</div><div class='val' style='color:var(--purple)'>"+fmt(totalRev)+"</div></div></div>";
     }
-    if(inv.teamMembers&&inv.teamMembers.length){
-      h+="<div style='margin-bottom:12px'><div style='font-size:10px;color:var(--mut);font-weight:700;letter-spacing:1.5px;margin-bottom:8px'>TEAM</div><div style='display:flex;gap:6px;flex-wrap:wrap'>";
-      inv.teamMembers.forEach(function(t){
-        var nm=typeof t==="object"?t.name:t;
-        var rl=typeof t==="object"?t.role:"";
-        h+="<div style='background:var(--s2);border:1px solid var(--bor);border-radius:10px;padding:6px 12px;text-align:center'>";
-        h+="<div style='font-size:12px;font-weight:700'>"+nm+"</div>";
-        if(rl)h+="<div style='font-size:10px;color:var(--grn);margin-top:1px'>"+rl+"</div>";
+    // Project Manager
+    if(inv.projectManagerName||inv.projectManagerId){
+      h+="<div style='background:var(--gdm);border:1px solid var(--gbr);border-radius:12px;padding:12px 14px;margin-bottom:12px;display:flex;align-items:center;gap:10px'>";
+      h+="<div style='font-size:20px'>👤</div><div><div style='font-size:10px;color:var(--mut);font-weight:700;letter-spacing:1.5px;margin-bottom:2px'>PROJECT MANAGER</div>";
+      h+="<div style='font-size:14px;font-weight:800;color:var(--grn)'>"+inv.projectManagerName+"</div></div></div>";
+    }
+    // Team entries
+    var team=inv.teamEntries||[];
+    if(team.length){
+      h+="<div style='margin-bottom:12px'><div style='font-size:10px;color:var(--mut);font-weight:700;letter-spacing:1.5px;margin-bottom:8px'>TEAM ("+team.length+")</div>";
+      h+="<div style='display:flex;gap:6px;flex-wrap:wrap'>";
+      team.forEach(function(t){
+        h+="<div style='background:var(--s2);border:1px solid var(--bor);border-radius:10px;padding:7px 12px;text-align:center'>";
+        h+="<div style='font-size:12px;font-weight:700'>"+t.name+"</div>";
+        if(t.role)h+="<div style='font-size:10px;color:var(--grn);margin-top:2px'>"+t.role+"</div>";
+        if(t.isExternal)h+="<div style='font-size:9px;color:var(--mut);margin-top:1px'>External</div>";
         h+="</div>";
       });
       h+="</div></div>";
+    } else if(inv.teamMembers&&inv.teamMembers.length){
+      h+="<div style='margin-bottom:12px'><div style='font-size:10px;color:var(--mut);font-weight:700;letter-spacing:1.5px;margin-bottom:8px'>TEAM</div><div style='display:flex;gap:6px;flex-wrap:wrap'>"+inv.teamMembers.map(function(t){return"<span style='background:var(--s2);border:1px solid var(--bor);border-radius:99px;padding:5px 11px;font-size:12px'>"+t+"</span>";}).join("")+"</div></div>";
     }
     var extInvs2=inv.externalInvestors||[];
     if(extInvs2.length){
@@ -791,6 +822,22 @@ function pProject(id){
       h+="<div style='font-size:16px;font-weight:900;color:var(--gold)'>"+fmt(extTotal)+"</div></div>";
     }
     if(inv.notes)h+="<div style='font-size:13px;color:var(--mut);padding:11px 13px;background:var(--s2);border-radius:10px;line-height:1.6;border:1px solid var(--bor)'>"+inv.notes+"</div>";
+    // Capital history
+    var capEntries=inv.capitalEntries||[];
+    if(capEntries.length>0){
+      var showAll=capEntries.length>1;
+      h+="<div style='background:var(--s2);border:1px solid var(--bor);border-radius:12px;padding:12px 14px;margin-bottom:4px'>";
+      h+="<div style='display:flex;justify-content:space-between;align-items:center;margin-bottom:10px'>";
+      h+="<div style='font-size:10px;color:var(--mut);font-weight:700;letter-spacing:1.5px'>CAPITAL HISTORY</div>";
+      if(isAdmin()||S.role==="finance")h+="<button onclick='addCapital(this.dataset.id)' data-id='"+inv.id+"' class='btn-a' style='font-size:11px;padding:5px 10px'>+ Add Capital</button>";
+      h+="</div>";
+      capEntries.forEach(function(e){h+="<div style='display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid var(--bor)'><div style='flex:1'><div style='font-size:13px;font-weight:700;color:var(--gold)'>"+fmt(e.amount)+"</div><div style='font-size:11px;color:var(--mut);margin-top:1px'>"+(e.source||"SIPR Fund")+(e.date?" · "+fd(e.date):"")+(e.addedBy?" · by "+e.addedBy:"")+"</div></div></div>";});
+      h+="</div>";
+    } else if(isAdmin()||S.role==="finance"){
+      h+="<button onclick='addCapital(this.dataset.id)' data-id='"+inv.id+"' class='btn-s' style='font-size:12px'>+ Add Capital Entry</button>";
+    }
+    // Created by info
+    if(inv.createdBy)h+="<div style='font-size:11px;color:var(--mut);margin-top:4px'>Created by "+inv.createdBy+(inv.createdAt?" on "+fd(inv.createdAt):"")+"</div>";
 
   } else if(tab2==="log"){
     h+="<div style='display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:8px'>";
@@ -892,27 +939,98 @@ function openInv(id){
   var h="<div class='modal-bg' onclick='if(event.target===this)closeModal()'><div class='modal-box'>";
   h+="<div style='display:flex;justify-content:space-between;align-items:center;margin-bottom:18px'><div style='font-weight:800;font-size:17px'>"+(inv?"Edit":"New")+" Project</div><button onclick='closeModal()' style='background:none;border:none;color:var(--mut);font-size:20px;cursor:pointer'>✕</button></div>";
   h+="<div class='fc'>";
-  h+="<div><label class='lbl'>Project Name *</label><input id='in-nm' type='text' class='inp' value='"+(inv?inv.name:"")+"' placeholder='e.g. Plastic Recycling Phase 1'/></div>";
-  h+="<div><label class='lbl'>Description</label><textarea id='in-ds' class='inp' rows='2' placeholder='Brief description...'>"+(inv?inv.description||"":"")+"</textarea></div>";
-  h+="<div class='g2'><div><label class='lbl'>Sector</label><input id='in-sc' type='text' class='inp' value='"+(inv?inv.sector||"":"")+"' placeholder='e.g. Plastic Recycling'/></div><div><label class='lbl'>Partner / Buyer</label><input id='in-pt' type='text' class='inp' value='"+(inv?inv.partner||"":"")+"'/></div></div>";
-  h+="<div class='g2'><div><label class='lbl'>Start Date *</label><input id='in-dt' type='date' class='inp' value='"+(inv?inv.date:new Date().toISOString().split("T")[0])+"'/></div><div><label class='lbl'>Status</label><select id='in-st' class='inp'>"+IS_K.map(function(k){return"<option"+(inv&&inv.status===k?" selected":k==="planning"&&!inv?" selected":"")+">"+k+"</option>";}).join("")+"</select></div></div>";
-  h+="<div class='g2'><div><label class='lbl'>Capital Deployed (BDT)</label><input id='in-am' type='number' class='inp' value='"+(inv?inv.capitalDeployed||inv.amount||"":"")+"'/></div><div><label class='lbl'>Expected Return (BDT)</label><input id='in-er' type='number' class='inp' value='"+(inv?inv.expectedReturn||"":"")+"'/></div></div>";
-  h+="<div><label class='lbl'>Actual Return So Far (BDT)</label><input id='in-ar' type='number' class='inp' value='"+(inv?inv.actualReturn||"":"")+"'/></div>";
-  h+="<div><label class='lbl'>Team Members (comma separated)</label><input id='in-tm' type='text' class='inp' value='"+(inv&&inv.teamMembers?inv.teamMembers.join(", "):"")+"' placeholder='e.g. Jahed Aziz, Shoeb'/></div>";
+  // Basic info
+  h+="<div><label class='lbl'>Project Name *</label><input id='in-nm' type='text' class='inp' value='"+(inv?inv.name:"")+"' placeholder='e.g. LED Bulb Trading'/></div>";
+  h+="<div><label class='lbl'>Description</label><textarea id='in-ds' class='inp' rows='2'>"+(inv?inv.description||"":"")+"</textarea></div>";
+  h+="<div class='g2'><div><label class='lbl'>Sector</label><input id='in-sc' type='text' class='inp' value='"+(inv?inv.sector||"":"")+"' placeholder='e.g. Trading, Recycling'/></div><div><label class='lbl'>Status</label><select id='in-st' class='inp'>"+IS_K.map(function(k){return"<option"+(inv&&inv.status===k?" selected":k==="planning"&&!inv?" selected":"")+">"+k+"</option>";}).join("")+"</select></div></div>";
+  h+="<div class='g2'><div><label class='lbl'>Start Date *</label><input id='in-dt' type='date' class='inp' value='"+(inv?inv.date:new Date().toISOString().split("T")[0])+"'/></div><div><label class='lbl'>Expected Return (BDT)</label><input id='in-er' type='number' class='inp' value='"+(inv?inv.expectedReturn||"":"")+"'/></div></div>";
+  // Capital
+  h+="<div style='background:var(--s2);border:1px solid var(--bor);border-radius:11px;padding:13px'>";
+  h+="<div style='font-size:10px;color:var(--mut);font-weight:700;letter-spacing:1.5px;margin-bottom:10px'>INITIAL CAPITAL</div>";
+  h+="<div class='g2'><div><label class='lbl'>Amount (BDT)</label><input id='in-am' type='number' class='inp' value='"+(inv?inv.capitalDeployed||inv.amount||"":"")+"'/></div><div><label class='lbl'>Source</label><input id='in-cs' type='text' class='inp' value='"+(inv?inv.capitalSource||"SIPR Fund":"")+"' placeholder='SIPR Fund'/></div></div>";
+  h+="</div>";
+  // Project Manager
+  h+="<div><label class='lbl'>Project Manager (SIPR Member)</label><select id='in-pm' class='inp'><option value=''>— None / Admin manages —</option>"+S.mems.map(function(m){return"<option value='"+m.id+"'"+(inv&&inv.projectManagerId===m.id?" selected":"")+">"+m.name+" · "+m.title+"</option>";}).join("")+"</select></div>";
+  // Team
+  h+="<div style='background:var(--s2);border:1px solid var(--bor);border-radius:11px;padding:13px'>";
+  h+="<div style='font-size:10px;color:var(--mut);font-weight:700;letter-spacing:1.5px;margin-bottom:10px'>TEAM MEMBERS</div>";
+  // SIPR members on team
+  h+="<div><label class='lbl'>SIPR Members (select multiple)</label>";
+  h+="<div style='display:flex;flex-direction:column;gap:6px;max-height:160px;overflow-y:auto;padding:8px;background:var(--sur);border-radius:9px;border:1px solid var(--bor)'>";
+  S.mems.forEach(function(m){
+    var role="";var inTeam=false;
+    if(inv&&inv.teamEntries){var te=inv.teamEntries.find(function(t){return t.memberId===m.id;});if(te){inTeam=true;role=te.role||"";}}
+    h+="<div style='display:flex;align-items:center;gap:8px'>";
+    h+="<input type='checkbox' id='tm-"+m.id.replace(/-/g,"_")+"' value='"+m.id+"'"+(inTeam?" checked":"")+" style='width:16px;height:16px;cursor:pointer'/>";
+    h+=av(m.name,22);
+    h+="<span style='font-size:12px;font-weight:600;flex:1'>"+m.name+"</span>";
+    h+="<input type='text' id='tr-"+m.id.replace(/-/g,"_")+"' placeholder='Role' value='"+role+"' style='width:100px;padding:4px 8px;background:var(--s2);border:1px solid var(--bor);border-radius:7px;color:var(--txt);font-size:11px;font-family:inherit;outline:none'/>";
+    h+="</div>";
+  });
+  h+="</div></div>";
+  // External team members
+  h+="<div style='margin-top:10px'><label class='lbl'>External Team (comma separated: Name:Role)</label><input id='in-et' type='text' class='inp' value='"+(inv&&inv.externalTeam?inv.externalTeam:"")+"' placeholder='Ali:Driver, Karim:Field Worker'/></div>";
+  h+="</div>";
   h+="<div><label class='lbl'>Notes</label><textarea id='in-no' class='inp' rows='2'>"+(inv?inv.notes||"":"")+"</textarea></div>";
-  h+="<button class='btn-p' onclick='saveInv(\""+( inv?inv.id:"")+"\")'>Save Project</button></div></div></div>";
+  h+="<button class='btn-p' onclick='saveInv(this.dataset.id)' data-id='"+(inv?inv.id:"")+"'>Save Project</button></div></div></div>";
   $("modal").innerHTML=h;
 }
 function saveInv(id){
   var nm=($("in-nm")||{value:""}).value.trim(),dt=($("in-dt")||{value:""}).value;
   if(!nm||!dt){toast("Name and date required",false);return;}
   var amt=Number(($("in-am")||{value:0}).value)||0;
-  var data={name:nm,description:($("in-ds")||{value:""}).value.trim(),date:dt,sector:($("in-sc")||{value:""}).value.trim(),partner:($("in-pt")||{value:""}).value.trim(),capitalDeployed:amt,amount:amt,expectedReturn:Number(($("in-er")||{value:0}).value)||0,actualReturn:Number(($("in-ar")||{value:0}).value)||0,status:($("in-st")||{value:"planning"}).value,teamMembers:($("in-tm")||{value:""}).value.split(",").map(function(x){return x.trim();}).filter(Boolean),notes:($("in-no")||{value:""}).value.trim()};
+  var pmId=($("in-pm")||{value:""}).value;
+  // Build team entries from checkboxes
+  var teamEntries=[];
+  S.mems.forEach(function(m){
+    var sid=m.id.replace(/-/g,"_");
+    var cb=$("tm-"+sid);
+    if(cb&&cb.checked){
+      var roleEl=$("tr-"+sid);
+      teamEntries.push({memberId:m.id,name:m.name,role:roleEl?roleEl.value.trim():"",isExternal:false});
+    }
+  });
+  // Parse external team
+  var etStr=($("in-et")||{value:""}).value.trim();
+  if(etStr){etStr.split(",").forEach(function(p){var parts=p.trim().split(":");if(parts[0].trim())teamEntries.push({name:parts[0].trim(),role:parts[1]?parts[1].trim():"",isExternal:true});});}
   var ex=id?S.invs.find(function(x){return x.id===id;}):null;
-  if(ex){if(ex.milestones)data.milestones=ex.milestones;if(ex.collections)data.collections=ex.collections;if(ex.attachments)data.attachments=ex.attachments;}
+  // Handle capital entries
+  var capitalEntries=(ex&&ex.capitalEntries)?ex.capitalEntries.slice():[];
+  if(!ex||!capitalEntries.length){
+    if(amt>0)capitalEntries=[{amount:amt,date:dt,source:($("in-cs")||{value:"SIPR Fund"}).value.trim()||"SIPR Fund",addedBy:S.name,addedAt:now()}];
+  } else {
+    // Update first entry amount if changed
+    if(capitalEntries[0])capitalEntries[0].amount=amt;
+  }
+  var totalCap=capitalEntries.reduce(function(s,e){return s+Number(e.amount||0);},0);
+  var data={name:nm,description:($("in-ds")||{value:""}).value.trim(),date:dt,sector:($("in-sc")||{value:""}).value.trim(),capitalDeployed:totalCap,amount:totalCap,capitalSource:($("in-cs")||{value:"SIPR Fund"}).value.trim(),capitalEntries:capitalEntries,expectedReturn:Number(($("in-er")||{value:0}).value)||0,actualReturn:ex?Number(ex.actualReturn||0):0,status:($("in-st")||{value:"planning"}).value,projectManagerId:pmId,projectManagerName:pmId?(S.mems.find(function(m){return m.id===pmId;})||{name:""}).name:"",teamEntries:teamEntries,externalTeam:($("in-et")||{value:""}).value.trim(),notes:($("in-no")||{value:""}).value.trim(),createdBy:ex?ex.createdBy:S.name,createdAt:ex?ex.createdAt:now()};
+  if(ex){if(ex.milestones)data.milestones=ex.milestones;if(ex.collections)data.collections=ex.collections;if(ex.suppliers)data.suppliers=ex.suppliers;if(ex.buyers)data.buyers=ex.buyers;if(ex.externalInvestors)data.externalInvestors=ex.externalInvestors;}
   var p=id?db.collection("investments").doc(id).update(data):db.collection("investments").add(data);
   p.then(function(){closeModal();logAct(id?"edit_investment":"add_investment",data.name);toast(id?"Updated!":"Project created!");}).catch(function(e){toast(e.message,false);});
 }
+// Add capital entry to existing project
+function addCapital(invId){
+  var inv=S.invs.find(function(x){return x.id===invId;});if(!inv)return;
+  var h="<div class='modal-bg' onclick='if(event.target===this)closeModal()'><div class='modal-box'>";
+  h+="<div style='display:flex;justify-content:space-between;align-items:center;margin-bottom:16px'><div style='font-weight:800;font-size:17px'>+ Add Capital</div><button onclick='closeModal()' style='background:none;border:none;color:var(--mut);font-size:20px;cursor:pointer'>✕</button></div>";
+  h+="<div class='fc'>";
+  h+="<div><label class='lbl'>Amount (BDT) *</label><input id='cap-am' type='number' class='inp' placeholder='0'/></div>";
+  h+="<div><label class='lbl'>Source</label><input id='cap-src' type='text' class='inp' placeholder='SIPR Fund, External, Personal...' value='SIPR Fund'/></div>";
+  h+="<div><label class='lbl'>Date</label><input id='cap-dt' type='date' class='inp' value='"+new Date().toISOString().split("T")[0]+"'/></div>";
+  h+="<div><label class='lbl'>Note</label><input id='cap-nt' type='text' class='inp' placeholder='Reason for additional capital...'/></div>";
+  h+="<button class='btn-p' onclick='saveCapital(this.dataset.id)' data-id='"+invId+"'>Add Capital</button>";
+  h+="</div></div></div>";$("modal").innerHTML=h;
+}
+function saveCapital(invId){
+  var amt=Number(($("cap-am")||{value:0}).value)||0;
+  if(!amt){toast("Amount required",false);return;}
+  var inv=S.invs.find(function(x){return x.id===invId;});if(!inv)return;
+  var entry={amount:amt,date:($("cap-dt")||{value:""}).value,source:($("cap-src")||{value:"SIPR Fund"}).value.trim(),note:($("cap-nt")||{value:""}).value.trim(),addedBy:S.name,addedAt:now()};
+  var entries=(inv.capitalEntries||[]).slice();entries.push(entry);
+  var totalCap=entries.reduce(function(s,e){return s+Number(e.amount||0);},0);
+  db.collection("investments").doc(invId).update({capitalEntries:entries,capitalDeployed:totalCap,amount:totalCap}).then(function(){closeModal();toast("Capital added: "+fmt(amt));}).catch(function(e){toast(e.message,false);});
+}
+
 
 // Collection entry modal
 function openCollection(invId){
@@ -1283,20 +1401,23 @@ function pAbout(){var h="<div class='fc'><div class='hero' style='text-align:cen
 
 // ═══════════ CONTROL PANEL ═══════════
 function pControl(){
-  var RC={admin:{L:"Admin (Full Access)",C:"var(--red)"},finance:{L:"Finance (Add Transactions)",C:"var(--gold)"},secretary:{L:"Secretary (Announcements & Docs)",C:"var(--teal)"},member:{L:"Member (Read Only)",C:"var(--mut)"}};
+  var RC={admin:{L:"Admin (Full Access)",C:"var(--red)"},finance:{L:"Finance (Transactions)",C:"var(--gold)"},secretary:{L:"Secretary (Notices & Docs)",C:"var(--teal)"},member:{L:"Member (View Only)",C:"var(--mut)"}};
+  var PERMS=[
+    {k:"sendReminders",l:"Send Payment Reminders",d:"Access reminder center, send WA reminders"},
+    {k:"addTransactions",l:"Add Transactions",d:"Add and edit payment records"},
+    {k:"manageProjects",l:"Manage Projects",d:"Add entries, contacts, tasks to projects"},
+    {k:"postNotices",l:"Post Announcements",d:"Post to the Notice Board"},
+    {k:"uploadDocs",l:"Upload Documents",d:"Add files to Documents section"},
+    {k:"viewReports",l:"View Full Reports",d:"Export CSV and PDF reports"}
+  ];
   var h="<div class='fc'><div><h2 style='font-size:22px;font-weight:800'>Control Panel</h2><p style='font-size:13px;color:var(--mut);margin-top:3px'>Manage members, roles and permissions.</p></div>";
   h+="<div id='ctrl-pending'></div>";
-  // Role reference card
-  h+="<div class='card'><div style='font-size:11px;letter-spacing:2px;color:var(--mut);font-weight:700;margin-bottom:12px'>🔒 ROLE PERMISSIONS</div><div style='display:flex;flex-direction:column;gap:8px'>";
-  [["admin","var(--red)","Full access — add/delete/edit everything, manage members, control panel"],["finance","var(--gold)","Add & edit transactions and payments, export CSV"],["secretary","var(--teal)","Post announcements, upload documents"],["member","var(--mut)","View only — cannot add or edit anything"]].forEach(function(r){h+="<div style='display:flex;align-items:center;gap:10px;padding:9px 12px;background:var(--s2);border-radius:9px;border:1px solid var(--bor)'><span class='bdg' style='background:"+r[1]+"18;color:"+r[1]+";border:1px solid "+r[1]+"30'>"+r[0]+"</span><div style='font-size:12px;color:var(--mut)'>"+r[2]+"</div></div>";});
-  h+="</div></div>";
-  // Reset
   h+="<div class='card' style='border-color:var(--gold)22'><div style='display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px'><div><div style='color:var(--gold);font-size:11px;font-weight:700;margin-bottom:3px'>MEMBER DATA RESET</div><div style='color:var(--mut);font-size:12px'>Restore member profiles. Transactions NOT deleted.</div></div><button onclick='resetMembers()' style='padding:9px 15px;border-radius:9px;border:1px solid var(--gold);background:#1c0e00;color:var(--gold);font-weight:700;font-size:12px;cursor:pointer'>⚙ Reset</button></div></div>";
-  // Members
   S.mems.forEach(function(m){
     var role=m.role||"member";var rc=RC[role]||RC.member;
     var isSelf=m.email===S.email;
     var sid=m.id.replace(/-/g,"_");
+    var perms=m.permissions||{};
     h+="<div class='card'>";
     h+="<div style='display:flex;align-items:center;gap:12px;margin-bottom:14px;flex-wrap:wrap'>"+av(m.name,40)+"<div style='flex:1;min-width:0'><div style='display:flex;align-items:center;gap:7px;flex-wrap:wrap;margin-bottom:3px'><span style='font-weight:800;font-size:14px'>"+m.name+"</span>"+(isSelf?"<span class='bdg' style='background:var(--s2);border:1px solid var(--bor);color:var(--mut)'>YOU</span>":"")+"</div><div style='font-size:11px;color:var(--mut)'>"+m.email+"</div><div style='font-size:11px;color:"+rc.C+";font-weight:600;margin-top:2px'>"+rc.L+"</div></div></div>";
     h+="<div class='g2' style='margin-bottom:12px'>";
@@ -1306,28 +1427,58 @@ function pControl(){
     if(m.locked)h+="<div class='inp' style='color:var(--mut)'>"+m.title+"</div>";
     else h+="<input id='tl-"+sid+"' type='text' class='inp' value='"+m.title+"'/>";
     h+="</div>";
-    h+="<div style='margin-bottom:12px'><label class='lbl'>Role & Permissions</label>";
-    h+="<select id='rl-"+sid+"' class='inp'>"+Object.keys(RC).map(function(k){return"<option value='"+k+"'"+(role===k?" selected":"")+">"+RC[k].L+"</option>";}).join("")+"</select></div>";
+    h+="<div style='margin-bottom:14px'><label class='lbl'>Base Role</label><select id='rl-"+sid+"' class='inp'>"+Object.keys(RC).map(function(k){return"<option value='"+k+"'"+(role===k?" selected":"")+">"+RC[k].L+"</option>";}).join("")+"</select></div>";
+    // Foldable permissions
+    h+="<div style='background:var(--s2);border-radius:11px;border:1px solid var(--bor);margin-bottom:12px;overflow:hidden'>";
+    h+="<button onclick='togglePerms(this)' style='width:100%;padding:11px 14px;background:none;border:none;font-family:inherit;cursor:pointer;display:flex;align-items:center;justify-content:space-between;color:var(--txt)'>";
+    h+="<span style='font-size:11px;font-weight:700;letter-spacing:1.5px;color:var(--mut)'>⚡ EXTRA PERMISSIONS</span>";
+    h+="<span style='font-size:12px;color:var(--mut)'>▼</span></button>";
+    h+="<div id='perms-"+sid+"' style='display:none;padding:0 14px 12px'>";
+    PERMS.forEach(function(p){
+      var granted=!!perms[p.k];
+      h+="<div style='display:flex;align-items:center;justify-content:space-between;padding:9px 0;border-bottom:1px solid var(--bor)'>";
+      h+="<div style='flex:1;padding-right:10px'><div style='font-size:12px;font-weight:700'>"+p.l+"</div><div style='font-size:10px;color:var(--mut);margin-top:1px'>"+p.d+"</div></div>";
+      h+="<input type='checkbox' id='perm-"+p.k+"-"+sid+"' class='tog'"+(granted?" checked":"")+" style='flex-shrink:0'/>";
+      h+="</div>";
+    });
+    h+="</div></div>";
+    // Google link status
     h+="<div style='background:var(--s2);border-radius:9px;padding:10px 12px;border:1px solid var(--bor);margin-bottom:12px'>";
     h+="<div style='font-size:10px;color:var(--mut);font-weight:700;margin-bottom:5px'>GOOGLE ACCOUNT</div>";
-    if(m.googleUid)h+="<div style='font-size:12px;color:var(--grn);font-weight:600;margin-bottom:6px'>✓ Linked"+(m.googleEmail?" ("+m.googleEmail+")":"")+"</div><button onclick='unlinkGoogle(\""+m.id+"\")' class='btn-d' style='font-size:11px;padding:4px 10px'>Unlink</button>";
-    else h+="<div style='font-size:12px;color:var(--mut)'>Not linked · Invite code: <strong style=\"color:var(--txt)\">"+m.id+"</strong></div>";
+    if(m.googleUid)h+="<div style='font-size:12px;color:var(--grn);font-weight:600;margin-bottom:6px'>✓ Linked"+(m.googleEmail?" ("+m.googleEmail+")":"")+"</div><button onclick='unlinkGoogle(this.dataset.id)' data-id='"+m.id+"' class='btn-d' style='font-size:11px;padding:4px 10px'>Unlink</button>";
+    else h+="<div style='font-size:12px;color:var(--mut)'>Not linked · Invite code: <strong style='color:var(--txt)'>"+m.id+"</strong></div>";
     h+="</div>";
-    h+="<button class='btn-p' onclick='saveMemCtrl(\""+m.id+"\",\""+sid+"\","+(m.locked?"true":"false")+")' style='padding:11px'>💾 Save</button>";
+    h+="<button class='btn-p' onclick='saveMemCtrl(this.dataset.id,this.dataset.sid,"+m.locked+")' data-id='"+m.id+"' data-sid='"+sid+"' style='padding:11px'>💾 Save Changes</button>";
     h+="</div>";
   });
   h+="</div>";
   setTimeout(loadPendingApprovals,100);
   return h;
 }
+function togglePerms(btn){
+  var container=btn.nextElementSibling;
+  var arrow=btn.querySelector("span:last-child");
+  if(container.style.display==="none"){container.style.display="block";arrow.textContent="▲";}
+  else{container.style.display="none";arrow.textContent="▼";}
+}
+
 function saveMemCtrl(mid,sid,locked){
   var mem=S.mems.find(function(m){return m.id===mid;});if(!mem)return;
   var nm=($("nm-"+sid)||{value:mem.name}).value.trim()||mem.name;
   var ph=($("ph-"+sid)||{value:""}).value.trim();
   var rl=($("rl-"+sid)||{value:mem.role||"member"}).value;
-  var upd={name:nm,phone:ph,role:rl};
+  var waLinkVal=($("wa-"+sid)||{value:""}).value.trim()||"";
+  // Collect permissions
+  var PERM_KEYS=["sendReminders","addTransactions","manageProjects","postNotices","uploadDocs","viewReports"];
+  var permissions={};
+  PERM_KEYS.forEach(function(pk){var el=$("perm-"+pk+"-"+sid);permissions[pk]=el?el.checked:false;});
+  var upd={name:nm,phone:ph,role:rl,waLink:waLinkVal,permissions:permissions};
   if(!locked&&$("tl-"+sid))upd.title=$("tl-"+sid).value.trim()||mem.title;
-  db.collection("members").doc(mid).update(upd).then(function(){Object.assign(mem,upd);if(mem.email===S.email){S.name=nm;S.role=rl;setLabels();buildNav();}logAct("save_member",nm);toast("Saved!");}).catch(function(e){toast(e.message,false);});
+  db.collection("members").doc(mid).update(upd).then(function(){
+    Object.assign(mem,upd);
+    if(mem.email===S.email){S.name=nm;S.role=rl;setLabels();buildNav();}
+    logAct("save_member",nm);toast("Saved! Permissions updated for "+nm);
+  }).catch(function(e){toast(e.message,false);});
 }
 function loadPendingApprovals(){var el=$("ctrl-pending");if(!el)return;db.collection("pendingApprovals").where("status","==","pending").get().then(function(snap){if(snap.empty){el.innerHTML="";return;}el.innerHTML="<div class='card' style='border-color:var(--gold)44;margin-bottom:0'><div style='color:var(--gold);font-size:11px;font-weight:700;margin-bottom:12px'>⏳ PENDING REGISTRATIONS ("+snap.size+")</div><div style='display:flex;flex-direction:column;gap:8px'>"+snap.docs.map(function(doc){var d=doc.data();return"<div style='display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--s2);border-radius:10px;border:1px solid var(--bor);flex-wrap:wrap'>"+av(d.name,32)+"<div style='flex:1'><div style='font-weight:700;font-size:13px'>"+d.name+"</div><div style='font-size:11px;color:var(--mut)'>"+d.email+"</div><div style='font-size:11px;color:var(--mut)'>Code: "+d.memberId+"</div></div><div style='display:flex;gap:6px'><button onclick='approveReg(\""+doc.id+"\",\""+d.memberId+"\")' class='btn-a' style='padding:6px 12px;font-size:11px'>Approve</button><button onclick='rejectReg(\""+doc.id+"\",\""+d.memberId+"\")' class='btn-d' style='padding:6px 12px;font-size:11px'>Reject</button></div></div>";}).join("")+"</div></div>";});}
 function approveReg(docId,memberId){if(!confirm("Approve this registration?"))return;db.collection("pendingApprovals").doc(docId).update({status:"approved"}).then(function(){return db.collection("members").doc(memberId).update({status:"active"});}).then(function(){toast("Approved!");loadPendingApprovals();}).catch(function(e){toast(e.message,false);});}
