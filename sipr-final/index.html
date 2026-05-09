@@ -668,7 +668,7 @@ function pInv(){
     h+="<div style='display:flex;gap:6px;flex-wrap:wrap'>";
     ["all","active","planning","completed","paused","loss"].forEach(function(f){
       var cnt=f==="all"?S.invs.length:S.invs.filter(function(x){return x.status===f;}).length;
-      if(cnt>0||f==="all")h+="<button class='tab"+((S.invF||"all")===f?" active":"")+"' onclick='S.invF=""+f+"";render()'>"+f.charAt(0).toUpperCase()+f.slice(1)+(f!=="all"?" ("+cnt+")":"")+"</button>";
+      if(cnt>0||f==="all")h+="<button class='tab"+((S.invF||"all")===f?" active":"")+"' onclick='S.invF=this.dataset.f;render()' data-f='"+f+"'>"+f.charAt(0).toUpperCase()+f.slice(1)+(f!=="all"?" ("+cnt+")":"")+"</button>";
     });
     h+="</div>";
     // Folded project cards
@@ -682,7 +682,7 @@ function pInv(){
       var totalKg=cols2.reduce(function(s,c){return s+Number(c.kg||0);},0);
       var tasks=inv.tasks||[];
       var openTasks=tasks.filter(function(t){return t.status!=="done";}).length;
-      h+="<div class='proj-card' onclick='openProject(""+inv.id+"")'>";
+      h+="<div class='proj-card' onclick='openProject(this.dataset.id)' data-id='"+inv.id+"'>";
       h+="<div style='padding:18px 20px;display:flex;align-items:center;gap:16px'>";
       // Left: color strip
       h+="<div style='width:4px;height:44px;border-radius:99px;background:"+st.C+";flex-shrink:0;opacity:.9'></div>";
@@ -736,8 +736,8 @@ function pProject(id){
   h+="<div style='display:flex;align-items:center;gap:10px;flex-wrap:wrap'>";
   h+="<button onclick='backToProjects()' style='display:flex;align-items:center;gap:6px;padding:9px 14px;border-radius:10px;border:1px solid var(--bor);background:var(--s2);color:var(--mut2);font-size:13px;font-weight:700;cursor:pointer;font-family:inherit'>‹ Projects</button>";
   h+="<div style='flex:1'></div>";
-  if(isAdmin())h+="<button class='btn-a' onclick='openInv(""+inv.id+"")'>✏ Edit</button>";
-  if(isAdmin())h+="<button class='btn-d' onclick='delInv(""+inv.id+"")'>Delete</button>";
+  if(isAdmin())h+="<button class='btn-a' onclick='openInv(this.dataset.id)' data-id='"+inv.id+"'>✏ Edit</button>";
+  if(isAdmin())h+="<button class='btn-d' onclick='delInv(this.dataset.id)' data-id='"+inv.id+"'>Delete</button>";
   h+="</div>";
   // Project header
   h+="<div class='proj-page'>";
@@ -760,7 +760,7 @@ function pProject(id){
   // Sub-page tab bar
   h+="<div class='proj-tab-bar'>";
   [{k:"overview",l:"Overview"},{k:"log",l:"Daily Log"},{k:"financials",l:"Financials"},{k:"tasks",l:"Tasks"+(openTasks>0?" ("+openTasks+")":"")},{k:"contacts",l:"Contacts"},{k:"milestones",l:"Milestones"}].forEach(function(tb){
-    h+="<button class='proj-tab"+(tab2===tb.k?" active":"")+"' onclick='S.projTab=""+tb.k+"";render()'>"+tb.l+"</button>";
+    h+="<button class='proj-tab"+(tab2===tb.k?" active":"")+"' onclick='S.projTab=this.dataset.tab;render()' data-tab='"+tb.k+"'>"+tb.l+"</button>";
   });
   h+="</div>";
   // Sub-page content
@@ -790,7 +790,7 @@ function pProject(id){
   } else if(tab2==="log"){
     h+="<div style='display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:8px'>";
     h+="<div><div style='font-size:14px;font-weight:800'>Daily Collection Log</div><div style='font-size:12px;color:var(--mut2);margin-top:2px'>"+cols2.length+" entries · "+totalColKg.toFixed(1)+" kg total</div></div>";
-    if(canManageProj())h+="<button class='btn-a' onclick='openCollection(""+inv.id+"")'>+ Add Entry</button>";
+    if(canManageProj())h+="<button class='btn-a' onclick='openCollection(this.dataset.id)' data-id='"+inv.id+"'>+ Add Entry</button>";
     h+="</div>";
     if(!cols2.length)h+="<div style='text-align:center;padding:48px;color:var(--mut2);border:1px dashed var(--bor);border-radius:14px'><div style='font-size:32px;opacity:.3;margin-bottom:10px'>📦</div><div style='font-weight:700'>No entries yet</div><div style='font-size:12px;margin-top:4px'>Start logging daily collection</div></div>";
     else{
@@ -803,7 +803,7 @@ function pProject(id){
         h+="<td style='text-align:right;color:var(--gold);font-weight:700'>"+stock2.toFixed(1)+" kg</td>";
         h+="<td style='text-align:right;color:var(--mut2);font-size:12px'>"+(c2.pricePerKg?fmt(c2.pricePerKg):"—")+"</td>";
         h+="<td style='text-align:right;color:var(--purple);font-weight:700'>"+fmt(c2.revenue||0)+"</td>";
-        h+="<td>"+(isAdmin()?"<button onclick='delCollection(""+inv.id+"","+(cols2.length-1-ci)+")' class='btn-d' style='padding:3px 8px;font-size:11px'>✕</button>":"")+"</td></tr>";
+        h+="<td>"+(isAdmin()?"<button onclick='delCollection(this.dataset.id,"+(cols2.length-1-ci)+")' class='btn-d' style='padding:3px 8px;font-size:11px'>✕</button>":"")+"</td></tr>";
       });
       h+="</tbody></table></div>";
     }
@@ -811,7 +811,7 @@ function pProject(id){
   } else if(tab2==="financials"){
     h+="<div style='display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:8px'>";
     h+="<div style='font-size:14px;font-weight:800'>Financials & Budget</div>";
-    if(isAdmin())h+="<div style='display:flex;gap:7px'><button onclick='openBudgetEdit(""+inv.id+"")' class='btn-s' style='font-size:12px'>⚙ Set Budget</button><button onclick='openBudgetCat(""+inv.id+"",null)' class='btn-a'>+ Category</button></div>";
+    if(isAdmin())h+="<div style='display:flex;gap:7px'><button onclick='openBudgetEdit(this.dataset.id)' data-id='"+inv.id+"' class='btn-s' style='font-size:12px'>⚙ Set Budget</button><button onclick='openBudgetCat(this.dataset.id,null)' data-id='"+inv.id+"' class='btn-a'>+ Category</button></div>";
     h+="</div>";
     // P&L summary
     h+="<div class='hero' style='margin-bottom:16px'>";
@@ -850,7 +850,7 @@ function pProject(id){
           h+="<div style='text-align:right'><div style='font-size:13px;font-weight:800;color:"+cclr+"'>"+fmt(catSpent)+" / "+fmt(catAlloc)+"</div><div style='font-size:10px;color:var(--mut2)'>"+cp2+"%</div></div>";
           h+="</div>";
           h+="<div class='pbar'><div style='height:100%;width:"+cp2+"%;background:"+cclr+";border-radius:99px'></div></div>";
-          if(isAdmin())h+="<div style='display:flex;gap:6px;margin-top:10px'><button onclick='openBudgetCat(""+inv.id+"","+ci+")' class='btn-s' style='font-size:11px'>Edit</button><button onclick='openSpendLog(""+inv.id+"","+ci+")' style='padding:6px 11px;border-radius:8px;border:1px solid var(--gbr);background:var(--gdm);color:var(--grn);font-size:11px;font-weight:700;cursor:pointer;font-family:inherit'>+ Log Spend</button><button onclick='delBudgetCat(""+inv.id+"","+ci+")' class='btn-d' style='font-size:11px'>✕</button></div>";
+          if(isAdmin())h+="<div style='display:flex;gap:6px;margin-top:10px'><button onclick='openBudgetCat(this.dataset.id,"+ci+")' class='btn-s' style='font-size:11px'>Edit</button><button onclick='openSpendLog(this.dataset.id,"+ci+")' style='padding:6px 11px;border-radius:8px;border:1px solid var(--gbr);background:var(--gdm);color:var(--grn);font-size:11px;font-weight:700;cursor:pointer;font-family:inherit'>+ Log Spend</button><button onclick='delBudgetCat(this.dataset.id,"+ci+")' class='btn-d' style='font-size:11px'>✕</button></div>";
           h+="</div>";
         });
         h+="</div>";
@@ -860,7 +860,7 @@ function pProject(id){
   } else if(tab2==="tasks"){
     h+="<div style='display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:8px'>";
     h+="<div><div style='font-size:14px;font-weight:800'>Task Assignments</div><div style='font-size:12px;color:var(--mut2);margin-top:2px'>"+tasks.filter(function(t){return t.status==="done";}).length+" / "+tasks.length+" done</div></div>";
-    if(isAdmin()||canManageProj())h+="<button class='btn-a' onclick='openTask(""+inv.id+"",null)'>+ Add Task</button>";
+    if(isAdmin()||canManageProj())h+="<button class='btn-a' onclick='openTask(this.dataset.id,null)' data-id='"+inv.id+"'>+ Add Task</button>";
     h+="</div>";
     if(!tasks.length)h+="<div style='text-align:center;padding:48px;color:var(--mut2);border:1px dashed var(--bor);border-radius:14px'><div style='font-size:32px;opacity:.3;margin-bottom:10px'>✅</div><div style='font-weight:700'>No tasks yet</div></div>";
     else{
@@ -875,7 +875,7 @@ function pProject(id){
           var pc={high:"prio-high",medium:"prio-med",low:"prio-low"}[tk.priority||"medium"]||"prio-med";
           var assM=tk.assigneeId?S.mems.find(function(x){return x.id===tk.assigneeId;}):null;
           h+="<div class='task-row' style='padding:13px 16px"+(tki>0?";border-top:1px solid var(--bor)":"")+"'>";
-          h+="<button onclick='cycleTask(""+inv.id+"","+ri+")' style='width:22px;height:22px;border-radius:6px;border:1px solid "+(tk.status==="done"?"var(--green)":"var(--bor2)")+";background:"+(tk.status==="done"?"#031209":"transparent")+";color:var(--green);font-size:12px;cursor:pointer;flex-shrink:0;display:flex;align-items:center;justify-content:center'>"+(tk.status==="done"?"✓":"")+"</button>";
+          h+="<button onclick='cycleTask(this.dataset.id,"+ri+")' style='width:22px;height:22px;border-radius:6px;border:1px solid "+(tk.status==="done"?"var(--green)":"var(--bor2)")+";background:"+(tk.status==="done"?"#031209":"transparent")+";color:var(--green);font-size:12px;cursor:pointer;flex-shrink:0;display:flex;align-items:center;justify-content:center'>"+(tk.status==="done"?"✓":"")+"</button>";
           h+="<div style='flex:1;min-width:0'>";
           h+="<div style='display:flex;align-items:center;gap:7px;flex-wrap:wrap;margin-bottom:4px'>";
           h+="<span style='font-size:13px;font-weight:700;color:"+(tk.status==="done"?"var(--mut2)":"var(--txt)")+";'+(tk.status==='done'?'text-decoration:line-through;':'')+''>"+tk.title+"</span>";
@@ -886,7 +886,7 @@ function pProject(id){
           if(tk.deadline)h+="📅 "+fd(tk.deadline);
           if(tk.note)h+="<br>"+tk.note;
           h+="</div></div>";
-          if(isAdmin()||canManageProj())h+="<div style='display:flex;gap:5px;flex-shrink:0'><button onclick='openTask(""+inv.id+"","+ri+")' class='btn-s' style='padding:4px 9px;font-size:11px'>Edit</button>"+(isAdmin()?"<button onclick='delTask(""+inv.id+"","+ri+")' class='btn-d' style='padding:4px 9px;font-size:11px'>✕</button>":"")+"</div>";
+          if(isAdmin()||canManageProj())h+="<div style='display:flex;gap:5px;flex-shrink:0'><button onclick='openTask(this.dataset.id,"+ri+")' class='btn-s' style='padding:4px 9px;font-size:11px'>Edit</button>"+(isAdmin()?"<button onclick='delTask(this.dataset.id,"+ri+")' class='btn-d' style='padding:4px 9px;font-size:11px'>✕</button>":"")+"</div>";
           h+="</div>";
         });
         h+="</div></div>";
@@ -897,7 +897,7 @@ function pProject(id){
     h+="<div style='margin-bottom:22px'>";
     h+="<div style='display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px'>";
     h+="<div><div style='font-size:14px;font-weight:800'>Suppliers</div><div style='font-size:12px;color:var(--mut2);margin-top:2px'>Who you buy from</div></div>";
-    if(isAdmin())h+="<button class='btn-a' onclick='openContact(""+inv.id+"","supplier",null)'>+ Add Supplier</button>";
+    if(isAdmin())h+="<button class='btn-a' onclick='openContact(this.dataset.id,\'supplier\',null)' data-id='"+inv.id+"'>+ Add Supplier</button>";
     h+="</div>";
     if(!suppliers.length)h+="<div style='text-align:center;padding:28px;color:var(--mut2);border:1px dashed var(--bor);border-radius:12px;font-size:13px'>No suppliers added yet.</div>";
     else suppliers.forEach(function(s2,si){
@@ -906,13 +906,13 @@ function pProject(id){
       h+="<div style='font-size:12px;color:var(--mut2);margin-top:3px'>"+(s2.phone?"📞 "+s2.phone+"  ":"")+(s2.productType||"")+(s2.buyPricePerKg?" · Buy ৳"+s2.buyPricePerKg+"/kg":"")+"</div>";
       if(s2.note)h+="<div style='font-size:11px;color:var(--mut2);margin-top:2px;font-style:italic'>"+s2.note+"</div>";
       h+="</div><span class='bdg' style='background:"+(s2.active?"#031a1499":"#1a040499")+";color:"+(s2.active?"var(--teal)":"var(--red)")+"'>"+(s2.active?"Active":"Inactive")+"</span>";
-      if(isAdmin())h+="<div style='display:flex;gap:5px'><button onclick='openContact(""+inv.id+"","supplier","+si+")' class='btn-s' style='font-size:11px'>Edit</button><button onclick='delContact(""+inv.id+"","supplier","+si+")' class='btn-d' style='font-size:11px'>✕</button></div>";
+      if(isAdmin())h+="<div style='display:flex;gap:5px'><button onclick='openContact(this.dataset.id,'supplier',"+si+")' class='btn-s' style='font-size:11px'>Edit</button><button onclick='delContact(this.dataset.id,'supplier',"+si+")' class='btn-d' style='font-size:11px'>✕</button></div>";
       h+="</div>";
     });
     h+="</div>";
     h+="<div style='display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px'>";
     h+="<div><div style='font-size:14px;font-weight:800'>Buyers</div><div style='font-size:12px;color:var(--mut2);margin-top:2px'>Who you sell to</div></div>";
-    if(isAdmin())h+="<button class='btn-a' onclick='openContact(""+inv.id+"","buyer",null)'>+ Add Buyer</button>";
+    if(isAdmin())h+="<button class='btn-a' onclick='openContact(this.dataset.id,\'buyer\',null)' data-id='"+inv.id+"'>+ Add Buyer</button>";
     h+="</div>";
     if(!buyers.length)h+="<div style='text-align:center;padding:28px;color:var(--mut2);border:1px dashed var(--bor);border-radius:12px;font-size:13px'>No buyers added yet.</div>";
     else buyers.forEach(function(b2,bi){
@@ -921,14 +921,14 @@ function pProject(id){
       h+="<div style='font-size:12px;color:var(--mut2);margin-top:3px'>"+(b2.phone?"📞 "+b2.phone+"  ":"")+(b2.productType||"")+(b2.sellPricePerKg?" · Sell ৳"+b2.sellPricePerKg+"/kg":"")+"</div>";
       if(b2.note)h+="<div style='font-size:11px;color:var(--mut2);margin-top:2px;font-style:italic'>"+b2.note+"</div>";
       h+="</div><span class='bdg' style='background:"+(b2.active?"#1a0e0099":"#1a040499")+";color:"+(b2.active?"var(--gold)":"var(--red)")+"'>"+(b2.active?"Active":"Inactive")+"</span>";
-      if(isAdmin())h+="<div style='display:flex;gap:5px'><button onclick='openContact(""+inv.id+"","buyer","+bi+")' class='btn-s' style='font-size:11px'>Edit</button><button onclick='delContact(""+inv.id+"","buyer","+bi+")' class='btn-d' style='font-size:11px'>✕</button></div>";
+      if(isAdmin())h+="<div style='display:flex;gap:5px'><button onclick='openContact(this.dataset.id,'buyer',"+bi+")' class='btn-s' style='font-size:11px'>Edit</button><button onclick='delContact(this.dataset.id,'buyer',"+bi+")' class='btn-d' style='font-size:11px'>✕</button></div>";
       h+="</div>";
     });
 
   } else if(tab2==="milestones"){
     h+="<div style='display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:8px'>";
     h+="<div style='font-size:14px;font-weight:800'>Milestones</div>";
-    if(isAdmin())h+="<button class='btn-a' onclick='openMilestone(""+inv.id+"")'>+ Add</button>";
+    if(isAdmin())h+="<button class='btn-a' onclick='openMilestone(this.dataset.id)' data-id='"+inv.id+"'>+ Add</button>";
     h+="</div>";
     var ms=inv.milestones||[];
     if(!ms.length)h+="<div style='text-align:center;padding:48px;color:var(--mut2);border:1px dashed var(--bor);border-radius:14px'><div style='font-size:32px;opacity:.3;margin-bottom:10px'>🎯</div><div style='font-weight:700'>No milestones yet</div></div>";
@@ -939,7 +939,7 @@ function pProject(id){
         h+="<div style='width:28px;height:28px;border-radius:50%;background:"+(m.done?"var(--green)":"var(--s3)")+";border:2px solid "+(m.done?"var(--green)":"var(--bor2)")+";display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:900;color:"+(m.done?"#fff":"var(--mut2)")+";flex-shrink:0'>"+(m.done?"✓":(i+1))+"</div>";
         h+="<div style='flex:1'><div style='font-size:13px;font-weight:700;color:"+(m.done?"var(--green)":"var(--txt)")+"'>"+m.title+"</div>"+(m.note?"<div style='font-size:11px;color:var(--mut2);margin-top:2px'>"+m.note+"</div>":"")+"</div>";
         if(m.date)h+="<div style='font-size:11px;color:var(--mut2);flex-shrink:0'>"+fd(m.date)+"</div>";
-        if(isAdmin())h+="<button onclick='toggleMilestone(""+inv.id+"","+i+")' class='btn-s' style='padding:5px 10px;font-size:11px;flex-shrink:0'>"+(m.done?"Undo":"Mark Done")+"</button>";
+        if(isAdmin())h+="<button onclick='toggleMilestone(this.dataset.id,"+i+")' class='btn-s' style='padding:5px 10px;font-size:11px;flex-shrink:0'>"+(m.done?"Undo":"Mark Done")+"</button>";
         h+="</div>";
       });
       h+="</div>";
