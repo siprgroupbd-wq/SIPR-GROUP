@@ -9,104 +9,116 @@
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <style>
-:root{--bg:#07090f;--sur:#0e1118;--s2:#13161e;--bor:#1c2030;--txt:#e6e9f0;--mut:#56607a;--grn:#4f8ef7;--gdm:#0a1226;--gbr:#0d1f4a;--gold:#f59e0b;--purple:#8b5cf6;--red:#ef4444;--teal:#14b8a6;}
+:root{
+  --bg:#050709;--sur:#0b0d14;--s2:#0f1219;--s3:#141720;
+  --bor:#181c28;--bor2:#1e2235;--txt:#e8eaf2;--mut:#434966;--mut2:#636b88;
+  --grn:#3b82f6;--grn2:#1d4ed8;--gdm:#060e1c;--gbr:#0c1e40;
+  --gold:#f59e0b;--purple:#8b5cf6;--red:#ef4444;--teal:#06b6d4;
+  --green:#10b981;--orange:#f97316;
+  --sh:0 4px 24px #00000060;--sh2:0 8px 40px #00000080;
+}
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
-body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--bg);color:var(--txt);min-height:100vh;overflow-x:hidden;}
-.page{display:none;}
-/* LOGIN */
-#pg-login{min-height:100vh;align-items:center;justify-content:center;background:radial-gradient(ellipse at 30% 20%,#0d1f4a,var(--bg));display:flex;}
-.lbox{background:var(--sur);border:1px solid var(--bor);border-radius:20px;padding:36px 32px;width:100%;max-width:400px;}
-.lbl{display:block;font-size:10px;letter-spacing:2px;color:var(--mut);font-weight:700;margin-bottom:6px;}
-.inp{width:100%;background:var(--s2);border:1px solid var(--bor);border-radius:10px;padding:11px 13px;color:var(--txt);font-size:14px;font-family:inherit;outline:none;transition:border .15s;}
-.inp:focus{border-color:var(--grn);}
+body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--bg);color:var(--txt);min-height:100vh;overflow-x:hidden;-webkit-font-smoothing:antialiased;}
+#pg-login{min-height:100vh;align-items:center;justify-content:center;background:radial-gradient(ellipse at 20% 20%,#091525,var(--bg) 65%);display:flex;}
+.lbox{background:var(--sur);border:1px solid var(--bor2);border-radius:24px;padding:40px 36px;width:100%;max-width:400px;box-shadow:var(--sh2);}
+.lbl{display:block;font-size:10px;letter-spacing:2.5px;color:var(--mut2);font-weight:700;margin-bottom:7px;text-transform:uppercase;}
+.inp{width:100%;background:var(--s2);border:1px solid var(--bor);border-radius:12px;padding:12px 14px;color:var(--txt);font-size:14px;font-family:inherit;outline:none;transition:border-color .15s,box-shadow .15s;}
+.inp:focus{border-color:var(--grn);box-shadow:0 0 0 3px #3b82f614;}
 select.inp{cursor:pointer;}textarea.inp{resize:vertical;}
-.btn-p{width:100%;padding:13px;background:linear-gradient(135deg,var(--gbr),var(--grn));color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;touch-action:manipulation;}
-.btn-g{width:100%;padding:12px;background:var(--s2);border:1px solid var(--bor);color:var(--txt);border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:10px;touch-action:manipulation;}
-.btn-a{background:var(--gdm);color:var(--grn);border:1px solid var(--gbr);border-radius:9px;padding:8px 15px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;touch-action:manipulation;}
-.btn-s{background:var(--s2);color:var(--txt);border:1px solid var(--bor);border-radius:8px;padding:6px 11px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;touch-action:manipulation;}
-.btn-d{background:#1a040688;color:#ef4444;border:1px solid #7f1d1d44;border-radius:8px;padding:6px 11px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;touch-action:manipulation;}
-.divider{display:flex;align-items:center;gap:10px;color:var(--mut);font-size:11px;margin:14px 0;}
+.btn-p{width:100%;padding:14px;background:linear-gradient(135deg,var(--grn2),var(--grn));color:#fff;border:none;border-radius:12px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;touch-action:manipulation;box-shadow:0 4px 16px #3b82f630;}
+.btn-g{width:100%;padding:13px;background:var(--s2);border:1px solid var(--bor2);color:var(--txt);border-radius:12px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:10px;touch-action:manipulation;}
+.btn-a{background:var(--gdm);color:var(--grn);border:1px solid var(--gbr);border-radius:10px;padding:9px 16px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;touch-action:manipulation;}
+.btn-s{background:var(--s2);color:var(--txt);border:1px solid var(--bor);border-radius:9px;padding:7px 12px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;touch-action:manipulation;}
+.btn-d{background:#1a040699;color:#ef4444;border:1px solid #7f1d1d55;border-radius:9px;padding:7px 12px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;touch-action:manipulation;}
+.btn-wa{background:#071a0f;color:#25d366;border:1px solid #25d36633;border-radius:10px;padding:9px 14px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;touch-action:manipulation;}
+.divider{display:flex;align-items:center;gap:10px;color:var(--mut);font-size:11px;margin:16px 0;}
 .divider::before,.divider::after{content:'';flex:1;height:1px;background:var(--bor);}
-.err{color:#f87171;font-size:12px;padding:10px 13px;background:#1a060688;border-radius:8px;border:1px solid #7f1d1d;margin-top:10px;display:none;}
-/* APP */
+.err{color:#f87171;font-size:12px;padding:11px 14px;background:#1a060699;border-radius:10px;border:1px solid #7f1d1d;margin-top:10px;display:none;}
 #pg-app{display:none;min-height:100vh;}
-#sidebar{width:220px;background:var(--sur);border-right:1px solid var(--bor);display:flex;flex-direction:column;padding:16px 10px;position:fixed;top:0;bottom:0;left:0;overflow-y:auto;z-index:100;transition:transform .25s;}
-.nav-logo{text-align:center;padding:8px 0 14px;border-bottom:1px solid var(--bor);margin-bottom:10px;}
-.nav-logo .logo{width:38px;height:38px;border-radius:11px;background:linear-gradient(135deg,var(--gbr),var(--grn));display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:900;color:#fff;margin:0 auto 6px;}
-.nav-item{display:flex;align-items:center;gap:9px;padding:8px 11px;border-radius:9px;cursor:pointer;font-size:13px;font-weight:600;color:var(--mut);margin-bottom:1px;transition:all .15s;touch-action:manipulation;}
+#sidebar{width:230px;background:var(--sur);border-right:1px solid var(--bor);display:flex;flex-direction:column;padding:18px 12px;position:fixed;top:0;bottom:0;left:0;overflow-y:auto;z-index:100;transition:transform .25s;}
+.nav-logo{text-align:center;padding:6px 0 18px;border-bottom:1px solid var(--bor);margin-bottom:14px;}
+.nav-logo .logo{width:44px;height:44px;border-radius:15px;background:linear-gradient(135deg,var(--gbr),var(--grn));display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:900;color:#fff;margin:0 auto 9px;box-shadow:0 4px 20px #3b82f640;}
+.nav-logo .logo-name{font-size:15px;font-weight:900;letter-spacing:.5px;}
+.nav-logo .logo-sub{font-size:8px;letter-spacing:3.5px;color:var(--mut);margin-top:2px;text-transform:uppercase;}
+.nav-section{font-size:9px;letter-spacing:2.5px;color:var(--mut);font-weight:700;padding:8px 10px 4px;text-transform:uppercase;}
+.nav-item{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:11px;cursor:pointer;font-size:13px;font-weight:600;color:var(--mut2);margin-bottom:2px;transition:all .15s;touch-action:manipulation;}
 .nav-item:hover{background:var(--s2);color:var(--txt);}
-.nav-item.active{background:var(--gdm);color:var(--grn);}
-#main{margin-left:220px;flex:1;padding:20px 24px;max-width:960px;}
-#topbar{display:flex;align-items:center;gap:10px;margin-bottom:18px;}
-#topbar h2{font-size:19px;font-weight:900;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
-#ham{display:none;background:var(--s2);border:1px solid var(--bor);border-radius:8px;padding:8px 11px;font-size:18px;cursor:pointer;color:var(--txt);touch-action:manipulation;}
+.nav-item.active{background:linear-gradient(135deg,var(--gdm),#091828);color:var(--grn);border:1px solid var(--gbr);}
+.nav-item .nav-ic{width:20px;text-align:center;font-size:16px;}
+#main{margin-left:230px;flex:1;padding:26px 30px;max-width:980px;}
+#topbar{display:flex;align-items:center;gap:12px;margin-bottom:24px;}
+#topbar h2{font-size:21px;font-weight:900;flex:1;letter-spacing:-.5px;}
+#ham{display:none;background:var(--s2);border:1px solid var(--bor);border-radius:10px;padding:9px 12px;font-size:18px;cursor:pointer;color:var(--txt);touch-action:manipulation;}
 @media(max-width:800px){
-  #sidebar{transform:translateX(-220px);}
-  #sidebar.open{transform:translateX(0);box-shadow:8px 0 40px #00000099;}
-  #main{margin-left:0;padding:13px 13px 80px;}
+  #sidebar{transform:translateX(-230px);}
+  #sidebar.open{transform:translateX(0);box-shadow:12px 0 48px #00000099;}
+  #main{margin-left:0;padding:14px 14px 90px;}
   #ham{display:block;}
   #bot-nav{display:flex!important;}
   .hide-mob{display:none!important;}
 }
-#bot-nav{display:none;position:fixed;bottom:0;left:0;right:0;background:var(--sur);border-top:1px solid var(--bor);z-index:100;padding:5px 0 7px;}
-.bn{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;padding:5px 3px;cursor:pointer;color:var(--mut);font-size:9px;font-weight:700;border:none;background:none;font-family:inherit;touch-action:manipulation;}
+#bot-nav{display:none;position:fixed;bottom:0;left:0;right:0;background:var(--sur);border-top:1px solid var(--bor);z-index:100;padding:6px 4px 8px;box-shadow:0 -4px 24px #00000060;}
+.bn{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;padding:5px 2px;cursor:pointer;color:var(--mut);font-size:9px;font-weight:700;border:none;background:none;font-family:inherit;touch-action:manipulation;border-radius:8px;}
 .bn.active{color:var(--grn);}
-.bn .bi{font-size:18px;}
-#overlay{display:none;position:fixed;inset:0;background:#00000070;z-index:99;}
-/* Cards */
-.card{background:var(--sur);border:1px solid var(--bor);border-radius:14px;padding:18px;}
-.sc{background:var(--s2);border:1px solid var(--bor);border-radius:12px;padding:14px;}
-.hero{background:linear-gradient(135deg,var(--gdm),#0d1424);border:1px solid var(--gbr);border-radius:16px;padding:22px 26px;}
+.bn .bi{font-size:20px;line-height:1;}
+#overlay{display:none;position:fixed;inset:0;background:#00000088;z-index:99;}
+.card{background:var(--sur);border:1px solid var(--bor);border-radius:18px;padding:22px;}
+.sc{background:var(--s2);border:1px solid var(--bor);border-radius:14px;padding:15px;}
+.hero{background:linear-gradient(140deg,var(--gdm) 0%,#080f1e 100%);border:1px solid var(--gbr);border-radius:20px;padding:26px 30px;position:relative;overflow:hidden;}
+.hero::before{content:'';position:absolute;top:-60px;right:-60px;width:200px;height:200px;background:radial-gradient(circle,#3b82f60a,transparent 70%);border-radius:50%;pointer-events:none;}
 .g2{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
 .g3{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;}
 .g4{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;}
 @media(max-width:600px){.g4{grid-template-columns:1fr 1fr;}.g3{grid-template-columns:1fr 1fr;}.g2-mob{grid-template-columns:1fr!important;}}
-.fc{display:flex;flex-direction:column;gap:14px;}
-.tab-row{display:flex;gap:5px;flex-wrap:wrap;}
-.tab{background:var(--s2);border:1px solid var(--bor);border-radius:7px;padding:7px 13px;font-size:12px;font-weight:600;cursor:pointer;color:var(--mut);font-family:inherit;touch-action:manipulation;}
+.fc{display:flex;flex-direction:column;gap:16px;}
+.tab-row{display:flex;gap:6px;flex-wrap:wrap;}
+.tab{background:var(--s2);border:1px solid var(--bor);border-radius:9px;padding:8px 14px;font-size:12px;font-weight:700;cursor:pointer;color:var(--mut2);font-family:inherit;touch-action:manipulation;}
 .tab.active{background:var(--gdm);border-color:var(--gbr);color:var(--grn);}
-.bdg{display:inline-flex;align-items:center;padding:3px 9px;border-radius:99px;font-size:11px;font-weight:600;}
-.pbar{height:5px;background:var(--s2);border-radius:99px;overflow:hidden;}
-.pfill{height:100%;border-radius:99px;background:linear-gradient(90deg,var(--gbr),var(--grn));}
+.bdg{display:inline-flex;align-items:center;padding:3px 10px;border-radius:99px;font-size:10px;font-weight:700;letter-spacing:.3px;}
+.pbar{height:4px;background:var(--s2);border-radius:99px;overflow:hidden;}
+.pfill{height:100%;border-radius:99px;background:linear-gradient(90deg,var(--grn2),var(--grn));}
 .tbl{width:100%;border-collapse:collapse;}
-.tbl th{padding:9px 12px;text-align:left;font-size:10px;letter-spacing:1.5px;color:var(--mut);font-weight:700;border-bottom:1px solid var(--bor);}
-.tbl td{padding:10px 12px;border-bottom:1px solid var(--bor);font-size:13px;}
+.tbl th{padding:10px 13px;text-align:left;font-size:9px;letter-spacing:2px;color:var(--mut2);font-weight:700;border-bottom:1px solid var(--bor);text-transform:uppercase;}
+.tbl td{padding:12px 13px;border-bottom:1px solid var(--bor);font-size:13px;}
 .tbl tr:last-child td{border-bottom:none;}
+.tbl tbody tr:hover{background:var(--s2);}
 .sw{overflow-x:auto;}
-.modal-bg{position:fixed;inset:0;background:#00000088;z-index:500;display:flex;align-items:center;justify-content:center;padding:16px;}
-.modal-box{background:var(--sur);border:1px solid var(--bor);border-radius:18px;padding:24px;width:100%;max-width:520px;max-height:90vh;overflow-y:auto;}
+.modal-bg{position:fixed;inset:0;background:#00000094;z-index:500;display:flex;align-items:center;justify-content:center;padding:16px;}
+.modal-box{background:var(--sur);border:1px solid var(--bor2);border-radius:22px;padding:28px;width:100%;max-width:520px;max-height:92vh;overflow-y:auto;box-shadow:var(--sh2);}
 #prof-btn{position:relative;cursor:pointer;touch-action:manipulation;}
-#prof-drop{display:none;position:absolute;top:46px;right:0;background:var(--sur);border:1px solid var(--bor);border-radius:14px;padding:10px;min-width:210px;z-index:200;box-shadow:0 16px 48px #000000aa;}
-#toast{display:none;position:fixed;bottom:80px;left:50%;transform:translateX(-50%);padding:11px 18px;border-radius:10px;font-size:13px;font-weight:700;z-index:9999;white-space:nowrap;box-shadow:0 8px 24px #00000060;}
-.live{display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--grn);animation:pulse 2s infinite;margin-right:5px;}
+#prof-drop{display:none;position:absolute;top:52px;right:0;background:var(--sur);border:1px solid var(--bor2);border-radius:18px;padding:12px;min-width:220px;z-index:200;box-shadow:var(--sh2);}
+#toast{display:none;position:fixed;bottom:90px;left:50%;transform:translateX(-50%);padding:12px 20px;border-radius:14px;font-size:13px;font-weight:700;z-index:9999;white-space:nowrap;box-shadow:var(--sh2);}
+.live{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--green);animation:pulse 2s infinite;margin-right:6px;}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
 @keyframes spin{to{transform:rotate(360deg)}}
-.pb-row{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--bor);}
+.pb-row{display:flex;align-items:center;gap:12px;padding:13px 0;border-bottom:1px solid var(--bor);}
 .pb-row:last-child{border-bottom:none;}
-/* Collection tracker */
 .col-row{display:flex;align-items:center;gap:8px;padding:10px 0;border-bottom:1px solid var(--bor);}
 .col-row:last-child{border-bottom:none;}
-.stat-box{background:var(--s2);border:1px solid var(--bor);border-radius:10px;padding:12px;text-align:center;}
-.stat-box .val{font-size:16px;font-weight:900;margin-top:4px;}
-.stat-box .lbl2{font-size:9px;color:var(--mut);font-weight:700;letter-spacing:1px;}
-/* Invite page */
+.stat-box{background:var(--s2);border:1px solid var(--bor);border-radius:14px;padding:15px;text-align:center;}
+.stat-box .val{font-size:17px;font-weight:900;margin-top:5px;letter-spacing:-.5px;}
+.stat-box .lbl2{font-size:9px;color:var(--mut2);font-weight:700;letter-spacing:1.5px;text-transform:uppercase;}
 #pg-invite{display:none;min-height:100vh;align-items:center;justify-content:center;background:radial-gradient(ellipse at 30% 20%,#0d1f4a,var(--bg));}
-/* ── NEW: Toggle Switches ── */
-input[type=checkbox].tog{width:38px;height:20px;appearance:none;-webkit-appearance:none;background:var(--bor);border-radius:99px;cursor:pointer;transition:background .2s;position:relative;flex-shrink:0;border:none;outline:none;}
+input[type=checkbox].tog{width:40px;height:22px;appearance:none;-webkit-appearance:none;background:var(--bor2);border-radius:99px;cursor:pointer;transition:background .2s;position:relative;flex-shrink:0;border:none;outline:none;}
 input[type=checkbox].tog:checked{background:var(--grn);}
-input[type=checkbox].tog::after{content:'';width:14px;height:14px;border-radius:50%;background:#fff;position:absolute;top:3px;left:3px;transition:left .18s;}
+input[type=checkbox].tog::after{content:'';width:16px;height:16px;border-radius:50%;background:#fff;position:absolute;top:3px;left:3px;transition:left .18s;box-shadow:0 1px 4px #00000040;}
 input[type=checkbox].tog:checked::after{left:21px;}
-.perm-row{display:flex;align-items:center;justify-content:space-between;padding:9px 0;border-bottom:1px solid var(--bor);}
+.perm-row{display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--bor);}
 .perm-row:last-child{border-bottom:none;}
-/* ── NEW: Task Priority ── */
-.prio-high{color:#ef4444;background:#1a040488;border:1px solid #7f1d1d44;padding:2px 7px;border-radius:99px;font-size:10px;font-weight:700;}
-.prio-med{color:#f59e0b;background:#1c0e0088;border:1px solid #78350f44;padding:2px 7px;border-radius:99px;font-size:10px;font-weight:700;}
-.prio-low{color:#4f8ef7;background:#0a122688;border:1px solid #0d1f4a44;padding:2px 7px;border-radius:99px;font-size:10px;font-weight:700;}
-.task-row{display:flex;align-items:flex-start;gap:10px;padding:11px 0;border-bottom:1px solid var(--bor);}
+.prio-high{color:#ef4444;background:#1a040499;border:1px solid #7f1d1d44;padding:2px 8px;border-radius:99px;font-size:10px;font-weight:700;}
+.prio-med{color:#f59e0b;background:#1c0e0099;border:1px solid #78350f44;padding:2px 8px;border-radius:99px;font-size:10px;font-weight:700;}
+.prio-low{color:#3b82f6;background:#06102099;border:1px solid #1e3a5f44;padding:2px 8px;border-radius:99px;font-size:10px;font-weight:700;}
+.task-row{display:flex;align-items:flex-start;gap:10px;padding:12px 0;border-bottom:1px solid var(--bor);}
 .task-row:last-child{border-bottom:none;}
-/* ── NEW: Reminder Center ── */
-.rem-card{background:var(--s2);border:1px solid var(--bor);border-radius:11px;padding:11px 13px;display:flex;align-items:center;gap:10px;}
-.btn-wa{background:#0a2e1a;color:#25d366;border:1px solid #25d36644;border-radius:8px;padding:6px 11px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;touch-action:manipulation;}
+.rem-card{background:var(--s2);border:1px solid var(--bor);border-radius:14px;padding:13px 15px;display:flex;align-items:center;gap:12px;}
+/* PROJECT SYSTEM */
+.proj-card{background:var(--sur);border:1px solid var(--bor);border-radius:18px;overflow:hidden;cursor:pointer;transition:border-color .2s,transform .15s,box-shadow .2s;}
+.proj-card:hover{border-color:var(--bor2);transform:translateY(-2px);box-shadow:0 8px 32px #00000050;}
+.proj-tab-bar{display:flex;gap:0;overflow-x:auto;border-bottom:1px solid var(--bor);scrollbar-width:none;}
+.proj-tab-bar::-webkit-scrollbar{display:none;}
+.proj-tab{padding:14px 20px;border:none;background:none;font-family:inherit;font-size:13px;font-weight:700;cursor:pointer;color:var(--mut2);border-bottom:2px solid transparent;touch-action:manipulation;white-space:nowrap;flex-shrink:0;transition:color .15s;}
+.proj-tab.active{color:var(--grn);border-bottom-color:var(--grn);}
+.proj-page{background:var(--sur);border:1px solid var(--bor);border-radius:20px;overflow:hidden;}
 </style>
 </head>
 <body>
@@ -267,6 +279,7 @@ var S={
   email:"",name:"",role:"member",uid:"",
   mems:[],txs:[],invs:[],wallets:[],
   tab:"dashboard",
+  activeProj:null,projTab:"overview",
   payM:new Date().getMonth(),payY:new Date().getFullYear(),
   payMode:"single",fT:"all",fMem:"all",
   nbTab:"ann",invF:"all",_pf:"all",_mo:{},
@@ -460,7 +473,7 @@ function closeProf(){var d=$("prof-drop");if(d)d.style.display="none";}
 function closeModal(){var m=$("modal");if(m)m.innerHTML="";}
 function goPage(tab){S.tab=tab;buildNav();var titles={dashboard:"Dashboard",payments:"Monthly Payments",reminders:"💬 Reminder Center",investments:"Projects",transactions:"Transactions",members:"Members",wallet:"My Wallet",goals:"Goals",noticeboard:"Notice Board",expenses:"Expenses",documents:"Documents",activity:"Activity Log",about:"About SIPR",control:"Control Panel"};var pt=$("pg-title");if(pt)pt.textContent=titles[tab]||tab;closeSidebar();closeProf();render();}
 function moreMenu(){var vis=NAVS.filter(function(n){if(n.adm&&!isAdmin())return false;if(n.perm==="remind"&&!canRemind())return false;return true;});var pri=["dashboard","payments","investments","transactions","members"];var more=vis.filter(function(n){return pri.indexOf(n.id)<0;});var h="<div class='modal-bg' onclick='if(event.target===this)closeModal()'><div class='modal-box'><div style='font-size:11px;letter-spacing:2px;color:var(--mut);font-weight:700;margin-bottom:12px'>MORE PAGES</div><div style='display:flex;flex-direction:column;gap:6px'>"+more.map(function(n){return"<button onclick='goPage(\""+n.id+"\");closeModal()' style='display:flex;align-items:center;gap:12px;padding:12px;background:var(--s2);border:1px solid var(--bor);border-radius:10px;color:var(--txt);font-size:13px;font-weight:600;cursor:pointer;font-family:inherit'><span style='font-size:18px'>"+n.ic+"</span>"+n.lb+"</button>";}).join("")+"</div></div></div>";$("modal").innerHTML=h;}
-function render(){var c=$("content");if(!c)return;var t=S.tab;if(t==="dashboard"){c.innerHTML=pDash();return;}if(t==="payments"){c.innerHTML=pPay();return;}if(t==="reminders"){c.innerHTML=pReminders();return;}if(t==="investments"){c.innerHTML=pInv();return;}if(t==="transactions"){c.innerHTML=pTx();return;}if(t==="members"){c.innerHTML=pMem();return;}if(t==="wallet"){c.innerHTML=pWallet();return;}if(t==="goals"){c.innerHTML=pGoals();return;}if(t==="noticeboard"){c.innerHTML=pNotice();loadNotice();return;}if(t==="expenses"){c.innerHTML=pExpenses();return;}if(t==="documents"){c.innerHTML=pDocs();loadDocs();return;}if(t==="activity"){c.innerHTML=pActivity();loadActivity();return;}if(t==="about"){c.innerHTML=pAbout();return;}if(t==="control"){c.innerHTML=isAdmin()?pControl():"<div class='card' style='text-align:center;padding:48px;color:var(--mut)'>Admin access required.</div>";return;}}
+function render(){var c=$("content");if(!c)return;var t=S.tab;if(t==="dashboard"){c.innerHTML=pDash();return;}if(t==="payments"){c.innerHTML=pPay();return;}if(t==="reminders"){c.innerHTML=pReminders();return;}if(t==="investments"){if(S.activeProj){c.innerHTML=pProject(S.activeProj);return;}c.innerHTML=pInv();return;}if(t==="transactions"){c.innerHTML=pTx();return;}if(t==="members"){c.innerHTML=pMem();return;}if(t==="wallet"){c.innerHTML=pWallet();return;}if(t==="goals"){c.innerHTML=pGoals();return;}if(t==="noticeboard"){c.innerHTML=pNotice();loadNotice();return;}if(t==="expenses"){c.innerHTML=pExpenses();return;}if(t==="documents"){c.innerHTML=pDocs();loadDocs();return;}if(t==="activity"){c.innerHTML=pActivity();loadActivity();return;}if(t==="about"){c.innerHTML=pAbout();return;}if(t==="control"){c.innerHTML=isAdmin()?pControl():"<div class='card' style='text-align:center;padding:48px;color:var(--mut)'>Admin access required.</div>";return;}}
 
 // ═══════════ WALLET ═══════════
 function getMyWallet(){var me=getMem(S.email);if(!me||!me.id)return{available:0,locked:0,history:[]};var w=S.wallets.find(function(x){return x.memberId===me.id;})||{available:0,locked:0,history:[]};var today=new Date(),unlocked=0,locked=0;(w.history||[]).forEach(function(e){if(e.type==="salary"&&e.locked){if(e.unlockDate&&today>=new Date(e.unlockDate))unlocked+=Number(e.amount);else locked+=Number(e.amount);}});return{available:Number(w.available||0)+unlocked,locked:locked,history:w.history||[],docId:w.id};}
@@ -622,171 +635,318 @@ function pReminders(){
   }
   h+="</div>";return h;
 }
+function openProject(id){S.activeProj=id;S.projTab="overview";var pt=document.getElementById("pg-title");if(pt){var inv=S.invs.find(function(x){return x.id===id;});if(inv)pt.textContent=inv.name;}render();}
+function backToProjects(){S.activeProj=null;var pt=document.getElementById("pg-title");if(pt)pt.textContent="Projects";render();}
+
 function pInv(){
-  var h="<div class='fc'>";
-  h+="<div style='display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px'><h2 style='font-size:22px;font-weight:800'>Projects</h2>";
-  if(isAdmin())h+="<button class='btn-a' onclick='openInv(null)'>+ New Project</button>";
-  h+="</div>";
+  var ST={active:{L:"Active",C:"#3b82f6",B:"#060e1c",BD:"#0c1e40"},planning:{L:"Planning",C:"#f59e0b",B:"#0e0800",BD:"#3d2000"},completed:{L:"Completed",C:"#10b981",B:"#031209",BD:"#064e3b"},paused:{L:"Paused",C:"#6b7594",B:"#0c0e14",BD:"#1a1f2e"},loss:{L:"Loss",C:"#ef4444",B:"#0e0303",BD:"#450a0a"}};
   var dep=S.invs.reduce(function(s,x){return s+Number(x.capitalDeployed||x.amount||0);},0);
   var ret=S.invs.reduce(function(s,x){return s+Number(x.actualReturn||0);},0);
-  h+="<div class='g3'><div class='sc' style='background:var(--gdm);border-color:var(--gbr);text-align:center'><div class='lbl2' style='margin-bottom:5px'>DEPLOYED</div><div style='color:var(--gold);font-weight:900;font-size:17px'>"+fmt(dep)+"</div></div><div class='sc' style='text-align:center'><div class='lbl2' style='margin-bottom:5px'>RETURNED</div><div style='color:var(--purple);font-weight:900;font-size:17px'>"+fmt(ret)+"</div></div><div class='sc' style='text-align:center'><div class='lbl2' style='margin-bottom:5px'>ACTIVE</div><div style='color:var(--grn);font-weight:900;font-size:22px'>"+S.invs.filter(function(x){return x.status==="active";}).length+"</div></div></div>";
+  var active=S.invs.filter(function(x){return x.status==="active";});
+  var h="<div class='fc'>";
+  // Top bar
+  h+="<div style='display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px'>";
+  h+="<div><h2 style='font-size:24px;font-weight:900;letter-spacing:-.5px'>Projects</h2><p style='font-size:13px;color:var(--mut2);margin-top:3px'>"+S.invs.length+" project"+(S.invs.length!==1?"s":"")+" · Tap to open</p></div>";
+  if(isAdmin())h+="<button class='btn-a' onclick='openInv(null)'>+ New Project</button>";
+  h+="</div>";
+  // Summary strip
+  h+="<div class='hero'>";
+  h+="<div style='display:grid;grid-template-columns:repeat(3,1fr);gap:0;text-align:center'>";
+  h+="<div style='padding:4px 0'><div style='font-size:9px;color:var(--mut2);font-weight:700;letter-spacing:2px;margin-bottom:6px'>TOTAL DEPLOYED</div><div style='font-size:20px;font-weight:900;color:var(--gold);letter-spacing:-.5px'>"+fmt(dep)+"</div></div>";
+  h+="<div style='padding:4px 0;border-left:1px solid var(--bor);border-right:1px solid var(--bor)'><div style='font-size:9px;color:var(--mut2);font-weight:700;letter-spacing:2px;margin-bottom:6px'>RETURNED</div><div style='font-size:20px;font-weight:900;color:var(--green);letter-spacing:-.5px'>"+fmt(ret)+"</div></div>";
+  h+="<div style='padding:4px 0'><div style='font-size:9px;color:var(--mut2);font-weight:700;letter-spacing:2px;margin-bottom:6px'>ACTIVE</div><div style='font-size:20px;font-weight:900;color:var(--grn);letter-spacing:-.5px'>"+active.length+"</div></div>";
+  h+="</div></div>";
   if(!S.invs.length){
-    h+="<div class='card' style='text-align:center;padding:48px;color:var(--mut)'><div style='font-size:44px;opacity:.3;margin-bottom:12px'>📈</div><div style='font-size:15px;font-weight:700;margin-bottom:8px'>No projects yet</div>";
-    if(isAdmin())h+="<button class='btn-p' onclick='openInv(null)' style='padding:11px 24px;margin-top:4px'>+ Create First Project</button>";
+    h+="<div class='card' style='text-align:center;padding:60px 30px;border-style:dashed'>";
+    h+="<div style='font-size:48px;opacity:.2;margin-bottom:14px'>📈</div>";
+    h+="<div style='font-size:16px;font-weight:800;margin-bottom:6px'>No projects yet</div>";
+    h+="<div style='font-size:13px;color:var(--mut2);margin-bottom:20px'>Create your first investment project to get started</div>";
+    if(isAdmin())h+="<button class='btn-p' onclick='openInv(null)' style='padding:12px 28px;width:auto;display:inline-block'>+ Create First Project</button>";
     h+="</div>";
   } else {
-    h+="<div class='tab-row'>";
-    ["all","active","planning","completed","paused","loss"].forEach(function(f){var cnt=f==="all"?S.invs.length:S.invs.filter(function(x){return x.status===f;}).length;if(cnt>0||f==="all")h+="<button class='tab"+((S.invF||"all")===f?" active":"")+"' onclick='S.invF=\""+f+"\";render()'>"+f.charAt(0).toUpperCase()+f.slice(1)+" ("+cnt+")</button>";});
+    // Filter tabs
+    h+="<div style='display:flex;gap:6px;flex-wrap:wrap'>";
+    ["all","active","planning","completed","paused","loss"].forEach(function(f){
+      var cnt=f==="all"?S.invs.length:S.invs.filter(function(x){return x.status===f;}).length;
+      if(cnt>0||f==="all")h+="<button class='tab"+((S.invF||"all")===f?" active":"")+"' onclick='S.invF=""+f+"";render()'>"+f.charAt(0).toUpperCase()+f.slice(1)+(f!=="all"?" ("+cnt+")":"")+"</button>";
+    });
     h+="</div>";
-    var IS2={active:{L:"Active",C:"#4f8ef7",B:"#0a1226"},planning:{L:"Planning",C:"#f59e0b",B:"#1c0e00"},completed:{L:"Completed",C:"#8b5cf6",B:"#1a0f3a"},paused:{L:"Paused",C:"#56607a",B:"#13161e"},loss:{L:"Loss",C:"#ef4444",B:"#1a0404"}};
+    // Folded project cards
     var filtered=(!S.invF||S.invF==="all")?S.invs:S.invs.filter(function(x){return x.status===S.invF;});
+    h+="<div style='display:flex;flex-direction:column;gap:10px'>";
     filtered.forEach(function(inv){
-      var dep2=Number(inv.capitalDeployed||inv.amount||0),ret2=Number(inv.actualReturn||0),exp=Number(inv.expectedReturn||0),pl=ret2-dep2,pp=exp>0?Math.min(ret2/exp*100,100):0;
-      var st=IS2[inv.status]||IS2.planning;
-      // Collection stats
+      var dep2=Number(inv.capitalDeployed||inv.amount||0),ret2=Number(inv.actualReturn||0),exp=Number(inv.expectedReturn||0),pl=ret2-dep2;
+      var pp=exp>0?Math.min(Math.round(ret2/exp*100),100):0;
+      var st=ST[inv.status]||ST.planning;
       var cols2=inv.collections||[];
-      var totalColKg=cols2.reduce(function(s,c){return s+Number(c.kg||0);},0);
-      var totalSoldKg=cols2.reduce(function(s,c){return s+Number(c.soldKg||0);},0);
-      var totalRevenue=cols2.reduce(function(s,c){return s+Number(c.revenue||0);},0);
-      var stockKg=totalColKg-totalSoldKg;
-      var tasks=inv.tasks||[];var openTasks=tasks.filter(function(t){return t.status!=="done";}).length;
-      var budget=inv.budget||{totalBudget:0,categories:[]};
-      var totalBudgetSpent=budget.categories.reduce(function(s,c){return s+Number(c.spent||0);},0);
-      h+="<div class='card' style='padding:0;overflow:hidden'>";
-      // Header
-      h+="<div style='padding:16px 18px;background:linear-gradient(135deg,var(--gdm),#0d1424);border-bottom:1px solid var(--bor)'>";
-      h+="<div style='display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:10px'>";
-      h+="<div><div style='display:flex;align-items:center;gap:8px;margin-bottom:4px;flex-wrap:wrap'><span style='font-weight:900;font-size:17px'>"+inv.name+"</span><span class='bdg' style='background:"+st.B+";color:"+st.C+"'>"+st.L+"</span>"+(openTasks>0?"<span class='bdg' style='background:#1a0f3a;color:var(--purple)'>"+openTasks+" tasks</span>":"")+"</div>";
-      h+="<div style='font-size:12px;color:var(--mut)'>"+(inv.sector||"")+(inv.partner?" · "+inv.partner:"")+(inv.date?" · Started "+fd(inv.date):"")+"</div></div>";
-      h+="<div style='text-align:right'><div style='color:var(--gold);font-weight:900;font-size:18px'>"+fmt(dep2)+"</div>"+(pl!==0?"<div style='font-size:12px;color:"+(pl>0?"var(--grn)":"var(--red)")+";font-weight:700'>"+(pl>0?"+":"")+fmt(pl)+" P&L</div>":"")+"</div></div>";
-      if(inv.description)h+="<div style='font-size:12px;color:var(--mut);margin-top:8px;line-height:1.6'>"+inv.description+"</div>";
+      var totalKg=cols2.reduce(function(s,c){return s+Number(c.kg||0);},0);
+      var tasks=inv.tasks||[];
+      var openTasks=tasks.filter(function(t){return t.status!=="done";}).length;
+      h+="<div class='proj-card' onclick='openProject(""+inv.id+"")'>";
+      h+="<div style='padding:18px 20px;display:flex;align-items:center;gap:16px'>";
+      // Left: color strip
+      h+="<div style='width:4px;height:44px;border-radius:99px;background:"+st.C+";flex-shrink:0;opacity:.9'></div>";
+      // Middle: info
+      h+="<div style='flex:1;min-width:0'>";
+      h+="<div style='display:flex;align-items:center;gap:8px;margin-bottom:4px;flex-wrap:wrap'>";
+      h+="<span style='font-weight:800;font-size:15px;letter-spacing:-.2px'>"+inv.name+"</span>";
+      h+="<span class='bdg' style='background:"+st.B+";color:"+st.C+";border:1px solid "+st.BD+"'>"+st.L+"</span>";
+      if(openTasks>0)h+="<span class='bdg' style='background:#0d0a1f;color:var(--purple);border:1px solid #2d1b6944'>"+openTasks+" tasks</span>";
       h+="</div>";
-      // Body tabs
-      h+="<div style='padding:0 18px'>";
-      var tab2=inv._tab||"overview";
-      h+="<div style='display:flex;gap:0;border-bottom:1px solid var(--bor);margin-bottom:14px;overflow-x:auto'>";
-      [{k:"overview",l:"📊 Overview"},{k:"collection",l:"📦 Collection"},{k:"sales",l:"💵 Sales"},{k:"milestones",l:"🎯 Milestones"},{k:"tasks",l:"✅ Tasks"+(openTasks>0?" ("+openTasks+")":"")},{k:"contacts",l:"👥 Contacts"},{k:"budget",l:"💼 Budget"}].forEach(function(tb){var isA=tab2===tb.k;h+="<button onclick='S.invs.find(function(x){return x.id==\""+inv.id+"\"})._tab=\""+tb.k+"\";render()' style='padding:10px 13px;border:none;background:none;font-family:inherit;font-size:12px;font-weight:700;cursor:pointer;color:"+(isA?"var(--grn)":"var(--mut)")+";border-bottom:2px solid "+(isA?"var(--grn)":"transparent")+";touch-action:manipulation;white-space:nowrap;flex-shrink:0'>"+tb.l+"</button>";});
+      h+="<div style='font-size:12px;color:var(--mut2)'>";
+      if(inv.sector)h+=inv.sector;
+      if(inv.date)h+=" · "+fd(inv.date);
+      if(totalKg>0)h+=" · "+totalKg.toFixed(0)+"kg collected";
+      h+="</div></div>";
+      // Right: numbers
+      h+="<div style='text-align:right;flex-shrink:0'>";
+      h+="<div style='font-size:17px;font-weight:900;color:var(--gold);letter-spacing:-.3px'>"+fmt(dep2)+"</div>";
+      if(pl!==0)h+="<div style='font-size:12px;font-weight:700;color:"+(pl>0?"var(--green)":"var(--red)")+"'>"+(pl>0?"+":"")+fmt(pl)+"</div>";
       h+="</div>";
-      if(tab2==="overview"){
-        h+="<div class='g4' style='margin-bottom:14px'>";
-        h+="<div class='stat-box'><div class='lbl2'>CAPITAL</div><div class='val' style='color:var(--gold)'>"+fmt(dep2)+"</div></div>";
-        h+="<div class='stat-box'><div class='lbl2'>RETURNED</div><div class='val' style='color:var(--grn)'>"+fmt(ret2)+"</div></div>";
-        h+="<div class='stat-box'><div class='lbl2'>EXPECTED</div><div class='val' style='color:var(--purple)'>"+fmt(exp)+"</div></div>";
-        h+="<div class='stat-box'><div class='lbl2'>P&L</div><div class='val' style='color:"+(pl>=0?"var(--grn)":"var(--red)")+"'>"+(pl>=0?"+":"")+fmt(pl)+"</div></div></div>";
-        if(exp>0){h+="<div style='margin-bottom:14px'><div style='display:flex;justify-content:space-between;font-size:11px;color:var(--mut);margin-bottom:5px'><span>Return Progress</span><span>"+fmt(ret2)+" / "+fmt(exp)+" ("+pp.toFixed(0)+"%)</span></div><div class='pbar' style='height:8px'><div class='pfill' style='width:"+pp+"%'></div></div></div>";}
-        if(cols2.length){
-          h+="<div class='g4' style='margin-bottom:14px'>";
-          h+="<div class='stat-box'><div class='lbl2'>TOTAL COLLECTED</div><div class='val' style='color:var(--teal)'>"+totalColKg.toFixed(1)+" kg</div></div>";
-          h+="<div class='stat-box'><div class='lbl2'>SOLD</div><div class='val' style='color:var(--grn)'>"+totalSoldKg.toFixed(1)+" kg</div></div>";
-          h+="<div class='stat-box'><div class='lbl2'>IN STOCK</div><div class='val' style='color:var(--gold)'>"+stockKg.toFixed(1)+" kg</div></div>";
-          h+="<div class='stat-box'><div class='lbl2'>REVENUE</div><div class='val' style='color:var(--purple)'>"+fmt(totalRevenue)+"</div></div></div>";
-        }
-        if(budget.totalBudget>0){var bp=Math.min(Math.round(totalBudgetSpent/budget.totalBudget*100),100);var bc2=bp>85?"var(--red)":bp>60?"var(--gold)":"var(--grn)";h+="<div style='margin-bottom:14px;background:var(--s2);border-radius:10px;padding:10px 12px;border:1px solid var(--bor)'><div style='display:flex;justify-content:space-between;font-size:11px;margin-bottom:6px'><span style='color:var(--mut);font-weight:700'>BUDGET</span><span style='color:"+bc2+";font-weight:800'>"+fmt(totalBudgetSpent)+" / "+fmt(budget.totalBudget)+"</span></div><div class='pbar' style='height:7px'><div style='height:100%;width:"+bp+"%;background:"+bc2+";border-radius:99px'></div></div></div>";}
-        if(inv.teamMembers&&inv.teamMembers.length)h+="<div style='margin-bottom:14px'><div style='font-size:10px;color:var(--mut);font-weight:700;margin-bottom:6px'>TEAM</div><div style='display:flex;gap:5px;flex-wrap:wrap'>"+inv.teamMembers.map(function(t){return"<span style='background:var(--s2);border:1px solid var(--bor);border-radius:99px;padding:4px 11px;font-size:12px'>"+t+"</span>";}).join("")+"</div></div>";
-        if(inv.notes)h+="<div style='font-size:12px;color:var(--mut);padding:10px 12px;background:var(--s2);border-radius:8px;line-height:1.6;margin-bottom:12px'>"+inv.notes+"</div>";
-      } else if(tab2==="collection"){
-        h+="<div style='display:flex;justify-content:space-between;align-items:center;margin-bottom:12px'>";
-        h+="<div style='font-size:11px;color:var(--mut);font-weight:700'>DAILY COLLECTION LOG</div>";
-        if(canManageProj())h+="<button class='btn-a' onclick='openCollection(\""+inv.id+"\")'>+ Add Entry</button>";
-        h+="</div>";
-        if(!cols2.length)h+="<div style='text-align:center;padding:28px;color:var(--mut)'>No collection entries yet.</div>";
-        else{
-          h+="<div class='sw'><table class='tbl'><thead><tr><th>Date</th><th>Source</th><th style='text-align:right'>Collected (kg)</th><th style='text-align:right'>Sold (kg)</th><th style='text-align:right'>Stock (kg)</th><th style='text-align:right'>Price/kg</th><th style='text-align:right'>Revenue</th><th></th></tr></thead><tbody>";
-          cols2.slice().reverse().forEach(function(c2,ci){var stock2=Number(c2.kg||0)-Number(c2.soldKg||0);h+="<tr><td style='color:var(--mut);font-size:12px;white-space:nowrap'>"+fd(c2.date)+"</td><td style='font-size:12px'>"+( c2.source||"—")+"</td><td style='text-align:right;color:var(--teal);font-weight:700'>"+Number(c2.kg||0).toFixed(1)+"</td><td style='text-align:right;color:var(--grn);font-weight:700'>"+Number(c2.soldKg||0).toFixed(1)+"</td><td style='text-align:right;color:var(--gold);font-weight:700'>"+stock2.toFixed(1)+"</td><td style='text-align:right;color:var(--mut);font-size:12px'>"+(c2.pricePerKg?fmt(c2.pricePerKg):"—")+"</td><td style='text-align:right;color:var(--purple);font-weight:700'>"+fmt(c2.revenue||0)+"</td><td>"+(isAdmin()?"<button onclick='delCollection(\""+inv.id+"\","+( cols2.length-1-ci)+")' class='btn-d' style='padding:3px 7px;font-size:10px'>✕</button>":"")+"</td></tr>";});
-          h+="</tbody></table></div>";
-        }
-      } else if(tab2==="sales"){
-        h+="<div style='margin-bottom:14px'>";
-        h+="<div class='g3'>";
-        h+="<div class='stat-box'><div class='lbl2'>TOTAL REVENUE</div><div class='val' style='color:var(--purple)'>"+fmt(totalRevenue)+"</div></div>";
-        h+="<div class='stat-box'><div class='lbl2'>TOTAL SOLD</div><div class='val' style='color:var(--grn)'>"+totalSoldKg.toFixed(1)+" kg</div></div>";
-        h+="<div class='stat-box'><div class='lbl2'>AVG PRICE/KG</div><div class='val' style='color:var(--gold)'>"+(totalSoldKg>0?fmt(Math.round(totalRevenue/totalSoldKg)):"—")+"</div></div></div></div>";
-        var salesData=cols2.filter(function(c2){return Number(c2.soldKg||0)>0;});
-        if(!salesData.length)h+="<div style='text-align:center;padding:28px;color:var(--mut)'>No sales recorded yet. Add entries in Collection tab.</div>";
-        else{h+="<div class='sw'><table class='tbl'><thead><tr><th>Date</th><th>Sold (kg)</th><th style='text-align:right'>Price/kg</th><th style='text-align:right'>Revenue</th><th>Notes</th></tr></thead><tbody>";salesData.slice().reverse().forEach(function(c2){h+="<tr><td style='color:var(--mut);font-size:12px'>"+fd(c2.date)+"</td><td style='color:var(--grn);font-weight:700'>"+Number(c2.soldKg||0).toFixed(1)+" kg</td><td style='text-align:right;color:var(--gold)'>"+(c2.pricePerKg?fmt(c2.pricePerKg):"—")+"</td><td style='text-align:right;color:var(--purple);font-weight:700'>"+fmt(c2.revenue||0)+"</td><td style='color:var(--mut);font-size:12px'>"+(c2.saleNote||"—")+"</td></tr>";});h+="</tbody></table></div>";}
-      } else if(tab2==="milestones"){
-        h+="<div style='display:flex;justify-content:space-between;align-items:center;margin-bottom:12px'><div style='font-size:11px;color:var(--mut);font-weight:700'>MILESTONES</div>"+(isAdmin()?"<button class='btn-a' onclick='openMilestone(\""+inv.id+"\")'>+ Add</button>":"")+"</div>";
-        var ms=inv.milestones||[];
-        if(!ms.length)h+="<div style='text-align:center;padding:28px;color:var(--mut)'>No milestones yet.</div>";
-        else{h+="<div style='background:var(--s2);border-radius:11px;padding:4px 14px;border:1px solid var(--bor)'>";ms.forEach(function(m,i){h+="<div style='display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--bor)'><div style='width:22px;height:22px;border-radius:50%;background:"+(m.done?"var(--grn)":"var(--bor)")+";display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;color:"+(m.done?"#fff":"var(--mut)")+";flex-shrink:0'>"+(m.done?"✓":(i+1))+"</div><div style='flex:1'><div style='font-size:13px;font-weight:600;color:"+(m.done?"var(--grn)":"var(--txt)")+"'>"+m.title+"</div>"+(m.note?"<div style='font-size:11px;color:var(--mut)'>"+m.note+"</div>":"")+"</div>"+(m.date?"<div style='font-size:11px;color:var(--mut)'>"+fd(m.date)+"</div>":"")+(isAdmin()?"<button onclick='toggleMilestone(\""+inv.id+"\","+i+")' class='btn-s' style='padding:4px 8px;font-size:11px'>"+(m.done?"Undo":"Done")+"</button>":"")+"</div>";});h+="</div>";}
-      } else if(tab2==="tasks"){
-        // TASKS TAB
-        h+="<div style='display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px'>";
-        h+="<div><div style='font-size:11px;color:var(--mut);font-weight:700'>TASK ASSIGNMENTS</div><div style='font-size:10px;color:var(--mut);margin-top:2px'>"+tasks.filter(function(t){return t.status==="done";}).length+" / "+tasks.length+" done</div></div>";
-        if(isAdmin()||canManageProj())h+="<button class='btn-a' onclick='openTask(\""+inv.id+"\",null)'>+ Add Task</button>";
-        h+="</div>";
-        if(!tasks.length)h+="<div style='text-align:center;padding:28px;color:var(--mut);font-size:13px'>No tasks yet. Add tasks and assign to team members.</div>";
-        else{
-          ["todo","doing","done"].forEach(function(st2){
-            var grp=tasks.filter(function(t){return t.status===st2;});if(!grp.length)return;
-            var stLabel={todo:"🔲 To Do",doing:"🔄 In Progress",done:"✅ Done"}[st2];
-            var stClr={todo:"var(--mut)",doing:"var(--gold)",done:"var(--grn)"}[st2];
-            h+="<div style='margin-bottom:10px'><div style='font-size:10px;font-weight:700;letter-spacing:1px;color:"+stClr+";margin-bottom:6px'>"+stLabel+" ("+grp.length+")</div>";
-            h+="<div style='background:var(--s2);border-radius:11px;padding:4px 12px;border:1px solid var(--bor)'>";
-            grp.forEach(function(tk){
-              var ri=tasks.indexOf(tk);
-              var pc={high:"prio-high",medium:"prio-med",low:"prio-low"}[tk.priority||"medium"]||"prio-med";
-              var assM=tk.assigneeId?S.mems.find(function(x){return x.id===tk.assigneeId;}):null;
-              h+="<div class='task-row'>";
-              h+="<button onclick='cycleTask(\""+inv.id+"\","+ri+")' style='width:20px;height:20px;border-radius:5px;border:1px solid "+(tk.status==="done"?"var(--grn)":"var(--bor)")+";background:"+(tk.status==="done"?"var(--gdm)":"transparent")+";color:var(--grn);font-size:12px;cursor:pointer;flex-shrink:0;display:flex;align-items:center;justify-content:center'>"+(tk.status==="done"?"✓":"")+"</button>";
-              h+="<div style='flex:1;min-width:0'><div style='display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:2px'><span style='font-size:13px;font-weight:700;color:"+(tk.status==="done"?"var(--mut)":"var(--txt)")+";'+(tk.status==="done"?"text-decoration:line-through;":"")+"'>"+tk.title+"</span><span class='"+pc+"'>"+(tk.priority||"med")+"</span></div>";
-              h+="<div style='font-size:11px;color:var(--mut)'>"+(assM?"👤 "+assM.name+" &nbsp;":"")+(tk.deadline?"📅 "+fd(tk.deadline):"")+(tk.note?"<br>"+tk.note:"")+"</div></div>";
-              if(isAdmin()||canManageProj())h+="<div style='display:flex;gap:4px;flex-shrink:0'><button onclick='openTask(\""+inv.id+"\","+ri+")' class='btn-s' style='padding:3px 7px;font-size:10px'>Edit</button>"+(isAdmin()?"<button onclick='delTask(\""+inv.id+"\","+ri+")' class='btn-d' style='padding:3px 7px;font-size:10px'>✕</button>":"")+"</div>";
-              h+="</div>";
-            });
-            h+="</div></div>";
-          });
-        }
-      } else if(tab2==="contacts"){
-        // CONTACTS TAB
-        var suppliers=inv.suppliers||[];var buyers=inv.buyers||[];
-        h+="<div style='margin-bottom:18px'><div style='display:flex;justify-content:space-between;align-items:center;margin-bottom:11px;flex-wrap:wrap;gap:8px'>";
-        h+="<div style='font-size:11px;color:var(--teal);font-weight:700;letter-spacing:1px'>📦 SUPPLIERS ("+suppliers.length+")</div>";
-        if(isAdmin())h+="<button class='btn-a' onclick='openContact(\""+inv.id+"\",\"supplier\",null)'>+ Add Supplier</button>";
-        h+="</div>";
-        if(!suppliers.length)h+="<div style='text-align:center;padding:20px;color:var(--mut);font-size:12px'>No suppliers yet.</div>";
-        else suppliers.forEach(function(s2,si){h+="<div style='background:var(--s2);border:1px solid "+(s2.active?"#14b8a622":"var(--bor)")+";border-radius:10px;padding:11px 13px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:7px'><div style='flex:1;min-width:150px'><div style='font-weight:700'>"+s2.name+"</div><div style='font-size:11px;color:var(--mut)'>"+(s2.phone?"📞 "+s2.phone+" · ":"")+(s2.productType||"")+(s2.buyPricePerKg?" · Buy: "+fmt(s2.buyPricePerKg)+"/kg":"")+"</div>"+(s2.note?"<div style='font-size:11px;color:var(--mut);font-style:italic'>"+s2.note+"</div>":"")+"</div><span class='bdg' style='background:"+(s2.active?"#00302088":"#1a040488")+";color:"+(s2.active?"var(--teal)":"var(--red)")+"'>"+(s2.active?"Active":"Inactive")+"</span>"+(isAdmin()?"<div style='display:flex;gap:4px'><button onclick='openContact(\""+inv.id+"\",\"supplier\","+si+")' class='btn-s' style='padding:4px 8px;font-size:11px'>Edit</button><button onclick='delContact(\""+inv.id+"\",\"supplier\","+si+")' class='btn-d' style='padding:4px 8px;font-size:11px'>✕</button></div>":"")+"</div>";});
-        h+="</div>";
-        h+="<div><div style='display:flex;justify-content:space-between;align-items:center;margin-bottom:11px;flex-wrap:wrap;gap:8px'>";
-        h+="<div style='font-size:11px;color:var(--gold);font-weight:700;letter-spacing:1px'>🏪 BUYERS ("+buyers.length+")</div>";
-        if(isAdmin())h+="<button class='btn-a' onclick='openContact(\""+inv.id+"\",\"buyer\",null)'>+ Add Buyer</button>";
-        h+="</div>";
-        if(!buyers.length)h+="<div style='text-align:center;padding:20px;color:var(--mut);font-size:12px'>No buyers yet.</div>";
-        else buyers.forEach(function(b2,bi){h+="<div style='background:var(--s2);border:1px solid "+(b2.active?"#f59e0b22":"var(--bor)")+";border-radius:10px;padding:11px 13px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:7px'><div style='flex:1;min-width:150px'><div style='font-weight:700'>"+b2.name+"</div><div style='font-size:11px;color:var(--mut)'>"+(b2.phone?"📞 "+b2.phone+" · ":"")+(b2.productType||"")+(b2.sellPricePerKg?" · Sell: "+fmt(b2.sellPricePerKg)+"/kg":"")+"</div>"+(b2.note?"<div style='font-size:11px;color:var(--mut);font-style:italic'>"+b2.note+"</div>":"")+"</div><span class='bdg' style='background:"+(b2.active?"#1c0e0088":"#1a040488")+";color:"+(b2.active?"var(--gold)":"var(--red)")+"'>"+(b2.active?"Active":"Inactive")+"</span>"+(isAdmin()?"<div style='display:flex;gap:4px'><button onclick='openContact(\""+inv.id+"\",\"buyer\","+bi+")' class='btn-s' style='padding:4px 8px;font-size:11px'>Edit</button><button onclick='delContact(\""+inv.id+"\",\"buyer\","+bi+")' class='btn-d' style='padding:4px 8px;font-size:11px'>✕</button></div>":"")+"</div>";});
-        h+="</div>";
-      } else if(tab2==="budget"){
-        // BUDGET TAB
-        var bcat=budget.categories||[];
-        h+="<div style='display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:8px'>";
-        h+="<div style='font-size:11px;color:var(--mut);font-weight:700'>BUDGET CONTROL</div>";
-        if(isAdmin())h+="<div style='display:flex;gap:6px'><button onclick='openBudgetEdit(\""+inv.id+"\")' class='btn-s' style='font-size:11px'>⚙ Set Total</button><button onclick='openBudgetCat(\""+inv.id+"\",null)' class='btn-a'>+ Category</button></div>";
-        h+="</div>";
-        if(budget.totalBudget>0){
-          var bp2=Math.min(Math.round(totalBudgetSpent/budget.totalBudget*100),100);var bc3=bp2>85?"var(--red)":bp2>60?"var(--gold)":"var(--grn)";
-          h+="<div class='hero' style='margin-bottom:14px'><div style='display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:12px'><div><div style='font-size:10px;color:var(--mut);font-weight:700;letter-spacing:1px;margin-bottom:4px'>TOTAL BUDGET</div><div style='font-size:24px;font-weight:900;color:"+bc3+"'>"+fmt(budget.totalBudget)+"</div></div><div style='text-align:right'><div style='font-size:10px;color:var(--mut);font-weight:700;letter-spacing:1px;margin-bottom:4px'>SPENT</div><div style='font-size:24px;font-weight:900;color:var(--red)'>"+fmt(totalBudgetSpent)+"</div></div><div style='text-align:right'><div style='font-size:10px;color:var(--mut);font-weight:700;letter-spacing:1px;margin-bottom:4px'>REMAINING</div><div style='font-size:24px;font-weight:900;color:var(--grn)'>"+fmt(Math.max(0,budget.totalBudget-totalBudgetSpent))+"</div></div></div>";
-          h+="<div class='pbar' style='height:10px'><div style='height:100%;width:"+bp2+"%;background:"+bc3+";border-radius:99px'></div></div><div style='font-size:11px;color:var(--mut);margin-top:5px'>"+bp2+"% used</div></div>";
-        }
-        if(!bcat.length)h+="<div style='text-align:center;padding:24px;color:var(--mut);font-size:12px'>No budget categories. Add categories to track spending.</div>";
-        else bcat.forEach(function(c2,ci){
-          var catSpent=Number(c2.spent||0),catAlloc=Number(c2.allocated||0);
-          var cp=catAlloc>0?Math.min(Math.round(catSpent/catAlloc*100),100):0;var cclr=cp>85?"var(--red)":cp>60?"var(--gold)":"var(--grn)";
-          h+="<div style='background:var(--s2);border-radius:10px;padding:12px 14px;border:1px solid var(--bor);margin-bottom:8px'>";
-          h+="<div style='display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px;flex-wrap:wrap;gap:6px'><div><div style='font-weight:700;font-size:13px'>"+c2.name+"</div>"+(c2.note?"<div style='font-size:11px;color:var(--mut)'>"+c2.note+"</div>":"")+"</div><div style='text-align:right'><div style='font-size:12px;font-weight:800;color:"+cclr+"'>"+fmt(catSpent)+" / "+fmt(catAlloc)+"</div><div style='font-size:10px;color:var(--mut)'>"+cp+"%</div></div></div>";
-          h+="<div class='pbar'><div style='height:100%;width:"+cp+"%;background:"+cclr+";border-radius:99px'></div></div>";
-          if(isAdmin())h+="<div style='display:flex;gap:5px;margin-top:9px;flex-wrap:wrap'><button onclick='openBudgetCat(\""+inv.id+"\","+ci+")' class='btn-s' style='font-size:11px;padding:4px 9px'>Edit</button><button onclick='openSpendLog(\""+inv.id+"\","+ci+")' style='padding:4px 9px;border-radius:7px;border:1px solid var(--gbr);background:var(--gdm);color:var(--grn);font-size:11px;font-weight:700;cursor:pointer;font-family:inherit'>+ Log Spend</button><button onclick='delBudgetCat(\""+inv.id+"\","+ci+")' class='btn-d' style='font-size:11px;padding:4px 9px'>✕</button></div>";
-          h+="</div>";
-        });
-      }
+      // Arrow
+      h+="<div style='color:var(--mut);font-size:18px;flex-shrink:0'>›</div>";
       h+="</div>";
-      // Action buttons
-      h+="<div style='padding:12px 18px;border-top:1px solid var(--bor);display:flex;gap:7px;flex-wrap:wrap'>";
-      if(isAdmin()){h+="<button class='btn-s' onclick='openInv(\""+inv.id+"\")'>✏ Edit</button><button class='btn-s' onclick='openMilestone(\""+inv.id+"\")'>🎯 Milestone</button><button class='btn-d' onclick='delInv(\""+inv.id+"\")'>Delete</button>";}
-      if(canManageProj())h+="<button class='btn-s' onclick='S.invs.find(function(x){return x.id==\""+inv.id+"\"})._tab=\"collection\";render()'>📦 Collection</button>";
-      h+="</div>";
+      // Progress bar at bottom
+      if(exp>0){h+="<div style='height:2px;background:var(--bor);width:100%'><div style='height:100%;width:"+pp+"%;background:"+st.C+";opacity:.7'></div></div>";}
       h+="</div>";
     });
+    h+="</div>";
   }
   h+="</div>";return h;
+}
+
+function pProject(id){
+  var inv=S.invs.find(function(x){return x.id===id;});
+  if(!inv)return "<div class='card' style='text-align:center;padding:48px;color:var(--mut)'>Project not found. <button onclick='backToProjects()' class='btn-a' style='margin-top:12px'>← Back</button></div>";
+  var ST={active:{L:"Active",C:"#3b82f6",B:"#060e1c",BD:"#0c1e40"},planning:{L:"Planning",C:"#f59e0b",B:"#0e0800",BD:"#3d2000"},completed:{L:"Completed",C:"#10b981",B:"#031209",BD:"#064e3b"},paused:{L:"Paused",C:"#6b7594",B:"#0c0e14",BD:"#1a1f2e"},loss:{L:"Loss",C:"#ef4444",B:"#0e0303",BD:"#450a0a"}};
+  var st=ST[inv.status]||ST.planning;
+  var dep2=Number(inv.capitalDeployed||inv.amount||0),ret2=Number(inv.actualReturn||0),exp=Number(inv.expectedReturn||0),pl=ret2-dep2,pp=exp>0?Math.min(Math.round(ret2/exp*100),100):0;
+  var cols2=inv.collections||[];
+  var totalColKg=cols2.reduce(function(s,c){return s+Number(c.kg||0);},0);
+  var totalSoldKg=cols2.reduce(function(s,c){return s+Number(c.soldKg||0);},0);
+  var totalRevenue=cols2.reduce(function(s,c){return s+Number(c.revenue||0);},0);
+  var stockKg=totalColKg-totalSoldKg;
+  var tasks=inv.tasks||[];var openTasks=tasks.filter(function(t){return t.status!=="done";}).length;
+  var budget=inv.budget||{totalBudget:0,categories:[]};
+  var totalBudgetSpent=budget.categories.reduce(function(s,c){return s+Number(c.spent||0);},0);
+  var suppliers=inv.suppliers||[];var buyers=inv.buyers||[];
+  var tab2=S.projTab||"overview";
+  var h="<div class='fc'>";
+  // Back button + Edit
+  h+="<div style='display:flex;align-items:center;gap:10px;flex-wrap:wrap'>";
+  h+="<button onclick='backToProjects()' style='display:flex;align-items:center;gap:6px;padding:9px 14px;border-radius:10px;border:1px solid var(--bor);background:var(--s2);color:var(--mut2);font-size:13px;font-weight:700;cursor:pointer;font-family:inherit'>‹ Projects</button>";
+  h+="<div style='flex:1'></div>";
+  if(isAdmin())h+="<button class='btn-a' onclick='openInv(""+inv.id+"")'>✏ Edit</button>";
+  if(isAdmin())h+="<button class='btn-d' onclick='delInv(""+inv.id+"")'>Delete</button>";
+  h+="</div>";
+  // Project header
+  h+="<div class='proj-page'>";
+  h+="<div style='padding:24px 26px;background:linear-gradient(140deg,var(--gdm),#08101e);border-bottom:1px solid var(--bor)'>";
+  h+="<div style='display:flex;align-items:flex-start;gap:14px;flex-wrap:wrap'>";
+  h+="<div style='width:5px;height:52px;border-radius:99px;background:"+st.C+";flex-shrink:0;margin-top:2px'></div>";
+  h+="<div style='flex:1;min-width:0'>";
+  h+="<div style='display:flex;align-items:center;gap:9px;flex-wrap:wrap;margin-bottom:5px'>";
+  h+="<h2 style='font-size:22px;font-weight:900;letter-spacing:-.5px'>"+inv.name+"</h2>";
+  h+="<span class='bdg' style='background:"+st.B+";color:"+st.C+";border:1px solid "+st.BD+"'>"+st.L+"</span>";
+  if(openTasks>0)h+="<span class='bdg' style='background:#0d0a1f;color:var(--purple);border:1px solid #2d1b6944'>"+openTasks+" open tasks</span>";
+  h+="</div>";
+  h+="<div style='font-size:12px;color:var(--mut2);margin-bottom:8px'>"+(inv.sector||"")+(inv.partner?" · "+inv.partner:"")+(inv.date?" · Started "+fd(inv.date):"")+"</div>";
+  if(inv.description)h+="<div style='font-size:13px;color:var(--mut2);line-height:1.7'>"+inv.description+"</div>";
+  h+="</div>";
+  h+="<div style='text-align:right;flex-shrink:0'><div style='font-size:9px;color:var(--mut2);font-weight:700;letter-spacing:2px;margin-bottom:4px'>CAPITAL</div><div style='font-size:22px;font-weight:900;color:var(--gold);letter-spacing:-.5px'>"+fmt(dep2)+"</div>"+(pl!==0?"<div style='font-size:13px;font-weight:700;color:"+(pl>0?"var(--green)":"var(--red)")+"'>"+(pl>0?"+":"")+fmt(pl)+"</div>":"")+"</div>";
+  h+="</div>";
+  if(exp>0){h+="<div style='margin-top:16px'><div style='display:flex;justify-content:space-between;font-size:11px;color:var(--mut2);margin-bottom:6px'><span>Return progress</span><span>"+fmt(ret2)+" / "+fmt(exp)+" · "+pp+"%</span></div><div style='height:5px;background:#ffffff0a;border-radius:99px;overflow:hidden'><div style='height:100%;width:"+pp+"%;background:"+st.C+";border-radius:99px'></div></div></div>";}
+  h+="</div>";
+  // Sub-page tab bar
+  h+="<div class='proj-tab-bar'>";
+  [{k:"overview",l:"Overview"},{k:"log",l:"Daily Log"},{k:"financials",l:"Financials"},{k:"tasks",l:"Tasks"+(openTasks>0?" ("+openTasks+")":"")},{k:"contacts",l:"Contacts"},{k:"milestones",l:"Milestones"}].forEach(function(tb){
+    h+="<button class='proj-tab"+(tab2===tb.k?" active":"")+"' onclick='S.projTab=""+tb.k+"";render()'>"+tb.l+"</button>";
+  });
+  h+="</div>";
+  // Sub-page content
+  h+="<div style='padding:22px 24px'>";
+
+  if(tab2==="overview"){
+    h+="<div class='g4' style='margin-bottom:18px'>";
+    h+="<div class='stat-box'><div class='lbl2'>Capital</div><div class='val' style='color:var(--gold)'>"+fmt(dep2)+"</div></div>";
+    h+="<div class='stat-box'><div class='lbl2'>Returned</div><div class='val' style='color:var(--green)'>"+fmt(ret2)+"</div></div>";
+    h+="<div class='stat-box'><div class='lbl2'>Expected</div><div class='val' style='color:var(--purple)'>"+fmt(exp)+"</div></div>";
+    h+="<div class='stat-box'><div class='lbl2'>P&amp;L</div><div class='val' style='color:"+(pl>=0?"var(--green)":"var(--red)")+"'>"+(pl>=0?"+":"")+fmt(pl)+"</div></div></div>";
+    if(cols2.length){
+      h+="<div class='g4' style='margin-bottom:18px'>";
+      h+="<div class='stat-box'><div class='lbl2'>Collected</div><div class='val' style='color:var(--teal)'>"+totalColKg.toFixed(1)+" kg</div></div>";
+      h+="<div class='stat-box'><div class='lbl2'>Sold</div><div class='val' style='color:var(--green)'>"+totalSoldKg.toFixed(1)+" kg</div></div>";
+      h+="<div class='stat-box'><div class='lbl2'>In Stock</div><div class='val' style='color:var(--gold)'>"+stockKg.toFixed(1)+" kg</div></div>";
+      h+="<div class='stat-box'><div class='lbl2'>Revenue</div><div class='val' style='color:var(--purple)'>"+fmt(totalRevenue)+"</div></div></div>";
+    }
+    if(budget.totalBudget>0){
+      var bp3=Math.min(Math.round(totalBudgetSpent/budget.totalBudget*100),100);
+      var bc4=bp3>85?"var(--red)":bp3>60?"var(--gold)":"var(--green)";
+      h+="<div style='background:var(--s2);border-radius:14px;padding:14px 16px;border:1px solid var(--bor);margin-bottom:16px'><div style='display:flex;justify-content:space-between;margin-bottom:8px'><span style='font-size:11px;color:var(--mut2);font-weight:700;letter-spacing:1px'>BUDGET</span><span style='font-size:12px;font-weight:800;color:"+bc4+"'>"+fmt(totalBudgetSpent)+" / "+fmt(budget.totalBudget)+"</span></div><div class='pbar' style='height:6px'><div style='height:100%;width:"+bp3+"%;background:"+bc4+";border-radius:99px'></div></div></div>";
+    }
+    if(inv.teamMembers&&inv.teamMembers.length){h+="<div style='margin-bottom:16px'><div style='font-size:10px;color:var(--mut2);font-weight:700;letter-spacing:1.5px;margin-bottom:8px'>TEAM MEMBERS</div><div style='display:flex;gap:6px;flex-wrap:wrap'>"+inv.teamMembers.map(function(t){return"<span style='background:var(--s2);border:1px solid var(--bor);border-radius:99px;padding:5px 13px;font-size:12px;font-weight:600'>"+t+"</span>";}).join("")+"</div></div>";}
+    if(inv.notes)h+="<div style='font-size:13px;color:var(--mut2);padding:14px 16px;background:var(--s2);border-radius:12px;line-height:1.7;border:1px solid var(--bor)'>"+inv.notes+"</div>";
+
+  } else if(tab2==="log"){
+    h+="<div style='display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:8px'>";
+    h+="<div><div style='font-size:14px;font-weight:800'>Daily Collection Log</div><div style='font-size:12px;color:var(--mut2);margin-top:2px'>"+cols2.length+" entries · "+totalColKg.toFixed(1)+" kg total</div></div>";
+    if(canManageProj())h+="<button class='btn-a' onclick='openCollection(""+inv.id+"")'>+ Add Entry</button>";
+    h+="</div>";
+    if(!cols2.length)h+="<div style='text-align:center;padding:48px;color:var(--mut2);border:1px dashed var(--bor);border-radius:14px'><div style='font-size:32px;opacity:.3;margin-bottom:10px'>📦</div><div style='font-weight:700'>No entries yet</div><div style='font-size:12px;margin-top:4px'>Start logging daily collection</div></div>";
+    else{
+      h+="<div class='sw'><table class='tbl'><thead><tr><th>Date</th><th>Source</th><th style='text-align:right'>Collected</th><th style='text-align:right'>Sold</th><th style='text-align:right'>Stock</th><th style='text-align:right'>Price/kg</th><th style='text-align:right'>Revenue</th><th></th></tr></thead><tbody>";
+      cols2.slice().reverse().forEach(function(c2,ci){
+        var stock2=Number(c2.kg||0)-Number(c2.soldKg||0);
+        h+="<tr><td style='color:var(--mut2);font-size:12px;white-space:nowrap'>"+fd(c2.date)+"</td><td style='font-size:13px;font-weight:600'>"+(c2.source||"—")+"</td>";
+        h+="<td style='text-align:right;color:var(--teal);font-weight:700'>"+Number(c2.kg||0).toFixed(1)+" kg</td>";
+        h+="<td style='text-align:right;color:var(--green);font-weight:700'>"+Number(c2.soldKg||0).toFixed(1)+" kg</td>";
+        h+="<td style='text-align:right;color:var(--gold);font-weight:700'>"+stock2.toFixed(1)+" kg</td>";
+        h+="<td style='text-align:right;color:var(--mut2);font-size:12px'>"+(c2.pricePerKg?fmt(c2.pricePerKg):"—")+"</td>";
+        h+="<td style='text-align:right;color:var(--purple);font-weight:700'>"+fmt(c2.revenue||0)+"</td>";
+        h+="<td>"+(isAdmin()?"<button onclick='delCollection(""+inv.id+"","+(cols2.length-1-ci)+")' class='btn-d' style='padding:3px 8px;font-size:11px'>✕</button>":"")+"</td></tr>";
+      });
+      h+="</tbody></table></div>";
+    }
+
+  } else if(tab2==="financials"){
+    h+="<div style='display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:8px'>";
+    h+="<div style='font-size:14px;font-weight:800'>Financials & Budget</div>";
+    if(isAdmin())h+="<div style='display:flex;gap:7px'><button onclick='openBudgetEdit(""+inv.id+"")' class='btn-s' style='font-size:12px'>⚙ Set Budget</button><button onclick='openBudgetCat(""+inv.id+"",null)' class='btn-a'>+ Category</button></div>";
+    h+="</div>";
+    // P&L summary
+    h+="<div class='hero' style='margin-bottom:16px'>";
+    h+="<div style='display:grid;grid-template-columns:repeat(3,1fr);gap:0;text-align:center'>";
+    h+="<div><div style='font-size:9px;color:var(--mut2);font-weight:700;letter-spacing:2px;margin-bottom:5px'>INVESTED</div><div style='font-size:20px;font-weight:900;color:var(--gold)'>"+fmt(dep2)+"</div></div>";
+    h+="<div style='border-left:1px solid var(--bor);border-right:1px solid var(--bor)'><div style='font-size:9px;color:var(--mut2);font-weight:700;letter-spacing:2px;margin-bottom:5px'>RETURNED</div><div style='font-size:20px;font-weight:900;color:var(--green)'>"+fmt(ret2)+"</div></div>";
+    h+="<div><div style='font-size:9px;color:var(--mut2);font-weight:700;letter-spacing:2px;margin-bottom:5px'>P&amp;L</div><div style='font-size:20px;font-weight:900;color:"+(pl>=0?"var(--green)":"var(--red)")+"'>"+(pl>=0?"+":"")+fmt(pl)+"</div></div>";
+    h+="</div>";
+    if(exp>0){h+="<div style='margin-top:16px'><div style='display:flex;justify-content:space-between;font-size:11px;color:var(--mut2);margin-bottom:6px'><span>Target progress</span><span>"+fmt(ret2)+" / "+fmt(exp)+"</span></div><div style='height:6px;background:#ffffff0a;border-radius:99px;overflow:hidden'><div style='height:100%;width:"+pp+"%;background:var(--green);border-radius:99px'></div></div></div>";}
+    h+="</div>";
+    // Revenue from sales
+    if(totalRevenue>0){h+="<div style='background:var(--s2);border-radius:14px;padding:14px 16px;border:1px solid var(--bor);margin-bottom:12px;display:flex;justify-content:space-between;align-items:center'><div><div style='font-size:10px;color:var(--mut2);font-weight:700;letter-spacing:1.5px'>TOTAL SALES REVENUE</div><div style='font-size:18px;font-weight:900;color:var(--purple);margin-top:4px'>"+fmt(totalRevenue)+"</div></div><div style='text-align:right'><div style='font-size:10px;color:var(--mut2)'>"+totalSoldKg.toFixed(1)+" kg sold</div><div style='font-size:12px;color:var(--mut2)'>"+(totalSoldKg>0?"Avg "+fmt(Math.round(totalRevenue/totalSoldKg))+"/kg":"")+"</div></div></div>";}
+    // Budget categories
+    var bcat=budget.categories||[];
+    if(budget.totalBudget>0||bcat.length){
+      if(budget.totalBudget>0){
+        var bp4=Math.min(Math.round(totalBudgetSpent/budget.totalBudget*100),100);var bc5=bp4>85?"var(--red)":bp4>60?"var(--gold)":"var(--green)";
+        h+="<div style='background:var(--s2);border-radius:14px;padding:16px;border:1px solid var(--bor);margin-bottom:12px'>";
+        h+="<div style='display:flex;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:8px'>";
+        h+="<div><div style='font-size:10px;color:var(--mut2);font-weight:700;letter-spacing:1.5px;margin-bottom:5px'>TOTAL BUDGET</div><div style='font-size:22px;font-weight:900;color:"+bc5+"'>"+fmt(budget.totalBudget)+"</div></div>";
+        h+="<div style='text-align:right'><div style='font-size:10px;color:var(--mut2);font-weight:700;letter-spacing:1.5px;margin-bottom:5px'>SPENT</div><div style='font-size:22px;font-weight:900;color:var(--red)'>"+fmt(totalBudgetSpent)+"</div></div>";
+        h+="<div style='text-align:right'><div style='font-size:10px;color:var(--mut2);font-weight:700;letter-spacing:1.5px;margin-bottom:5px'>REMAINING</div><div style='font-size:22px;font-weight:900;color:var(--green)'>"+fmt(Math.max(0,budget.totalBudget-totalBudgetSpent))+"</div></div>";
+        h+="</div>";
+        h+="<div class='pbar' style='height:8px'><div style='height:100%;width:"+bp4+"%;background:"+bc5+";border-radius:99px'></div></div>";
+        h+="<div style='font-size:11px;color:var(--mut2);margin-top:6px'>"+bp4+"% of budget used</div></div>";
+      }
+      if(bcat.length){
+        h+="<div style='display:flex;flex-direction:column;gap:9px'>";
+        bcat.forEach(function(c2,ci){
+          var catSpent=Number(c2.spent||0),catAlloc=Number(c2.allocated||0);
+          var cp2=catAlloc>0?Math.min(Math.round(catSpent/catAlloc*100),100):0;
+          var cclr=cp2>85?"var(--red)":cp2>60?"var(--gold)":"var(--green)";
+          h+="<div style='background:var(--s2);border-radius:13px;padding:13px 15px;border:1px solid var(--bor)'>";
+          h+="<div style='display:flex;justify-content:space-between;margin-bottom:8px;flex-wrap:wrap;gap:6px'>";
+          h+="<div><div style='font-weight:700;font-size:13px'>"+c2.name+"</div>"+(c2.note?"<div style='font-size:11px;color:var(--mut2);margin-top:2px'>"+c2.note+"</div>":"")+"</div>";
+          h+="<div style='text-align:right'><div style='font-size:13px;font-weight:800;color:"+cclr+"'>"+fmt(catSpent)+" / "+fmt(catAlloc)+"</div><div style='font-size:10px;color:var(--mut2)'>"+cp2+"%</div></div>";
+          h+="</div>";
+          h+="<div class='pbar'><div style='height:100%;width:"+cp2+"%;background:"+cclr+";border-radius:99px'></div></div>";
+          if(isAdmin())h+="<div style='display:flex;gap:6px;margin-top:10px'><button onclick='openBudgetCat(""+inv.id+"","+ci+")' class='btn-s' style='font-size:11px'>Edit</button><button onclick='openSpendLog(""+inv.id+"","+ci+")' style='padding:6px 11px;border-radius:8px;border:1px solid var(--gbr);background:var(--gdm);color:var(--grn);font-size:11px;font-weight:700;cursor:pointer;font-family:inherit'>+ Log Spend</button><button onclick='delBudgetCat(""+inv.id+"","+ci+")' class='btn-d' style='font-size:11px'>✕</button></div>";
+          h+="</div>";
+        });
+        h+="</div>";
+      }
+    } else h+="<div style='text-align:center;padding:40px;color:var(--mut2);border:1px dashed var(--bor);border-radius:14px'>No budget set yet. Use ⚙ Set Budget to get started.</div>";
+
+  } else if(tab2==="tasks"){
+    h+="<div style='display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:8px'>";
+    h+="<div><div style='font-size:14px;font-weight:800'>Task Assignments</div><div style='font-size:12px;color:var(--mut2);margin-top:2px'>"+tasks.filter(function(t){return t.status==="done";}).length+" / "+tasks.length+" done</div></div>";
+    if(isAdmin()||canManageProj())h+="<button class='btn-a' onclick='openTask(""+inv.id+"",null)'>+ Add Task</button>";
+    h+="</div>";
+    if(!tasks.length)h+="<div style='text-align:center;padding:48px;color:var(--mut2);border:1px dashed var(--bor);border-radius:14px'><div style='font-size:32px;opacity:.3;margin-bottom:10px'>✅</div><div style='font-weight:700'>No tasks yet</div></div>";
+    else{
+      ["todo","doing","done"].forEach(function(st2){
+        var grp=tasks.filter(function(t){return t.status===st2;});if(!grp.length)return;
+        var stLabel={todo:"To Do",doing:"In Progress",done:"Done"}[st2];
+        var stClr={todo:"var(--mut2)",doing:"var(--gold)",done:"var(--green)"}[st2];
+        h+="<div style='margin-bottom:14px'><div style='font-size:10px;font-weight:700;letter-spacing:1.5px;color:"+stClr+";margin-bottom:8px;text-transform:uppercase'>"+stLabel+" ("+grp.length+")</div>";
+        h+="<div style='background:var(--s2);border-radius:14px;border:1px solid var(--bor);overflow:hidden'>";
+        grp.forEach(function(tk,tki){
+          var ri=tasks.indexOf(tk);
+          var pc={high:"prio-high",medium:"prio-med",low:"prio-low"}[tk.priority||"medium"]||"prio-med";
+          var assM=tk.assigneeId?S.mems.find(function(x){return x.id===tk.assigneeId;}):null;
+          h+="<div class='task-row' style='padding:13px 16px"+(tki>0?";border-top:1px solid var(--bor)":"")+"'>";
+          h+="<button onclick='cycleTask(""+inv.id+"","+ri+")' style='width:22px;height:22px;border-radius:6px;border:1px solid "+(tk.status==="done"?"var(--green)":"var(--bor2)")+";background:"+(tk.status==="done"?"#031209":"transparent")+";color:var(--green);font-size:12px;cursor:pointer;flex-shrink:0;display:flex;align-items:center;justify-content:center'>"+(tk.status==="done"?"✓":"")+"</button>";
+          h+="<div style='flex:1;min-width:0'>";
+          h+="<div style='display:flex;align-items:center;gap:7px;flex-wrap:wrap;margin-bottom:4px'>";
+          h+="<span style='font-size:13px;font-weight:700;color:"+(tk.status==="done"?"var(--mut2)":"var(--txt)")+";'+(tk.status==='done'?'text-decoration:line-through;':'')+''>"+tk.title+"</span>";
+          h+="<span class='"+pc+"'>"+(tk.priority||"med")+"</span>";
+          h+="</div>";
+          h+="<div style='font-size:11px;color:var(--mut2)'>";
+          if(assM)h+="👤 "+assM.name+"  ";
+          if(tk.deadline)h+="📅 "+fd(tk.deadline);
+          if(tk.note)h+="<br>"+tk.note;
+          h+="</div></div>";
+          if(isAdmin()||canManageProj())h+="<div style='display:flex;gap:5px;flex-shrink:0'><button onclick='openTask(""+inv.id+"","+ri+")' class='btn-s' style='padding:4px 9px;font-size:11px'>Edit</button>"+(isAdmin()?"<button onclick='delTask(""+inv.id+"","+ri+")' class='btn-d' style='padding:4px 9px;font-size:11px'>✕</button>":"")+"</div>";
+          h+="</div>";
+        });
+        h+="</div></div>";
+      });
+    }
+
+  } else if(tab2==="contacts"){
+    h+="<div style='margin-bottom:22px'>";
+    h+="<div style='display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px'>";
+    h+="<div><div style='font-size:14px;font-weight:800'>Suppliers</div><div style='font-size:12px;color:var(--mut2);margin-top:2px'>Who you buy from</div></div>";
+    if(isAdmin())h+="<button class='btn-a' onclick='openContact(""+inv.id+"","supplier",null)'>+ Add Supplier</button>";
+    h+="</div>";
+    if(!suppliers.length)h+="<div style='text-align:center;padding:28px;color:var(--mut2);border:1px dashed var(--bor);border-radius:12px;font-size:13px'>No suppliers added yet.</div>";
+    else suppliers.forEach(function(s2,si){
+      h+="<div style='background:var(--s2);border:1px solid "+(s2.active?"var(--teal)22":"var(--bor)")+";border-radius:13px;padding:13px 15px;display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:8px'>";
+      h+="<div style='flex:1;min-width:150px'><div style='font-weight:700;font-size:14px'>"+s2.name+"</div>";
+      h+="<div style='font-size:12px;color:var(--mut2);margin-top:3px'>"+(s2.phone?"📞 "+s2.phone+"  ":"")+(s2.productType||"")+(s2.buyPricePerKg?" · Buy ৳"+s2.buyPricePerKg+"/kg":"")+"</div>";
+      if(s2.note)h+="<div style='font-size:11px;color:var(--mut2);margin-top:2px;font-style:italic'>"+s2.note+"</div>";
+      h+="</div><span class='bdg' style='background:"+(s2.active?"#031a1499":"#1a040499")+";color:"+(s2.active?"var(--teal)":"var(--red)")+"'>"+(s2.active?"Active":"Inactive")+"</span>";
+      if(isAdmin())h+="<div style='display:flex;gap:5px'><button onclick='openContact(""+inv.id+"","supplier","+si+")' class='btn-s' style='font-size:11px'>Edit</button><button onclick='delContact(""+inv.id+"","supplier","+si+")' class='btn-d' style='font-size:11px'>✕</button></div>";
+      h+="</div>";
+    });
+    h+="</div>";
+    h+="<div style='display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px'>";
+    h+="<div><div style='font-size:14px;font-weight:800'>Buyers</div><div style='font-size:12px;color:var(--mut2);margin-top:2px'>Who you sell to</div></div>";
+    if(isAdmin())h+="<button class='btn-a' onclick='openContact(""+inv.id+"","buyer",null)'>+ Add Buyer</button>";
+    h+="</div>";
+    if(!buyers.length)h+="<div style='text-align:center;padding:28px;color:var(--mut2);border:1px dashed var(--bor);border-radius:12px;font-size:13px'>No buyers added yet.</div>";
+    else buyers.forEach(function(b2,bi){
+      h+="<div style='background:var(--s2);border:1px solid "+(b2.active?"var(--gold)22":"var(--bor)")+";border-radius:13px;padding:13px 15px;display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:8px'>";
+      h+="<div style='flex:1;min-width:150px'><div style='font-weight:700;font-size:14px'>"+b2.name+"</div>";
+      h+="<div style='font-size:12px;color:var(--mut2);margin-top:3px'>"+(b2.phone?"📞 "+b2.phone+"  ":"")+(b2.productType||"")+(b2.sellPricePerKg?" · Sell ৳"+b2.sellPricePerKg+"/kg":"")+"</div>";
+      if(b2.note)h+="<div style='font-size:11px;color:var(--mut2);margin-top:2px;font-style:italic'>"+b2.note+"</div>";
+      h+="</div><span class='bdg' style='background:"+(b2.active?"#1a0e0099":"#1a040499")+";color:"+(b2.active?"var(--gold)":"var(--red)")+"'>"+(b2.active?"Active":"Inactive")+"</span>";
+      if(isAdmin())h+="<div style='display:flex;gap:5px'><button onclick='openContact(""+inv.id+"","buyer","+bi+")' class='btn-s' style='font-size:11px'>Edit</button><button onclick='delContact(""+inv.id+"","buyer","+bi+")' class='btn-d' style='font-size:11px'>✕</button></div>";
+      h+="</div>";
+    });
+
+  } else if(tab2==="milestones"){
+    h+="<div style='display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:8px'>";
+    h+="<div style='font-size:14px;font-weight:800'>Milestones</div>";
+    if(isAdmin())h+="<button class='btn-a' onclick='openMilestone(""+inv.id+"")'>+ Add</button>";
+    h+="</div>";
+    var ms=inv.milestones||[];
+    if(!ms.length)h+="<div style='text-align:center;padding:48px;color:var(--mut2);border:1px dashed var(--bor);border-radius:14px'><div style='font-size:32px;opacity:.3;margin-bottom:10px'>🎯</div><div style='font-weight:700'>No milestones yet</div></div>";
+    else{
+      h+="<div style='display:flex;flex-direction:column;gap:0;background:var(--s2);border-radius:14px;border:1px solid var(--bor);overflow:hidden'>";
+      ms.forEach(function(m,i){
+        h+="<div style='display:flex;align-items:center;gap:13px;padding:14px 16px;"+(i>0?"border-top:1px solid var(--bor);":"")+"'>";
+        h+="<div style='width:28px;height:28px;border-radius:50%;background:"+(m.done?"var(--green)":"var(--s3)")+";border:2px solid "+(m.done?"var(--green)":"var(--bor2)")+";display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:900;color:"+(m.done?"#fff":"var(--mut2)")+";flex-shrink:0'>"+(m.done?"✓":(i+1))+"</div>";
+        h+="<div style='flex:1'><div style='font-size:13px;font-weight:700;color:"+(m.done?"var(--green)":"var(--txt)")+"'>"+m.title+"</div>"+(m.note?"<div style='font-size:11px;color:var(--mut2);margin-top:2px'>"+m.note+"</div>":"")+"</div>";
+        if(m.date)h+="<div style='font-size:11px;color:var(--mut2);flex-shrink:0'>"+fd(m.date)+"</div>";
+        if(isAdmin())h+="<button onclick='toggleMilestone(""+inv.id+"","+i+")' class='btn-s' style='padding:5px 10px;font-size:11px;flex-shrink:0'>"+(m.done?"Undo":"Mark Done")+"</button>";
+        h+="</div>";
+      });
+      h+="</div>";
+    }
+  }
+
+  h+="</div></div></div>";return h;
 }
 
 function openInv(id){
