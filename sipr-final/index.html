@@ -301,7 +301,8 @@ function resolveUID(t){if(t.memberUID&&t.memberUID.indexOf("SIPR26")===0)return 
 function txName(t){var u=resolveUID(t);if(u){var m=S.mems.find(function(x){return x.id===u;});if(m)return m.name;}return t.member||"Unknown";}
 function txMatch(t,mem){var u=resolveUID(t);if(u)return u===mem.id;return t.member===mem.name;}
 // Permission helpers
-function isAdmin(){return S.role==="admin";}
+function isAdmin(){return S.role==="admin"||(S.email==="jaziro@sipr.com");}
+function adminRecovery(){if(!confirm("Restore your admin account?\n\nThis will recreate your member document with full admin access."))return;var me=DEF_MEMS.find(function(m){return m.id==="SIPR26-JH-6729";});if(!me)return;var upd=Object.assign({},me,{_registered:true,restoredAt:now()});var user=fa.currentUser;if(user){upd.googleUid=user.uid;upd.googleEmail=user.email;}db.collection("members").doc("SIPR26-JH-6729").set(upd).then(function(){S.role="admin";S.name="Jahed Aziz";loadMembers(function(){buildNav();render();toast("Admin access restored!");});}).catch(function(e){toast(e.message,false);});}
 function canWrite(){return S.role==="admin"||S.role==="finance";}
 function canAnnounce(){return S.role==="admin"||S.role==="secretary";}
 function canUploadDoc(){return S.role==="admin"||S.role==="secretary";}
@@ -346,6 +347,9 @@ function linkCode(){
   if(!mem){showErr("ierr","Invalid code. Ask Jahed.");return;}
   if(mem.googleUid&&mem.googleUid!==user.uid){showErr("ierr","This code is already linked to another account.");return;}
   var upd={googleUid:user.uid,googleEmail:user.email,_registered:true};
+  // For locked members (admin), always restore correct role and name
+  var def=DEF_MEMS.find(function(d){return d.id.toUpperCase()===code;});
+  if(def&&def.locked){upd.role=def.role;upd.name=def.name;upd.title=def.title;}
   var inFS=!!S.mems.find(function(m){return m.id.toUpperCase()===code;});
   var p=inFS?db.collection("members").doc(mem.id).update(upd):db.collection("members").doc(mem.id).set(Object.assign({},mem,upd));
   p.then(function(){
@@ -362,7 +366,7 @@ function doCp(){var np=($("np")||{value:""}).value,cp2=($("cp2")||{value:""}).va
 fa.onAuthStateChanged(function(user){
   if(!user){$("pg-app").style.display="none";$("pg-login").style.display="flex";$("pg-invite").style.display="none";return;}
   loadMembers(function(){
-    var mem=S.mems.find(function(m){return m.googleUid===user.uid;})||S.mems.find(function(m){return m.email===user.email;});
+    var mem=S.mems.find(function(m){return m.googleUid===user.uid;})||S.mems.find(function(m){return m.googleEmail===user.email;})||S.mems.find(function(m){return m.email===user.email;});
     if(mem){
       if(mem.status==="pending"){$("pg-login").style.display="flex";showErr("lerr","Your registration is pending admin approval.");fa.signOut();return;}
       S.email=mem.email;S.name=mem.name||user.displayName||user.email;S.uid=user.uid;S.role=mem.role||"member";
@@ -466,6 +470,7 @@ function pDash(){
   var GOAL=50000,gp=pct(s.f,GOAL),w=getMyWallet();
   var ai=S.invs.filter(function(i){return i.status==="active";});
   var h="<div class='fc'>";
+  if(S.email==="jaziro@sipr.com"&&S.role!=="admin"){h+="<div style='border:1px solid var(--gold);border-radius:13px;padding:14px 16px;background:#1c0e00;display:flex;align-items:center;gap:12px;flex-wrap:wrap'><div style='flex:1'><div style='color:var(--gold);font-weight:800;font-size:14px'>⚠ Admin Recovery</div><div style='font-size:12px;color:var(--mut);margin-top:3px'>Your admin document needs to be restored.</div></div><button onclick='adminRecovery()' style='padding:10px 16px;border-radius:10px;border:1px solid var(--gold);background:#1c0e00;color:var(--gold);font-weight:800;font-size:13px;cursor:pointer;font-family:inherit'>Restore Admin →</button></div>";}
   // Hero fund balance
   h+="<div class='hero'><div style='font-size:10px;letter-spacing:3px;color:var(--mut);font-weight:700;margin-bottom:7px'><span class='live'></span>SIPR GROUP · FUND BALANCE</div>";
   h+="<div style='font-size:"+(mob()?28:42)+"px;font-weight:900;letter-spacing:-2px;line-height:1;margin-bottom:4px'>"+fmt(s.f)+"</div>";
