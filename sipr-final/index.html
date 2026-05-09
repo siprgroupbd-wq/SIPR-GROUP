@@ -37,7 +37,7 @@ select.inp{cursor:pointer;}textarea.inp{resize:vertical;}
 .nav-item:hover{background:var(--s2);color:var(--txt);}
 .nav-item.active{background:var(--gdm);color:var(--grn);}
 #main{margin-left:220px;flex:1;padding:20px 24px;max-width:960px;}
-#topbar{display:flex;align-items:center;gap:10px;margin-bottom:18px;}
+#topbar{display:flex;align-items:center;gap:10px;position:sticky;top:0;z-index:140;background:var(--bg);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);padding:10px 0 12px;margin-bottom:10px;border-bottom:1px solid var(--bor);}
 #topbar h2{font-size:19px;font-weight:900;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
 #ham{display:none;background:var(--s2);border:1px solid var(--bor);border-radius:8px;padding:8px 11px;font-size:18px;cursor:pointer;color:var(--txt);touch-action:manipulation;}
 @media(max-width:800px){
@@ -104,7 +104,7 @@ input[type=checkbox].tog::after{content:'';width:14px;height:14px;border-radius:
 input[type=checkbox].tog:checked::after{left:21px;}
 @keyframes pulse{0%,100%{opacity:1;box-shadow:0 0 7px var(--pending);}50%{opacity:.5;box-shadow:0 0 16px var(--pending);}}
 @media(max-width:800px){[style*="grid-template-columns:1fr 240px"]{grid-template-columns:1fr!important;}}
-</style>
+
 </head>
 <body>
 
@@ -189,9 +189,9 @@ input[type=checkbox].tog:checked::after{left:21px;}
   </div>
   <div id="main">
     <div id="topbar">
-      <button id="ham" onclick="toggleSidebar()">☰</button>
+      <button id="ham" onclick="toggleSidebar()">&#x2630;</button>
       <h2 id="pg-title">Dashboard</h2>
-      <div id="prof-btn" onclick="toggleProf()">
+      <button id="theme-btn" onclick="toggleTheme()" title="Toggle theme" style="width:34px;height:34px;border-radius:50%;border:1px solid var(--bor);background:var(--s2);color:var(--txt);font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0">&#x263D;</button><div id="prof-btn" onclick="toggleProf()">
         <div id="top-av"></div>
         <div id="prof-drop">
           <div id="pd-info" style="padding:6px 4px;border-bottom:1px solid var(--bor);margin-bottom:10px"></div>
@@ -273,7 +273,23 @@ var S={
 // ═══════════ HELPERS ═══════════
 function $(i){return document.getElementById(i);}
 function mob(){return window.innerWidth<800;}
-function fmt(n){return"BDT "+(Number(n||0)).toLocaleString("en-BD");}
+function fmt(n){var v=Number(n||0),neg=v<0,abs=Math.round(Math.abs(v)).toString();return (neg?"BDT -":"BDT ")+abs.replace(/\B(?=(\d{3})+(?!\d))/g,",");}
+function countUpBalance(){
+  var el=document.getElementById("dash-balance");
+  if(!el)return;
+  var target=Number(el.dataset.val)||0;
+  if(target===0){el.textContent=fmt(0);return;}
+  var dur=900,start=null;
+  function ease(t){return 1-Math.pow(1-t,3);}
+  function step(ts){
+    if(!start)start=ts;
+    var p=Math.min((ts-start)/dur,1);
+    el.textContent=fmt(Math.round(ease(p)*target));
+    if(p<1)requestAnimationFrame(step);
+  }
+  requestAnimationFrame(step);
+}
+
 function fd(d){if(!d)return"—";try{return new Date(d).toLocaleDateString("en-GB",{day:"2-digit",month:"short",year:"numeric"});}catch(e){return"—";}}
 function now(){return new Date().toISOString();}
 function sumT(arr,t){return arr.filter(function(x){return x.type===t;}).reduce(function(s,x){return s+Number(x.amount);},0);}
@@ -351,6 +367,7 @@ function doLogout(){fa.signOut().then(function(){S.email="";S.name="";S.role="me
 function changePwModal(){closeProf();var h="<div class='modal-bg' onclick='if(event.target===this)closeModal()'><div class='modal-box'><div style='display:flex;justify-content:space-between;align-items:center;margin-bottom:18px'><div style='font-weight:800;font-size:17px'>Change Password</div><button onclick='closeModal()' style='background:none;border:none;color:var(--mut);font-size:20px;cursor:pointer'>✕</button></div><div class='fc'><div><label class='lbl'>New Password</label><input type='password' id='np' class='inp' placeholder='Min 6 characters'/></div><div><label class='lbl'>Confirm</label><input type='password' id='cp2' class='inp'/></div><button class='btn-p' onclick='doCp()'>Update Password</button></div></div></div>";$("modal").innerHTML=h;}
 function doCp(){var np=($("np")||{value:""}).value,cp2=($("cp2")||{value:""}).value;if(np.length<6){toast("Min 6 characters",false);return;}if(np!==cp2){toast("Passwords don't match",false);return;}var user=fa.currentUser;if(!user){toast("Not logged in",false);return;}user.updatePassword(np).then(function(){closeModal();toast("Password updated!");}).catch(function(e){toast(e.message,false);});}
 
+initTheme();
 fa.onAuthStateChanged(function(user){
   if(!user){$("pg-app").style.display="none";$("pg-login").style.display="flex";$("pg-invite").style.display="none";return;}
   loadMembers(function(){
@@ -405,6 +422,19 @@ function logAct(action,detail){
 }
 
 // ═══════════ APP INIT ═══════════
+function toggleTheme(){
+  var isLight=document.body.classList.toggle("light");
+  localStorage.setItem("sipr_theme",isLight?"light":"dark");
+  var btn=$("theme-btn");
+  if(btn)btn.innerHTML=isLight?"&#x2600;":"&#x263D;";
+}
+function initTheme(){
+  var saved=localStorage.getItem("sipr_theme")||"dark";
+  if(saved==="light")document.body.classList.add("light");
+  var btn=$("theme-btn");
+  if(btn)btn.innerHTML=saved==="light"?"&#x2600;":"&#x263D;";
+}
+
 function initApp(){
   $("pg-app").style.display="block";
   buildNav();setLabels();
@@ -438,7 +468,21 @@ function goPage(tab){S.tab=tab;buildNav();var titles={dashboard:"Dashboard",paym
 function moreMenu(){var vis=NAVS.filter(function(n){return !n.adm||isAdmin();});var pri=["dashboard","payments","investments","transactions","members"];var more=vis.filter(function(n){return pri.indexOf(n.id)<0;});var h="<div class='modal-bg' onclick='if(event.target===this)closeModal()'><div class='modal-box'><div style='font-size:11px;letter-spacing:2px;color:var(--mut);font-weight:700;margin-bottom:12px'>MORE PAGES</div><div style='display:flex;flex-direction:column;gap:6px'>"+more.map(function(n){return"<button onclick='goPage(\""+n.id+"\");closeModal()' style='display:flex;align-items:center;gap:12px;padding:12px;background:var(--s2);border:1px solid var(--bor);border-radius:10px;color:var(--txt);font-size:13px;font-weight:600;cursor:pointer;font-family:inherit'><span style='font-size:18px'>"+n.ic+"</span>"+n.lb+"</button>";}).join("")+"</div></div></div>";$("modal").innerHTML=h;}
 function render(){var c=$("content");if(!c)return;var t=S.tab;if(t==="dashboard"){c.innerHTML=pDash();return;}if(t==="payments"){c.innerHTML=pPay();return;}if(t==="investments"){if(S.activeProj){c.innerHTML=pProject(S.activeProj);return;}c.innerHTML=pInv();return;}if(t==="transactions"){c.innerHTML=pTx();return;}if(t==="members"){c.innerHTML=pMem();return;}if(t==="wallet"){c.innerHTML=pWallet();return;}if(t==="goals"){c.innerHTML=pGoals();return;}if(t==="noticeboard"){c.innerHTML=pNotice();loadNotice();return;}if(t==="expenses"){c.innerHTML=pExpenses();return;}if(t==="documents"){c.innerHTML=pDocs();loadDocs();return;}if(t==="activity"){c.innerHTML=pActivity();loadActivity();return;}if(t==="about"){c.innerHTML=pAbout();return;}if(t==="control"){c.innerHTML=isAdmin()?pControl():"<div class='card' style='text-align:center;padding:48px;color:var(--mut)'>Admin access required.</div>";return;}}
 
-// ═══════════ WALLET ═══════════
+// ═══════════ WALLET ══════════
+  // Update ham button based on context
+  var hb=$("ham");
+  if(hb){
+    if(S.activeProj){
+      hb.innerHTML="&#x2190;";
+      hb.onclick=function(){backToProjects();};
+      hb.title="Back to Projects";
+    } else {
+      hb.innerHTML="&#x2630;";
+      hb.onclick=toggleSidebar;
+      hb.title="Menu";
+    }
+  }
+//═
 function getMyWallet(){var me=getMem(S.email);if(!me||!me.id)return{available:0,locked:0,history:[]};var w=S.wallets.find(function(x){return x.memberId===me.id;})||{available:0,locked:0,history:[]};var today=new Date(),unlocked=0,locked=0;(w.history||[]).forEach(function(e){if(e.type==="salary"&&e.locked){if(e.unlockDate&&today>=new Date(e.unlockDate))unlocked+=Number(e.amount);else locked+=Number(e.amount);}});return{available:Number(w.available||0)+unlocked,locked:locked,history:w.history||[],docId:w.id};}
 function getMemWallet(mid){var w=S.wallets.find(function(x){return x.memberId===mid;})||{available:0,locked:0};return{available:Number(w.available||0),locked:Number(w.locked||0)};}
 function updateWallet(){var w=getMyWallet();var wi="<div style='background:var(--gdm);border:1px solid var(--gbr);border-radius:10px;padding:10px 12px'><div style='font-size:9px;color:var(--mut);font-weight:700;letter-spacing:1px;margin-bottom:4px'>MY WALLET</div><div style='font-size:16px;font-weight:900;color:var(--grn)'>"+fmt(w.available)+"</div>"+(w.locked>0?"<div style='font-size:11px;color:var(--gold);margin-top:2px'>🔒 "+fmt(w.locked)+" locked</div>":"")+"</div>";var pdw=$("pd-wallet");if(pdw)pdw.innerHTML=wi;}
@@ -460,7 +504,7 @@ function pDash(){
   var h="<div class='fc'>";
   // Hero fund balance
   h+="<div class='hero'><div style='font-size:10px;letter-spacing:3px;color:var(--mut);font-weight:700;margin-bottom:7px'><span class='live'></span>SIPR GROUP · FUND BALANCE</div>";
-  h+="<div style='font-size:"+(mob()?28:42)+"px;font-weight:900;letter-spacing:-2px;line-height:1;margin-bottom:4px'>"+fmt(s.f)+"</div>";
+  h+="<div id='dash-balance' data-val='"+s.f+"' style='font-size:"+(mob()?28:42)+"px;font-weight:900;letter-spacing:-2px;line-height:1;margin-bottom:4px'>BDT 0</div>";
   h+="<div style='font-size:12px;color:var(--mut);margin-bottom:11px'>Goal: "+fmt(GOAL)+" · "+gp+"% achieved</div>";
   h+="<div style='height:6px;background:#ffffff0a;border-radius:99px;overflow:hidden;margin-bottom:13px'><div style='height:100%;width:"+gp+"%;background:linear-gradient(90deg,var(--gbr),var(--grn));border-radius:99px'></div></div>";
   h+="<div style='display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--bor);border-radius:10px;overflow:hidden'>";
@@ -488,10 +532,9 @@ function pDash(){
   h+="</div></div>";
   if(isOD&&up.length>0)h+="<div style='border:1px solid #7f1d1d;border-radius:13px;padding:13px 15px;background:#0e0505;display:flex;align-items:center;gap:10px;flex-wrap:wrap'><span>⚠️</span><div style='flex:1'><div style='color:var(--orange);font-weight:700;font-size:13px'>Overdue — Past 10th</div><div style='font-size:12px;color:var(--mut)'>"+up.map(function(m){return m.name;}).join(", ")+"</div></div><button onclick='goPage(\"payments\")' class='btn-a' style='flex-shrink:0'>View →</button></div>";
   else if(pn===S.mems.length)h+="<div style='border:1px solid var(--gbr);border-radius:13px;padding:12px 15px;background:var(--gdm);display:flex;align-items:center;gap:10px'><span>🎉</span><div style='color:var(--grn);font-weight:700;font-size:13px'>All "+S.mems.length+" members paid for "+mn+"!</div></div>";
-  h+="</div>";return h;
+  h+="</div>";setTimeout(countUpBalance,80);setTimeout(countUpBalance,80);return h;
 }
-
-// ═══════════ PAYMENTS ═══════════
+// ════════════════════════════
 function pPay(){
   var ps=payS(S.payY,S.payM).slice().sort(function(a,b){return (b.paid?1:0)-(a.paid?1:0);});var pn=ps.filter(function(m){return m.paid;}).length;
   var up=ps.filter(function(m){return !m.paid;});
@@ -605,7 +648,7 @@ function sendOne(ph,nm){var msg=($("rm-msg")||{value:""}).value.trim();if(!msg)r
 function bulkWa(){openRemindModal();}
 
 function waReport(){var ps=payS(S.payY,S.payM),pn=ps.filter(function(m){return m.paid;}).length,up=ps.filter(function(m){return !m.paid;});var collected=ps.reduce(function(s,m){return s+(m.paid?m.paidAmt:0);},0);var txt="📊 *SIPR GROUP — Payment Report*\n📅 "+MF[S.payM]+" "+S.payY+"\n━━━━━━━━━━━━\n\n✅ *Paid ("+pn+"/"+S.mems.length+")*\n";ps.filter(function(m){return m.paid;}).forEach(function(m){txt+="  ✓ "+m.name+" — "+fmt(m.paidAmt)+"\n";});if(up.length){txt+="\n⏳ *Pending ("+up.length+")*\n";up.forEach(function(m){txt+="  ✗ "+m.name+"\n";});}txt+="\n💰 *Total: "+fmt(collected)+"*\nbKash: 01845526909 · Deadline: 10th\n— Jahed Aziz, SIPR Group";window.open("https://wa.me/?text="+encodeURIComponent(txt),"_blank");}
-function printReport(){var ps=payS(S.payY,S.payM),pn=ps.filter(function(m){return m.paid;}).length,collected=ps.reduce(function(s,m){return s+(m.paid?m.paidAmt:0);},0);var rows=ps.map(function(m,i){return"<tr style='background:"+(i%2===0?"#f8fafb":"#fff")+"'><td style='padding:9px 13px;color:#64748b;font-size:12px'>"+(m.paid?fd(m.paidDate):"—")+"</td><td style='padding:9px 13px;font-weight:600'>"+m.name+"</td><td style='padding:9px 13px;text-align:center'><span style='padding:3px 11px;border-radius:99px;font-size:11px;font-weight:700;background:"+(m.paid?"#dcfce7":"#fee2e2")+";color:"+(m.paid?"#15803d":"#dc2626")+"'>"+( m.paid?"✓ Paid":"✗ Pending")+"</span></td><td style='padding:9px 13px;text-align:right;font-weight:700;color:"+(m.paid?"#15803d":"#dc2626")+"'>"+( m.paid?fmt(m.paidAmt):"BDT "+DUE+" due")+"</td></tr>";}).join("");var html="<!DOCTYPE html><html><head><title>SIPR Report</title><style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:Arial,sans-serif}.np{display:flex}@media print{.np{display:none!important}}</style></head><body><div style='max-width:660px;margin:0 auto;padding:30px'><div style='border-bottom:3px solid #4f8ef7;padding-bottom:14px;margin-bottom:20px'><div style='font-size:11px;color:#4f8ef7;font-weight:700;letter-spacing:3px;margin-bottom:4px'>SIPR GROUP — PAYMENT REPORT</div><div style='font-size:24px;font-weight:900;color:#1a2233'>"+MF[S.payM]+" "+S.payY+"</div></div><table style='width:100%;border-collapse:collapse;border:1px solid #e2e8f0'><thead><tr style='background:#1a2233'><th style='padding:10px 13px;text-align:left;color:#fff;font-size:10px'>DATE PAID</th><th style='padding:10px 13px;text-align:left;color:#fff;font-size:10px'>MEMBER</th><th style='padding:10px 13px;text-align:center;color:#fff;font-size:10px'>STATUS</th><th style='padding:10px 13px;text-align:right;color:#fff;font-size:10px'>AMOUNT</th></tr></thead><tbody>"+rows+"</tbody><tfoot><tr style='background:#f1f5f9'><td colspan='2' style='padding:11px 13px;font-weight:800;color:#1a2233'>TOTAL</td><td></td><td style='padding:11px 13px;text-align:right;font-weight:900;color:#15803d;font-size:14px'>"+fmt(collected)+"</td></tr></tfoot></table><div class='np' style='margin-top:18px;justify-content:center;gap:10px'><button onclick='window.print()' style='padding:10px 22px;background:#1a2233;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer'>Print/PDF</button><button onclick='window.close()' style='padding:10px 18px;background:#f1f5f9;color:#1a2233;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer'>Close</button></div></div></body></html>";var w=window.open("","_blank","width=760,height=620");w.document.write(html);w.document.close();}
+function printReport(){var ps=payS(S.payY,S.payM),pn=ps.filter(function(m){return m.paid;}).length,collected=ps.reduce(function(s,m){return s+(m.paid?m.paidAmt:0);},0);var rows=ps.map(function(m,i){return"<tr style='background:"+(i%2===0?"#f8fafb":"#fff")+"'><td style='padding:9px 13px;color:#64748b;font-size:12px'>"+(m.paid?fd(m.paidDate):"—")+"</td><td style='padding:9px 13px;font-weight:600'>"+m.name+"</td><td style='padding:9px 13px;text-align:center'><span style='padding:3px 11px;border-radius:99px;font-size:11px;font-weight:700;background:"+(m.paid?"#dcfce7":"#fee2e2")+";color:"+(m.paid?"#15803d":"#dc2626")+"'>"+( m.paid?"✓ Paid":"✗ Pending")+"</span></td><td style='padding:9px 13px;text-align:right;font-weight:700;color:"+(m.paid?"#15803d":"#dc2626")+"'>"+( m.paid?fmt(m.paidAmt):"BDT "+DUE+" due")+"</td></tr>";}).join("");var html="<!DOCTYPE html><html><head><title>SIPR Report</title><style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:Arial,sans-serif}.np{display:flex}@media print{.np{display:none!important}}</head><body><div style='max-width:660px;margin:0 auto;padding:30px'><div style='border-bottom:3px solid #4f8ef7;padding-bottom:14px;margin-bottom:20px'><div style='font-size:11px;color:#4f8ef7;font-weight:700;letter-spacing:3px;margin-bottom:4px'>SIPR GROUP — PAYMENT REPORT</div><div style='font-size:24px;font-weight:900;color:#1a2233'>"+MF[S.payM]+" "+S.payY+"</div></div><table style='width:100%;border-collapse:collapse;border:1px solid #e2e8f0'><thead><tr style='background:#1a2233'><th style='padding:10px 13px;text-align:left;color:#fff;font-size:10px'>DATE PAID</th><th style='padding:10px 13px;text-align:left;color:#fff;font-size:10px'>MEMBER</th><th style='padding:10px 13px;text-align:center;color:#fff;font-size:10px'>STATUS</th><th style='padding:10px 13px;text-align:right;color:#fff;font-size:10px'>AMOUNT</th></tr></thead><tbody>"+rows+"</tbody><tfoot><tr style='background:#f1f5f9'><td colspan='2' style='padding:11px 13px;font-weight:800;color:#1a2233'>TOTAL</td><td></td><td style='padding:11px 13px;text-align:right;font-weight:900;color:#15803d;font-size:14px'>"+fmt(collected)+"</td></tr></tfoot></table><div class='np' style='margin-top:18px;justify-content:center;gap:10px'><button onclick='window.print()' style='padding:10px 22px;background:#1a2233;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer'>Print/PDF</button><button onclick='window.close()' style='padding:10px 18px;background:#f1f5f9;color:#1a2233;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer'>Close</button></div></div></body></html>";var w=window.open("","_blank","width=760,height=620");w.document.write(html);w.document.close();}
 function expCSV(){var rows=[["Date","Type","Member","Amount (BDT)","Note"]];S.txs.slice().reverse().forEach(function(t){rows.push([t.date,t.type,txName(t),t.amount,t.note||""]);});var csv=rows.map(function(r){return r.map(function(c){return'"'+String(c).replace(/"/g,'""')+'"';}).join(",");}).join("\n");var blob=new Blob([csv],{type:"text/csv"});var url=URL.createObjectURL(blob);var a=document.createElement("a");a.href=url;a.download="SIPR_"+new Date().toISOString().split("T")[0]+".csv";a.click();URL.revokeObjectURL(url);toast("CSV exported!");}
 
 // ═══════════ INVESTMENTS (Advanced Project Tracker) ═══════════
@@ -1350,7 +1393,7 @@ function pWallet(){
   else all.forEach(function(e){var ic={deposit:"↓",salary:"💼",profit_share:"★",fine:"⚠",invest:"↑",expense:"−"}[e.type]||"•";var c={deposit:"var(--grn)",salary:"var(--gold)",profit_share:"var(--purple)",fine:"var(--red)",invest:"var(--gold)",expense:"var(--red)"}[e.type]||"var(--grn)";h+="<div class='pb-row'><div style='width:32px;height:32px;border-radius:50%;background:"+c+"18;color:"+c+";display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0'>"+ic+"</div><div style='flex:1'><div style='font-weight:700;font-size:13px'>"+e.label+"</div><div style='font-size:11px;color:var(--mut)'>"+(e.note||fd(e.date))+"</div></div><div style='text-align:right'><div style='font-weight:800;font-size:13px;color:"+c+"'>"+(e.type==="fine"||e.type==="invest"||e.type==="expense"?"-":"+")+fmt(e.amount)+"</div><div style='font-size:10px;color:var(--mut)'>"+fd(e.date)+"</div></div></div>";});
   h+="</div></div></div>";return h;
 }
-function printPassbook(){var me=getMem(S.email),w=getMyWallet(),myTxs=S.txs.filter(function(t){return txMatch(t,me);}),all=[];myTxs.forEach(function(t){all.push({date:t.date,type:t.type,label:{deposit:"Monthly Deposit",fine:"Fine Issued",invest:"Investment",expense:"Expense",profit:"Profit"}[t.type]||t.type,amount:Number(t.amount),note:t.note||""});});w.history.forEach(function(e){all.push({date:e.date||"",type:e.type,label:e.label||e.type,amount:Number(e.amount),note:e.note||""});});all.sort(function(a,b){return new Date(b.date)-new Date(a.date);});var rows=all.map(function(e,i){var sign=(e.type==="fine"||e.type==="invest"||e.type==="expense")?"-":"+";var col=e.type==="fine"||e.type==="expense"?"#dc2626":e.type==="salary"?"#d97706":e.type==="profit_share"?"#7c3aed":"#15803d";return"<tr style='background:"+(i%2===0?"#f8fafb":"#fff")+"'><td style='padding:9px 13px;color:#64748b;font-size:12px'>"+fd(e.date)+"</td><td style='padding:9px 13px;font-weight:600'>"+e.label+"</td><td style='padding:9px 13px;color:#64748b;font-size:12px'>"+(e.note||"—")+"</td><td style='padding:9px 13px;text-align:right;font-weight:800;color:"+col+"'>"+sign+fmt(e.amount)+"</td></tr>";}).join("");var html="<!DOCTYPE html><html><head><title>Passbook</title><style>*{box-sizing:border-box;margin:0;padding:0}body{font-family:Arial,sans-serif}.np{display:flex}@media print{.np{display:none!important}}</style></head><body><div style='max-width:660px;margin:0 auto;padding:30px'><div style='border-bottom:3px solid #8b5cf6;padding-bottom:14px;margin-bottom:20px'><div style='font-size:11px;color:#8b5cf6;font-weight:700;letter-spacing:3px;margin-bottom:4px'>SIPR GROUP — MEMBER PASSBOOK</div><div style='font-size:22px;font-weight:900;color:#1a2233'>"+me.name+"</div><div style='font-size:12px;color:#64748b;margin-top:3px'>"+me.title+" · "+me.email+"</div></div><table style='width:100%;border-collapse:collapse;border:1px solid #e2e8f0'><thead><tr style='background:#1a2233'><th style='padding:10px 13px;text-align:left;color:#fff;font-size:10px'>DATE</th><th style='padding:10px 13px;text-align:left;color:#fff;font-size:10px'>TRANSACTION</th><th style='padding:10px 13px;text-align:left;color:#fff;font-size:10px'>NOTE</th><th style='padding:10px 13px;text-align:right;color:#fff;font-size:10px'>AMOUNT</th></tr></thead><tbody>"+rows+"</tbody></table><div class='np' style='margin-top:18px;justify-content:center;gap:10px'><button onclick='window.print()' style='padding:10px 22px;background:#1a2233;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer'>Print/PDF</button><button onclick='window.close()' style='padding:10px 18px;background:#f1f5f9;color:#1a2233;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer'>Close</button></div></div></body></html>";var w2=window.open("","_blank","width=760,height=620");w2.document.write(html);w2.document.close();}
+function printPassbook(){var me=getMem(S.email),w=getMyWallet(),myTxs=S.txs.filter(function(t){return txMatch(t,me);}),all=[];myTxs.forEach(function(t){all.push({date:t.date,type:t.type,label:{deposit:"Monthly Deposit",fine:"Fine Issued",invest:"Investment",expense:"Expense",profit:"Profit"}[t.type]||t.type,amount:Number(t.amount),note:t.note||""});});w.history.forEach(function(e){all.push({date:e.date||"",type:e.type,label:e.label||e.type,amount:Number(e.amount),note:e.note||""});});all.sort(function(a,b){return new Date(b.date)-new Date(a.date);});var rows=all.map(function(e,i){var sign=(e.type==="fine"||e.type==="invest"||e.type==="expense")?"-":"+";var col=e.type==="fine"||e.type==="expense"?"#dc2626":e.type==="salary"?"#d97706":e.type==="profit_share"?"#7c3aed":"#15803d";return"<tr style='background:"+(i%2===0?"#f8fafb":"#fff")+"'><td style='padding:9px 13px;color:#64748b;font-size:12px'>"+fd(e.date)+"</td><td style='padding:9px 13px;font-weight:600'>"+e.label+"</td><td style='padding:9px 13px;color:#64748b;font-size:12px'>"+(e.note||"—")+"</td><td style='padding:9px 13px;text-align:right;font-weight:800;color:"+col+"'>"+sign+fmt(e.amount)+"</td></tr>";}).join("");var html="<!DOCTYPE html><html><head><title>Passbook</title><style>*{box-sizing:border-box;margin:0;padding:0}body{font-family:Arial,sans-serif}.np{display:flex}@media print{.np{display:none!important}}</head><body><div style='max-width:660px;margin:0 auto;padding:30px'><div style='border-bottom:3px solid #8b5cf6;padding-bottom:14px;margin-bottom:20px'><div style='font-size:11px;color:#8b5cf6;font-weight:700;letter-spacing:3px;margin-bottom:4px'>SIPR GROUP — MEMBER PASSBOOK</div><div style='font-size:22px;font-weight:900;color:#1a2233'>"+me.name+"</div><div style='font-size:12px;color:#64748b;margin-top:3px'>"+me.title+" · "+me.email+"</div></div><table style='width:100%;border-collapse:collapse;border:1px solid #e2e8f0'><thead><tr style='background:#1a2233'><th style='padding:10px 13px;text-align:left;color:#fff;font-size:10px'>DATE</th><th style='padding:10px 13px;text-align:left;color:#fff;font-size:10px'>TRANSACTION</th><th style='padding:10px 13px;text-align:left;color:#fff;font-size:10px'>NOTE</th><th style='padding:10px 13px;text-align:right;color:#fff;font-size:10px'>AMOUNT</th></tr></thead><tbody>"+rows+"</tbody></table><div class='np' style='margin-top:18px;justify-content:center;gap:10px'><button onclick='window.print()' style='padding:10px 22px;background:#1a2233;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer'>Print/PDF</button><button onclick='window.close()' style='padding:10px 18px;background:#f1f5f9;color:#1a2233;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer'>Close</button></div></div></body></html>";var w2=window.open("","_blank","width=760,height=620");w2.document.write(html);w2.document.close();}
 
 // ═══════════ FINES ═══════════
 function openFine(mid,mname){$("modal").innerHTML="<div class='modal-bg' onclick='if(event.target===this)closeModal()'><div class='modal-box'><div style='display:flex;justify-content:space-between;align-items:center;margin-bottom:18px'><div style='font-weight:800;font-size:17px'>Issue Fine</div><button onclick='closeModal()' style='background:none;border:none;color:var(--mut);font-size:20px;cursor:pointer'>✕</button></div><div style='background:#1a0e0488;border:1px solid #78140044;border-radius:10px;padding:10px 13px;margin-bottom:13px'><div style='font-size:12px;color:var(--mut)'>Issuing fine to</div><div style='font-size:16px;font-weight:800;color:var(--orange)'>"+mname+"</div></div><div class='fc'><div><label class='lbl'>Amount (BDT)</label><input id='fn-a' type='number' class='inp'/></div><div><label class='lbl'>Reason</label><input id='fn-r' type='text' class='inp' placeholder='e.g. Late payment penalty'/></div><div><label class='lbl'>Date</label><input id='fn-d' type='date' class='inp' value='"+new Date().toISOString().split("T")[0]+"'/></div><button class='btn-p' style='background:linear-gradient(135deg,#7f1d1d,#ef4444)' onclick='saveFine(\""+mid+"\",\""+mname.replace(/"/g,"&quot;")+"\")'>Issue Fine</button></div></div></div>";}
@@ -1362,7 +1405,12 @@ function pGoals(){var s=stats(),GOAL=50000,gp=pct(s.f,GOAL),rem=Math.max(0,GOAL-
 // ═══════════ NOTICE BOARD ═══════════
 function pNotice(){var h="<div class='fc'><div style='display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px'><h2 style='font-size:22px;font-weight:800'>Notice Board</h2>"+(canAnnounce()?"<button class='btn-a' onclick='openAnn()'>+ Post</button>":"")+"</div><div class='tab-row'><button class='tab"+(S.nbTab==="ann"?" active":"")+"' onclick='S.nbTab=\"ann\";goPage(\"noticeboard\")'>📢 Announcements</button><button class='tab"+(S.nbTab==="prop"?" active":"")+"' onclick='S.nbTab=\"prop\";goPage(\"noticeboard\")'>📋 Proposals</button></div>";if(S.nbTab==="prop")h+="<button class='btn-a' style='align-self:flex-start' onclick='openProp()'>+ Submit</button><div class='tab-row'>"+["all","active","approved","rejected"].map(function(f){return"<button class='tab"+(S._pf===f?" active":"")+"' onclick='S._pf=\""+f+"\";renderProps()'>"+f.charAt(0).toUpperCase()+f.slice(1)+"</button>";}).join("")+"</div>";h+="<div id='nb-list'><div style='text-align:center;padding:36px;color:var(--mut)'>Loading...</div></div></div>";return h;}
 function loadNotice(){db.collection("announcements").orderBy("createdAt","desc").get().then(function(snap){window._anns=snap.docs.map(function(d){return Object.assign({id:d.id},d.data());});if(S.nbTab==="ann")renderAnns();});db.collection("proposals").orderBy("createdAt","desc").get().then(function(snap){window._props=snap.docs.map(function(d){return Object.assign({id:d.id},d.data());});if(S.nbTab==="prop")renderProps();});}
-function renderAnns(){var el=$("nb-list");if(!el)return;var anns=window._anns||[];if(!anns.length){el.innerHTML="<div class='card' style='text-align:center;padding:40px;color:var(--mut)'>No announcements yet.</div>";return;}el.innerHTML=anns.map(function(a){return"<div class='card' style='border-color:"+(a.pinned?"var(--gold)22":"var(--bor)")+"'><div style='display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:9px;flex-wrap:wrap;gap:7px'><div style='display:flex;align-items:center;gap:7px'>"+(a.pinned?"<span style='color:var(--gold)'>📌</span>":"")+"<div style='font-weight:700;font-size:14px'>"+a.title+"</div></div><div style='display:flex;gap:5px;align-items:center'><span style='font-size:11px;color:var(--mut)'>"+fd(a.createdAt&&a.createdAt.toDate?a.createdAt.toDate():a.createdAt)+"</span>"+(canAnnounce()?"<button onclick='delAnn(\""+a.id+"\")' class='btn-d' style='padding:3px 8px;font-size:11px'>Del</button>":"")+"</div></div><div style='color:var(--mut);font-size:13px;line-height:1.7'>"+a.message+"</div><div style='margin-top:7px;font-size:11px;color:var(--mut)'>By "+a.author+"</div></div>";}).join("");}
+function renderAnns(){var el=$("nb-list");if(!el)return;var anns=window._anns||[];if(!anns.length){el.innerHTML="<div class='card' style='text-align:center;padding:40px;color:var(--mut)'>No announcements yet.</div>";return;}el.innerHTML=anns.map(function(a){return"<div class='card' style='border-color:"+(a.pinned?"var(--gold)22":"var(--bor)")+"'><div style='display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:9px;flex-wrap:wrap;gap:7px'><div style='display:flex;align-items:center;gap:7px'>"+(a.pinned?"<span style='color:var(--gold)'>📌</span>":"")+"<div style='font-weight:700;font-size:14px'>"+a.title+"</div></div><div style='display:flex;gap:5px;align-items:center'><span style='font-size:11px;color:var(--mut)'>"+fd(a.createdAt&&a.createdAt.toDate?a.createdAt.toDate():a.createdAt)+"</span>"+(canAnnounce()?"<button onclick='delAnn(\""+a.id+"\")' class='btn-d' style='padding:3px 8px;font-size:11px'>Del</button>":"")+"</div></div><div style='color:var(--mut);font-size:13px;line-height:1.7'>"+a.message+"</div><div style='margin-top:7px;font-size:11px;color:var(--mut)'>By "+a.author+"</span>"+"<button onclick='shareAnnWA(this.dataset.t,this.dataset.m)'"+" data-t='"+a.title+"' data-m='"+a.message+"'"+" style='padding:5px 12px;border-radius:8px;border:1px solid #25d366;background:#071a0f;color:#25d366;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit'>&#x1F4F2; Share WA</button></div></div>";}).join("");}
+function shareAnnWA(title,body){
+  var msg="*SIPR GROUP NOTICE*\n\n*"+title+"*\n\n"+body+"\n\n\u2014 SIPR Group";
+  window.open("https://wa.me/?text="+encodeURIComponent(msg),"_blank");
+}
+
 function renderProps(){var el=$("nb-list");if(!el)return;if(!S._pf)S._pf="all";var props=(window._props||[]).filter(function(p){return S._pf==="all"||p.status===S._pf;});if(!props.length){el.innerHTML="<div class='card' style='text-align:center;padding:40px;color:var(--mut)'>No proposals.</div>";return;}el.innerHTML=props.map(function(p){var yes=(p.votesYes||[]).length,no=(p.votesNo||[]).length,total=yes+no,myVote=(p.votesYes||[]).indexOf(S.email)>=0?"yes":(p.votesNo||[]).indexOf(S.email)>=0?"no":"",pct2=total>0?Math.round(yes/total*100):0;var sc={active:"var(--grn)",approved:"#4f8ef7",rejected:"var(--red)"};return"<div class='card'><div style='display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:9px;flex-wrap:wrap;gap:7px'><div><div style='font-weight:700;font-size:14px;margin-bottom:3px'>"+p.title+"</div><span class='bdg' style='background:var(--gdm);color:"+(sc[p.status]||"var(--gold)")+";border:1px solid "+(sc[p.status]||"var(--gold)")+"30'>"+p.status+"</span></div>"+(isAdmin()?"<div style='display:flex;gap:5px'><button onclick='setPropSt(\""+p.id+"\",\"approved\")' class='btn-s' style='font-size:11px;padding:4px 8px'>✓ Approve</button><button onclick='setPropSt(\""+p.id+"\",\"rejected\")' class='btn-d' style='font-size:11px;padding:4px 8px'>✗ Reject</button></div>":"")+"</div><div style='color:var(--mut);font-size:13px;margin-bottom:11px;line-height:1.6'>"+p.description+"</div>"+(p.amount?"<div style='font-size:12px;color:var(--gold);font-weight:700;margin-bottom:9px'>Budget: "+fmt(p.amount)+"</div>":"")+"<div style='display:flex;gap:7px;margin-bottom:9px'><button onclick='vote(\""+p.id+"\",\"yes\")' style='flex:1;padding:9px;border-radius:9px;border:1px solid "+(myVote==="yes"?"var(--grn)":"var(--bor)")+";background:"+(myVote==="yes"?"var(--gdm)":"var(--s2)")+";color:"+(myVote==="yes"?"var(--grn)":"var(--txt)")+";font-weight:700;font-size:13px;cursor:pointer;font-family:inherit'>✓ Yes ("+yes+")</button><button onclick='vote(\""+p.id+"\",\"no\")' style='flex:1;padding:9px;border-radius:9px;border:1px solid "+(myVote==="no"?"#ef4444":"var(--bor)")+";background:"+(myVote==="no"?"#1a0e04":"var(--s2)")+";color:"+(myVote==="no"?"#ef4444":"var(--txt)")+";font-weight:700;font-size:13px;cursor:pointer;font-family:inherit'>✗ No ("+no+")</button></div><div style='height:5px;background:var(--s2);border-radius:99px;overflow:hidden;margin-bottom:5px'><div style='height:100%;width:"+pct2+"%;background:var(--grn);border-radius:99px'></div></div><div style='font-size:11px;color:var(--mut)'>"+yes+" Yes · "+no+" No · "+pct2+"% favour · By "+p.proposedBy+"</div></div>";}).join("");}
 function openAnn(){$("modal").innerHTML="<div class='modal-bg' onclick='if(event.target===this)closeModal()'><div class='modal-box'><div style='display:flex;justify-content:space-between;align-items:center;margin-bottom:18px'><div style='font-weight:800;font-size:17px'>New Announcement</div><button onclick='closeModal()' style='background:none;border:none;color:var(--mut);font-size:20px;cursor:pointer'>✕</button></div><div class='fc'><div><label class='lbl'>Title</label><input id='an-t' type='text' class='inp'/></div><div><label class='lbl'>Message</label><textarea id='an-m' class='inp' rows='4'></textarea></div><label style='display:flex;align-items:center;gap:8px;cursor:pointer'><input type='checkbox' id='an-p'/><span style='font-size:13px'>📌 Pin this announcement</span></label><button class='btn-p' onclick='saveAnn()'>Post Announcement</button></div></div></div>";}
 function saveAnn(){var t=($("an-t")||{value:""}).value.trim(),m=($("an-m")||{value:""}).value.trim();if(!t||!m){toast("Title and message required",false);return;}db.collection("announcements").add({title:t,message:m,author:S.name,pinned:($("an-p")||{checked:false}).checked,createdAt:firebase.firestore.FieldValue.serverTimestamp()}).then(function(){closeModal();loadNotice();logAct("post_announcement",t);toast("Posted!");}).catch(function(e){toast(e.message,false);});}
@@ -1508,3 +1556,26 @@ document.addEventListener("click",function(e){
 </script>
 </body>
 </html>
+body.light{
+  --bg:#f4f3ff;--sur:#ffffff;--s2:#edeaff;
+  --bor:#d5d0f0;--bor2:#b0a8e8;
+  --txt:#1c1840;--mut:#6860a8;--mut2:#4a4290;
+  --grn:#4f46e5;--grn2:#3730a3;
+  --gdm:#ebe8ff;--gbr:#ccc5f8;
+  --gold:#b45309;--purple:#7c3aed;
+  --red:#dc2626;--teal:#0d9488;
+  --green:#15803d;--orange:#c2410c;
+  --amber:#b45309;--pending:#c2410c;
+}
+body.light #topbar{background:#f4f3ffee;}
+body.light .modal-box{background:#ffffff;border-color:#d5d0f0;}
+body.light .lbox{background:#ffffff;}
+body.light #sidebar{background:#f4f3ff;border-right-color:#d5d0f0;}
+body.light #bot-nav{background:#f4f3ff;border-top-color:#d5d0f0;}
+body.light .tbl th{background:#edeaff;color:#1c1840;}
+body.light .tbl tr:hover{background:#f9f8ff;}
+body.light .card{background:#ffffff;}
+body.light .hero{background:linear-gradient(135deg,#edeaff,#f4f3ff);}
+body.light .stat-box{background:#f4f3ff;}
+body.light .btn-a{background:#4f46e5;color:#fff;}
+body.light #toast{background:#1c1840;color:#fff;}
