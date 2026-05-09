@@ -18,9 +18,9 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--bg);color:var(-
 .lbox{background:var(--sur);border:1px solid var(--bor2);border-radius:24px;padding:40px 36px;width:100%;max-width:400px;box-shadow:0 8px 40px #00000080;}
 .lbl{display:block;font-size:10px;letter-spacing:2px;color:var(--mut);font-weight:700;margin-bottom:6px;}
 .inp{width:100%;background:var(--s2);border:1px solid var(--bor);border-radius:10px;padding:11px 13px;color:var(--txt);font-size:14px;font-family:inherit;outline:none;transition:border .15s;}
-.inp:focus{border-color:var(--grn);}
+.inp:focus{border-color:var(--grn);box-shadow:0 0 0 3px #3b82f614;}
 select.inp{cursor:pointer;}textarea.inp{resize:vertical;}
-.btn-p{width:100%;padding:13px;background:linear-gradient(135deg,var(--gbr),var(--grn));color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;touch-action:manipulation;}
+.btn-p{width:100%;padding:13px;background:linear-gradient(135deg,var(--grn2),var(--grn));color:#fff;border:none;border-radius:12px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;touch-action:manipulation;box-shadow:0 4px 16px #3b82f630;}
 .btn-g{width:100%;padding:12px;background:var(--s2);border:1px solid var(--bor);color:var(--txt);border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:10px;touch-action:manipulation;}
 .btn-a{background:var(--gdm);color:var(--grn);border:1px solid var(--gbr);border-radius:9px;padding:8px 15px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;touch-action:manipulation;}
 .btn-s{background:var(--s2);color:var(--txt);border:1px solid var(--bor);border-radius:8px;padding:6px 11px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;touch-action:manipulation;}
@@ -35,7 +35,7 @@ select.inp{cursor:pointer;}textarea.inp{resize:vertical;}
 .nav-logo .logo{width:38px;height:38px;border-radius:11px;background:linear-gradient(135deg,var(--gbr),var(--grn));display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:900;color:#fff;margin:0 auto 6px;}
 .nav-item{display:flex;align-items:center;gap:9px;padding:8px 11px;border-radius:9px;cursor:pointer;font-size:13px;font-weight:600;color:var(--mut);margin-bottom:1px;transition:all .15s;touch-action:manipulation;}
 .nav-item:hover{background:var(--s2);color:var(--txt);}
-.nav-item.active{background:var(--gdm);color:var(--grn);}
+.nav-item.active{background:linear-gradient(135deg,var(--gdm),#091828);color:var(--grn);border:1px solid var(--gbr);}
 #main{margin-left:220px;flex:1;padding:20px 24px;max-width:960px;}
 #topbar{display:flex;align-items:center;gap:10px;margin-bottom:18px;}
 #topbar h2{font-size:19px;font-weight:900;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
@@ -56,11 +56,11 @@ select.inp{cursor:pointer;}textarea.inp{resize:vertical;}
 /* Cards */
 .card{background:var(--sur);border:1px solid var(--bor);border-radius:18px;padding:20px;}
 .sc{background:var(--s2);border:1px solid var(--bor);border-radius:12px;padding:14px;}
-.hero{background:linear-gradient(135deg,var(--gdm),#0d1424);border:1px solid var(--gbr);border-radius:16px;padding:22px 26px;}
+.hero{background:linear-gradient(140deg,var(--gdm) 0%,#080f1e 100%);border:1px solid var(--gbr);border-radius:18px;padding:22px 26px;position:relative;overflow:hidden;}
 .g2{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
 .g3{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;}
 .g4{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;}
-@media(max-width:600px){.g4{grid-template-columns:1fr 1fr;}.g3{grid-template-columns:1fr 1fr;}.g2-mob{grid-template-columns:1fr!important;}}
+@media(max-width:600px){.g4{grid-template-columns:1fr 1fr;}.g3{grid-template-columns:1fr 1fr;}.g2-mob{grid-template-columns:1fr!important;}.stat-box .val{font-size:14px!important;}.proj-tab{padding:10px 12px!important;font-size:12px!important;}}
 .fc{display:flex;flex-direction:column;gap:14px;}
 .tab-row{display:flex;gap:5px;flex-wrap:wrap;}
 .tab{background:var(--s2);border:1px solid var(--bor);border-radius:7px;padding:7px 13px;font-size:12px;font-weight:600;cursor:pointer;color:var(--mut);font-family:inherit;touch-action:manipulation;}
@@ -86,9 +86,9 @@ select.inp{cursor:pointer;}textarea.inp{resize:vertical;}
 /* Collection tracker */
 .col-row{display:flex;align-items:center;gap:8px;padding:10px 0;border-bottom:1px solid var(--bor);}
 .col-row:last-child{border-bottom:none;}
-.stat-box{background:var(--s2);border:1px solid var(--bor);border-radius:10px;padding:12px;text-align:center;}
-.stat-box .val{font-size:16px;font-weight:900;margin-top:4px;}
-.stat-box .lbl2{font-size:9px;color:var(--mut);font-weight:700;letter-spacing:1px;}
+.stat-box{background:var(--s2);border:1px solid var(--bor);border-radius:13px;padding:13px 10px;text-align:center;}
+.stat-box .val{font-size:15px;font-weight:900;margin-top:5px;letter-spacing:-.3px;}
+.stat-box .lbl2{font-size:8px;color:var(--mut2,#636b88);font-weight:700;letter-spacing:1.5px;text-transform:uppercase;}
 /* Invite page */
 #pg-invite{display:none;min-height:100vh;align-items:center;justify-content:center;background:radial-gradient(ellipse at 30% 20%,#0d1f4a,var(--bg));}
 
@@ -702,7 +702,7 @@ function pProject(id){
     h+="<div class='stat-box'><div class='lbl2'>EXPECTED</div><div class='val' style='color:var(--purple)'>"+fmt(exp)+"</div></div>";
     h+="<div class='stat-box'><div class='lbl2'>P&L</div><div class='val' style='color:"+(pl>=0?"var(--green)":"var(--red)")+"'>"+(pl>=0?"+":"")+fmt(pl)+"</div></div></div>";
     if(cols2.length){
-      var colUnit=cols2[0].unit||"kg";
+      var colUnit=cols2.length?(cols2.find(function(e){return e.unit;})||{unit:"units"}).unit:"units";
       h+="<div class='g4' style='margin-bottom:14px'>";
       h+="<div class='stat-box'><div class='lbl2'>COLLECTED</div><div class='val' style='color:var(--teal)'>"+totalQty.toFixed(2)+" "+colUnit+"</div></div>";
       h+="<div class='stat-box'><div class='lbl2'>SOLD</div><div class='val' style='color:var(--green)'>"+soldQty.toFixed(2)+" "+colUnit+"</div></div>";
@@ -817,106 +817,6 @@ function printReport(){var ps=payS(S.payY,S.payM),pn=ps.filter(function(m){retur
 function expCSV(){var rows=[["Date","Type","Member","Amount (BDT)","Note"]];S.txs.slice().reverse().forEach(function(t){rows.push([t.date,t.type,txName(t),t.amount,t.note||""]);});var csv=rows.map(function(r){return r.map(function(c){return'"'+String(c).replace(/"/g,'""')+'"';}).join(",");}).join("\n");var blob=new Blob([csv],{type:"text/csv"});var url=URL.createObjectURL(blob);var a=document.createElement("a");a.href=url;a.download="SIPR_"+new Date().toISOString().split("T")[0]+".csv";a.click();URL.revokeObjectURL(url);toast("CSV exported!");}
 
 // ═══════════ INVESTMENTS (Advanced Project Tracker) ═══════════
-function pInv(){
-  var h="<div class='fc'>";
-  h+="<div style='display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px'><h2 style='font-size:22px;font-weight:800'>Projects</h2>";
-  if(isAdmin())h+="<button class='btn-a' onclick='openInv(null)'>+ New Project</button>";
-  h+="</div>";
-  var dep=S.invs.reduce(function(s,x){return s+Number(x.capitalDeployed||x.amount||0);},0);
-  var ret=S.invs.reduce(function(s,x){return s+Number(x.actualReturn||0);},0);
-  h+="<div class='g3'><div class='sc' style='background:var(--gdm);border-color:var(--gbr);text-align:center'><div class='lbl2' style='margin-bottom:5px'>DEPLOYED</div><div style='color:var(--gold);font-weight:900;font-size:17px'>"+fmt(dep)+"</div></div><div class='sc' style='text-align:center'><div class='lbl2' style='margin-bottom:5px'>RETURNED</div><div style='color:var(--purple);font-weight:900;font-size:17px'>"+fmt(ret)+"</div></div><div class='sc' style='text-align:center'><div class='lbl2' style='margin-bottom:5px'>ACTIVE</div><div style='color:var(--grn);font-weight:900;font-size:22px'>"+S.invs.filter(function(x){return x.status==="active";}).length+"</div></div></div>";
-  if(!S.invs.length){
-    h+="<div class='card' style='text-align:center;padding:48px;color:var(--mut)'><div style='font-size:44px;opacity:.3;margin-bottom:12px'>📈</div><div style='font-size:15px;font-weight:700;margin-bottom:8px'>No projects yet</div>";
-    if(isAdmin())h+="<button class='btn-p' onclick='openInv(null)' style='padding:11px 24px;margin-top:4px'>+ Create First Project</button>";
-    h+="</div>";
-  } else {
-    h+="<div class='tab-row'>";
-    ["all","active","planning","completed","paused","loss"].forEach(function(f){var cnt=f==="all"?S.invs.length:S.invs.filter(function(x){return x.status===f;}).length;if(cnt>0||f==="all")h+="<button class='tab"+((S.invF||"all")===f?" active":"")+"' onclick='S.invF=\""+f+"\";render()'>"+f.charAt(0).toUpperCase()+f.slice(1)+" ("+cnt+")</button>";});
-    h+="</div>";
-    var IS2={active:{L:"Active",C:"#4f8ef7",B:"#0a1226"},planning:{L:"Planning",C:"#f59e0b",B:"#1c0e00"},completed:{L:"Completed",C:"#8b5cf6",B:"#1a0f3a"},paused:{L:"Paused",C:"#56607a",B:"#13161e"},loss:{L:"Loss",C:"#ef4444",B:"#1a0404"}};
-    var filtered=(!S.invF||S.invF==="all")?S.invs:S.invs.filter(function(x){return x.status===S.invF;});
-    filtered.forEach(function(inv){
-      var dep2=Number(inv.capitalDeployed||inv.amount||0),ret2=Number(inv.actualReturn||0),exp=Number(inv.expectedReturn||0),pl=ret2-dep2,pp=exp>0?Math.min(ret2/exp*100,100):0;
-      var st=IS2[inv.status]||IS2.planning;
-      // Collection stats
-      var cols2=inv.collections||[];
-      var totalColKg=cols2.reduce(function(s,c){return s+Number(c.kg||0);},0);
-      var totalSoldKg=cols2.reduce(function(s,c){return s+Number(c.soldKg||0);},0);
-      var totalRevenue=cols2.reduce(function(s,c){return s+Number(c.revenue||0);},0);
-      var stockKg=totalColKg-totalSoldKg;
-      h+="<div class='card' style='padding:0;overflow:hidden'>";
-      // Header
-      h+="<div style='padding:16px 18px;background:linear-gradient(135deg,var(--gdm),#0d1424);border-bottom:1px solid var(--bor)'>";
-      h+="<div style='display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:10px'>";
-      h+="<div><div style='display:flex;align-items:center;gap:8px;margin-bottom:4px'><span style='font-weight:900;font-size:17px'>"+inv.name+"</span><span class='bdg' style='background:"+st.B+";color:"+st.C+"'>"+st.L+"</span></div>";
-      h+="<div style='font-size:12px;color:var(--mut)'>"+(inv.sector||"")+(inv.partner?" · "+inv.partner:"")+(inv.date?" · Started "+fd(inv.date):"")+"</div></div>";
-      h+="<div style='text-align:right'><div style='color:var(--gold);font-weight:900;font-size:18px'>"+fmt(dep2)+"</div>"+(pl!==0?"<div style='font-size:12px;color:"+(pl>0?"var(--grn)":"var(--red)")+";font-weight:700'>"+(pl>0?"+":"")+fmt(pl)+" P&L</div>":"")+"</div></div>";
-      if(inv.description)h+="<div style='font-size:12px;color:var(--mut);margin-top:8px;line-height:1.6'>"+inv.description+"</div>";
-      h+="</div>";
-      // Body tabs
-      h+="<div style='padding:0 18px'>";
-      h+="<div style='display:flex;gap:0;border-bottom:1px solid var(--bor);margin-bottom:14px'>";
-      ["overview","collection","sales","milestones"].forEach(function(tb){var isActive=(inv._tab||"overview")===tb;h+="<button onclick='S.invs.find(function(x){return x.id==\""+inv.id+"\"})._tab=\""+tb+"\";render()' style='padding:10px 14px;border:none;background:none;font-family:inherit;font-size:12px;font-weight:700;cursor:pointer;color:"+(isActive?"var(--grn)":"var(--mut)")+";border-bottom:2px solid "+(isActive?"var(--grn)":"transparent")+";touch-action:manipulation'>"+{overview:"📊 Overview",collection:"📦 Collection",sales:"💵 Sales",milestones:"🎯 Milestones"}[tb]+"</button>";});
-      h+="</div>";
-      var tab2=inv._tab||"overview";
-      if(tab2==="overview"){
-        h+="<div class='g4' style='margin-bottom:14px'>";
-        h+="<div class='stat-box'><div class='lbl2'>CAPITAL</div><div class='val' style='color:var(--gold)'>"+fmt(dep2)+"</div></div>";
-        h+="<div class='stat-box'><div class='lbl2'>RETURNED</div><div class='val' style='color:var(--grn)'>"+fmt(ret2)+"</div></div>";
-        h+="<div class='stat-box'><div class='lbl2'>EXPECTED</div><div class='val' style='color:var(--purple)'>"+fmt(exp)+"</div></div>";
-        h+="<div class='stat-box'><div class='lbl2'>P&L</div><div class='val' style='color:"+(pl>=0?"var(--grn)":"var(--red)")+"'>"+(pl>=0?"+":"")+fmt(pl)+"</div></div></div>";
-        if(exp>0){h+="<div style='margin-bottom:14px'><div style='display:flex;justify-content:space-between;font-size:11px;color:var(--mut);margin-bottom:5px'><span>Return Progress</span><span>"+fmt(ret2)+" / "+fmt(exp)+" ("+pp.toFixed(0)+"%)</span></div><div class='pbar' style='height:8px'><div class='pfill' style='width:"+pp+"%'></div></div></div>";}
-        if(cols2.length){
-          h+="<div class='g4' style='margin-bottom:14px'>";
-          h+="<div class='stat-box'><div class='lbl2'>TOTAL COLLECTED</div><div class='val' style='color:var(--teal)'>"+totalColKg.toFixed(1)+" kg</div></div>";
-          h+="<div class='stat-box'><div class='lbl2'>SOLD</div><div class='val' style='color:var(--grn)'>"+totalSoldKg.toFixed(1)+" kg</div></div>";
-          h+="<div class='stat-box'><div class='lbl2'>IN STOCK</div><div class='val' style='color:var(--gold)'>"+stockKg.toFixed(1)+" kg</div></div>";
-          h+="<div class='stat-box'><div class='lbl2'>REVENUE</div><div class='val' style='color:var(--purple)'>"+fmt(totalRevenue)+"</div></div></div>";
-        }
-        if(inv.teamMembers&&inv.teamMembers.length)h+="<div style='margin-bottom:14px'><div style='font-size:10px;color:var(--mut);font-weight:700;margin-bottom:6px'>TEAM</div><div style='display:flex;gap:5px;flex-wrap:wrap'>"+inv.teamMembers.map(function(t){return"<span style='background:var(--s2);border:1px solid var(--bor);border-radius:99px;padding:4px 11px;font-size:12px'>"+t+"</span>";}).join("")+"</div></div>";
-        if(inv.notes)h+="<div style='font-size:12px;color:var(--mut);padding:10px 12px;background:var(--s2);border-radius:8px;line-height:1.6;margin-bottom:12px'>"+inv.notes+"</div>";
-      } else if(tab2==="collection"){
-        h+="<div style='display:flex;justify-content:space-between;align-items:center;margin-bottom:12px'>";
-        h+="<div style='font-size:11px;color:var(--mut);font-weight:700'>DAILY COLLECTION LOG</div>";
-        if(isAdmin()||canWrite())h+="<button class='btn-a' onclick='openCollection(\""+inv.id+"\")'>+ Add Entry</button>";
-        h+="</div>";
-        if(!cols2.length)h+="<div style='text-align:center;padding:28px;color:var(--mut)'>No collection entries yet.</div>";
-        else{
-          h+="<div class='sw'><table class='tbl'><thead><tr><th>Date</th><th>Source</th><th style='text-align:right'>Collected (kg)</th><th style='text-align:right'>Sold (kg)</th><th style='text-align:right'>Stock (kg)</th><th style='text-align:right'>Price/kg</th><th style='text-align:right'>Revenue</th><th></th></tr></thead><tbody>";
-          cols2.slice().reverse().forEach(function(c2,ci){var stock2=Number(c2.kg||0)-Number(c2.soldKg||0);h+="<tr><td style='color:var(--mut);font-size:12px;white-space:nowrap'>"+fd(c2.date)+"</td><td style='font-size:12px'>"+( c2.source||"—")+"</td><td style='text-align:right;color:var(--teal);font-weight:700'>"+Number(c2.kg||0).toFixed(1)+"</td><td style='text-align:right;color:var(--grn);font-weight:700'>"+Number(c2.soldKg||0).toFixed(1)+"</td><td style='text-align:right;color:var(--gold);font-weight:700'>"+stock2.toFixed(1)+"</td><td style='text-align:right;color:var(--mut);font-size:12px'>"+(c2.pricePerKg?fmt(c2.pricePerKg)+"":"—")+"</td><td style='text-align:right;color:var(--purple);font-weight:700'>"+fmt(c2.revenue||0)+"</td><td>"+(isAdmin()?"<button onclick='delCollection(\""+inv.id+"\","+cols2.length-1-ci+")' class='btn-d' style='padding:3px 7px;font-size:10px'>✕</button>":"")+"</td></tr>";});
-          h+="</tbody></table></div>";
-        }
-      } else if(tab2==="sales"){
-        h+="<div style='margin-bottom:14px'>";
-        h+="<div class='g3'>";
-        h+="<div class='stat-box'><div class='lbl2'>TOTAL REVENUE</div><div class='val' style='color:var(--purple)'>"+fmt(totalRevenue)+"</div></div>";
-        h+="<div class='stat-box'><div class='lbl2'>TOTAL SOLD</div><div class='val' style='color:var(--grn)'>"+totalSoldKg.toFixed(1)+" kg</div></div>";
-        h+="<div class='stat-box'><div class='lbl2'>AVG PRICE/KG</div><div class='val' style='color:var(--gold)'>"+(totalSoldKg>0?fmt(Math.round(totalRevenue/totalSoldKg)):"—")+"</div></div></div></div>";
-        var salesData=cols2.filter(function(c2){return Number(c2.soldKg||0)>0;});
-        if(!salesData.length)h+="<div style='text-align:center;padding:28px;color:var(--mut)'>No sales recorded yet. Add entries in Collection tab.</div>";
-        else{h+="<div class='sw'><table class='tbl'><thead><tr><th>Date</th><th>Sold (kg)</th><th style='text-align:right'>Price/kg</th><th style='text-align:right'>Revenue</th><th>Notes</th></tr></thead><tbody>";salesData.slice().reverse().forEach(function(c2){h+="<tr><td style='color:var(--mut);font-size:12px'>"+fd(c2.date)+"</td><td style='color:var(--grn);font-weight:700'>"+Number(c2.soldKg||0).toFixed(1)+" kg</td><td style='text-align:right;color:var(--gold)'>"+(c2.pricePerKg?fmt(c2.pricePerKg):"—")+"</td><td style='text-align:right;color:var(--purple);font-weight:700'>"+fmt(c2.revenue||0)+"</td><td style='color:var(--mut);font-size:12px'>"+(c2.saleNote||"—")+"</td></tr>";});h+="</tbody></table></div>";}
-      } else if(tab2==="milestones"){
-        h+="<div style='display:flex;justify-content:space-between;align-items:center;margin-bottom:12px'><div style='font-size:11px;color:var(--mut);font-weight:700'>MILESTONES</div>"+(isAdmin()?"<button class='btn-a' onclick='openMilestone(\""+inv.id+"\")'>+ Add</button>":"")+"</div>";
-        var ms=inv.milestones||[];
-        if(!ms.length)h+="<div style='text-align:center;padding:28px;color:var(--mut)'>No milestones yet.</div>";
-        else{h+="<div style='background:var(--s2);border-radius:11px;padding:4px 14px;border:1px solid var(--bor)'>";ms.forEach(function(m,i){h+="<div style='display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--bor)'>"+(i===ms.length-1?"style='border-bottom:none'":"")+"<div style='width:22px;height:22px;border-radius:50%;background:"+(m.done?"var(--grn)":"var(--bor)")+";display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;color:"+(m.done?"#fff":"var(--mut)")+";flex-shrink:0'>"+(m.done?"✓":(i+1))+"</div><div style='flex:1'><div style='font-size:13px;font-weight:600;color:"+(m.done?"var(--grn)":"var(--txt)")+"'>"+m.title+"</div>"+(m.note?"<div style='font-size:11px;color:var(--mut)'>"+m.note+"</div>":"")+"</div>"+(m.date?"<div style='font-size:11px;color:var(--mut)'>"+fd(m.date)+"</div>":"")+(isAdmin()?"<button onclick='toggleMilestone(\""+inv.id+"\","+i+")' class='btn-s' style='padding:4px 8px;font-size:11px'>"+(m.done?"Undo":"Done")+"</button>":"")+"</div>";});h+="</div>";}
-      }
-      h+="</div>";
-      // Action buttons
-      if(isAdmin()){
-        h+="<div style='padding:12px 18px;border-top:1px solid var(--bor);display:flex;gap:7px;flex-wrap:wrap'>";
-        h+="<button class='btn-s' onclick='openInv(\""+inv.id+"\")'>✏ Edit</button>";
-        h+="<button class='btn-s' onclick='openCollection(\""+inv.id+"\")'>📦 Add Collection</button>";
-        h+="<button class='btn-s' onclick='openMilestone(\""+inv.id+"\")'>🎯 Add Milestone</button>";
-        h+="<button class='btn-d' onclick='delInv(\""+inv.id+"\")'>Delete</button>";
-        h+="</div>";
-      }
-      h+="</div>";
-    });
-  }
-  h+="</div>";return h;
-}
-
 function openInv(id){
   var inv=id?S.invs.find(function(x){return x.id===id;}):null;
   var IS_K=["active","planning","completed","paused","loss"];
