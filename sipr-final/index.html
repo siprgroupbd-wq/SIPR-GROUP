@@ -260,7 +260,6 @@ var TC={deposit:{L:"Deposit",C:"#4f8ef7",B:"#0a1226",BD:"#0d1f4a",I:"↓"},profi
 var NAVS=[
   {id:"dashboard",ic:"⬡",lb:"Dashboard"},
   {id:"payments",ic:"📅",lb:"Monthly Payments"},
-  {id:"reminders",ic:"💬",lb:"Reminder Center",perm:"remind"},
   {id:"investments",ic:"📈",lb:"Projects"},
   {id:"transactions",ic:"⇅",lb:"Transactions"},
   {id:"members",ic:"○",lb:"Members"},
@@ -523,7 +522,7 @@ function pDash(){
   h+="</div>";
   if(ai.length){h+="<div class='card' style='flex:1'><div style='font-size:10px;letter-spacing:2px;color:var(--mut);font-weight:700;margin-bottom:9px'>ACTIVE PROJECTS</div>";ai.slice(0,3).forEach(function(inv){var dep=Number(inv.capitalDeployed||inv.amount||0),ret=Number(inv.actualReturn||0),exp=Number(inv.expectedReturn||0),pp=exp>0?Math.min(ret/exp*100,100):0;h+="<div style='margin-bottom:8px'><div style='display:flex;justify-content:space-between;margin-bottom:3px'><span style='font-size:12px;font-weight:700'>"+inv.name+"</span><span style='font-size:11px;color:var(--gold)'>"+fmt(dep)+"</span></div><div class='pbar'><div class='pfill' style='width:"+pp+"%'></div></div></div>";});h+="</div>";}
   h+="</div></div>";
-  if(isOD&&up.length>0)h+="<div style='border:1px solid #7f1d1d;border-radius:13px;padding:13px 15px;background:#0e0505;display:flex;align-items:center;gap:10px;flex-wrap:wrap'><span>⚠️</span><div style='flex:1'><div style='color:#f87171;font-weight:700;font-size:13px'>Overdue — Past 10th</div><div style='font-size:12px;color:var(--mut)'>"+up.map(function(m){return m.name;}).join(", ")+"</div></div>"+(canRemind()?"<button onclick='goPage(\"reminders\")' class='btn-wa' style='flex-shrink:0'>💬 Reminders</button>":"<button onclick='goPage(\"payments\")' class='btn-a' style='flex-shrink:0'>View →</button>")+"</div>";
+  if(isOD&&up.length>0)h+="<div style='border:1px solid #7f1d1d;border-radius:13px;padding:13px 15px;background:#0e0505;display:flex;align-items:center;gap:10px;flex-wrap:wrap'><span>⚠️</span><div style='flex:1'><div style='color:#f87171;font-weight:700;font-size:13px'>Overdue — Past 10th</div><div style='font-size:12px;color:var(--mut)'>"+up.map(function(m){return m.name;}).join(", ")+"</div></div>"+(canRemind()?"<button onclick='bulkWa()' class='btn-wa' style='flex-shrink:0'>💬 Remind All</button>":"<button onclick='goPage(\"payments\")' class='btn-a' style='flex-shrink:0'>View →</button>")+"</div>";
   else if(pn===S.mems.length)h+="<div style='border:1px solid var(--gbr);border-radius:13px;padding:12px 15px;background:var(--gdm);display:flex;align-items:center;gap:10px'><span>🎉</span><div style='color:var(--grn);font-weight:700;font-size:13px'>All "+S.mems.length+" members paid for "+mn+"!</div></div>";
   h+="</div>";return h;
 }
@@ -535,7 +534,7 @@ function pPay(){
   var rate=Math.round(pn/S.mems.length*100),collected=ps.reduce(function(s,m){return s+(m.paid?m.paidAmt:0);},0);
   var todayD=new Date(),isOD=todayD.getDate()>10&&todayD.getMonth()===S.payM&&todayD.getFullYear()===S.payY;
   var h="<div class='fc'><div style='display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px'><h2 style='font-size:22px;font-weight:800'>Monthly Payments</h2>";
-  h+="<div style='display:flex;gap:7px'>"+(canWrite()?"<button class='btn-a' onclick='openTx(null,\"deposit\")'>+ Add Payment</button>":"")+(canRemind()?"<button class='btn-wa' onclick='goPage(\"reminders\")'>💬 Reminders</button>":"")+"<button onclick='expCSV()' style='padding:8px 13px;border-radius:9px;border:1px solid var(--gbr);background:var(--gdm);color:var(--grn);font-size:12px;font-weight:700;cursor:pointer;font-family:inherit'>📥 CSV</button></div></div>";
+  h+="<div style='display:flex;gap:7px'>"+(canWrite()?"<button class='btn-a' onclick='openTx(null,\"deposit\")'>+ Add Payment</button>":"")+(canRemind()?"<button class='btn-wa' onclick='bulkWa()'>💬 Remind All</button>":"")+"<button onclick='expCSV()' style='padding:8px 13px;border-radius:9px;border:1px solid var(--gbr);background:var(--gdm);color:var(--grn);font-size:12px;font-weight:700;cursor:pointer;font-family:inherit'>📥 CSV</button></div></div>";
   h+="<div class='card' style='padding:11px 13px'><div style='display:flex;align-items:center;gap:8px;flex-wrap:wrap'>";
   h+="<select class='inp' style='width:auto;padding:7px 10px' onchange='S.payM=parseInt(this.value);render()'>";
   DM.forEach(function(m,i){h+="<option value='"+i+"'"+(i===S.payM?" selected":"")+">"+m+"</option>";});
@@ -558,7 +557,7 @@ function pPay(){
     ps.forEach(function(m){h+="<tr style='"+(m.paid?"":"background:rgba(239,68,68,.04)")+"'><td style='color:var(--mut);font-size:12px'>"+(m.paid?fd(m.paidDate):"—")+"</td><td><div style='display:flex;align-items:center;gap:7px'>"+avM(m,24)+"<span style='font-weight:700;font-size:13px'>"+m.name+"</span></div></td><td style='text-align:center;color:"+(m.paid?"var(--grn)":"#ef4444")+";font-weight:700'>"+(m.paid?"✓ Paid":"✗ Pending")+"</td><td style='text-align:right;font-weight:700;color:"+(m.paid?"var(--grn)":"#ef4444")+"'>"+(m.paid?fmt(m.paidAmt):"BDT "+DUE+" due")+"</td></tr>";});
     h+="</tbody><tfoot><tr><td colspan='2' style='padding:10px 13px;color:var(--grn);font-weight:700'>TOTAL</td><td></td><td style='padding:10px 13px;text-align:right;color:var(--grn);font-weight:900;font-size:14px'>"+fmt(collected)+"</td></tr></tfoot></table></div></div>";
     if(up.length>0){
-      h+="<div class='card' style='border-color:"+(isOD?"#7f1d1d":"var(--bor)")+"'><div style='display:flex;justify-content:space-between;align-items:center;margin-bottom:11px;flex-wrap:wrap;gap:8px'><div style='color:#ef4444;font-size:10px;font-weight:700;letter-spacing:1px'>"+up.length+" PENDING</div><div style='display:flex;gap:6px'>"+(canRemind()?"<button class='btn-wa' onclick='goPage(\"reminders\")'>💬 Reminder Center</button>":"")+"</div></div>";
+      h+="<div class='card' style='border-color:"+(isOD?"#7f1d1d":"var(--bor)")+"'><div style='display:flex;justify-content:space-between;align-items:center;margin-bottom:11px;flex-wrap:wrap;gap:8px'><div style='color:#ef4444;font-size:10px;font-weight:700;letter-spacing:1px'>"+up.length+" PENDING</div><div style='display:flex;gap:6px'>"+(canRemind()&&up.some(function(m){return m.phone;})?"<button onclick='bulkWa()' style='padding:7px 11px;border-radius:8px;border:1px solid #25d366;background:#071a0f;color:#25d366;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit'>💬 Send All</button>":"")+"</div></div>";
       h+="<div style='display:flex;flex-direction:column;gap:6px'>";
       up.forEach(function(m){h+="<div style='display:flex;align-items:center;gap:8px;padding:9px 10px;background:var(--s2);border-radius:9px;border:1px solid "+(isOD?"#3d1010":"var(--bor)")+"'>"+avM(m,28)+"<div style='flex:1'><div style='font-size:13px;font-weight:700'>"+m.name+"</div><div style='font-size:11px;color:var(--mut)'>Pending "+fmt(DUE)+"</div></div>"+(m.phone&&canRemind()?"<button onclick='wa(\""+m.phone+"\",\""+m.name+"\")' class='btn-wa'>💬</button>":"<span style='font-size:10px;color:var(--mut)'>"+(!m.phone?"No phone":"")+"</span>")+"</div>";});
       h+="</div></div>";
@@ -577,7 +576,12 @@ function pPay(){
   }
   h+="</div>";return h;
 }
-function wa(phone,name){window.open("https://wa.me/880"+phone.replace(/^0/,"")+"?text="+encodeURIComponent("Assalamu Alaikum "+name+",\n\nFriendly reminder: your monthly contribution of BDT "+DUE+" for "+MF[S.payM]+" "+S.payY+" is pending.\n\nbKash: 01845526909 (Shoeb)\nDeadline: 10th of the month.\n\n— Jahed Aziz, SIPR Group"),"_blank");}
+function wa(phone,name){
+  var d=phone.replace(/\D/g,'');
+  var num=d.startsWith('880')?d:d.startsWith('0')?'88'+d:'880'+d;
+  var msg="Assalamu Alaikum "+name+",\n\nThis is a reminder that your SIPR monthly contribution of BDT 500 for "+MF[S.payM]+" "+S.payY+" is still pending.\n\nPlease send via bKash to: 01845526909 (Shoeb)\nDeadline: 10th of the month.\n\nJazakAllah Khair.\n— SIPR Group";
+  window.open("https://wa.me/"+num+"?text="+encodeURIComponent(msg),"_blank");
+}
 function bulkWa(){var up=payS(S.payY,S.payM).filter(function(m){return !m.paid&&m.phone;});if(!up.length){toast("No pending members with phones",false);return;}var i=0;function nx(){if(i>=up.length)return;var m=up[i++];wa(m.phone,m.name);setTimeout(nx,1500);}nx();toast("Sending to "+up.length+" members...");}
 function waReport(){var ps=payS(S.payY,S.payM),pn=ps.filter(function(m){return m.paid;}).length,up=ps.filter(function(m){return !m.paid;});var collected=ps.reduce(function(s,m){return s+(m.paid?m.paidAmt:0);},0);var txt="📊 *SIPR GROUP — Payment Report*\n📅 "+MF[S.payM]+" "+S.payY+"\n━━━━━━━━━━━━\n\n✅ *Paid ("+pn+"/"+S.mems.length+")*\n";ps.filter(function(m){return m.paid;}).forEach(function(m){txt+="  ✓ "+m.name+" — "+fmt(m.paidAmt)+"\n";});if(up.length){txt+="\n⏳ *Pending ("+up.length+")*\n";up.forEach(function(m){txt+="  ✗ "+m.name+"\n";});}txt+="\n💰 *Total: "+fmt(collected)+"*\nbKash: 01845526909 · Deadline: 10th\n— Jahed Aziz, SIPR Group";window.open("https://wa.me/?text="+encodeURIComponent(txt),"_blank");}
 function printReport(){var ps=payS(S.payY,S.payM),pn=ps.filter(function(m){return m.paid;}).length,collected=ps.reduce(function(s,m){return s+(m.paid?m.paidAmt:0);},0);var rows=ps.map(function(m,i){return"<tr style='background:"+(i%2===0?"#f8fafb":"#fff")+"'><td style='padding:9px 13px;color:#64748b;font-size:12px'>"+(m.paid?fd(m.paidDate):"—")+"</td><td style='padding:9px 13px;font-weight:600'>"+m.name+"</td><td style='padding:9px 13px;text-align:center'><span style='padding:3px 11px;border-radius:99px;font-size:11px;font-weight:700;background:"+(m.paid?"#dcfce7":"#fee2e2")+";color:"+(m.paid?"#15803d":"#dc2626")+"'>"+(m.paid?"✓ Paid":"✗ Pending")+"</span></td><td style='padding:9px 13px;text-align:right;font-weight:700;color:"+(m.paid?"#15803d":"#dc2626")+"'>"+(m.paid?fmt(m.paidAmt):"BDT "+DUE+" due")+"</td></tr>";}).join("");var html="<!DOCTYPE html><html><head><title>SIPR Report</title><style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:Arial,sans-serif}.np{display:flex}@media print{.np{display:none!important}}</style></head><body><div style='max-width:660px;margin:0 auto;padding:30px'><div style='border-bottom:3px solid #4f8ef7;padding-bottom:14px;margin-bottom:20px'><div style='font-size:11px;color:#4f8ef7;font-weight:700;letter-spacing:3px;margin-bottom:4px'>SIPR GROUP — PAYMENT REPORT</div><div style='font-size:24px;font-weight:900;color:#1a2233'>"+MF[S.payM]+" "+S.payY+"</div></div><table style='width:100%;border-collapse:collapse;border:1px solid #e2e8f0'><thead><tr style='background:#1a2233'><th style='padding:10px 13px;text-align:left;color:#fff;font-size:10px'>DATE PAID</th><th style='padding:10px 13px;text-align:left;color:#fff;font-size:10px'>MEMBER</th><th style='padding:10px 13px;text-align:center;color:#fff;font-size:10px'>STATUS</th><th style='padding:10px 13px;text-align:right;color:#fff;font-size:10px'>AMOUNT</th></tr></thead><tbody>"+rows+"</tbody><tfoot><tr style='background:#f1f5f9'><td colspan='2' style='padding:11px 13px;font-weight:800;color:#1a2233'>TOTAL</td><td></td><td style='padding:11px 13px;text-align:right;font-weight:900;color:#15803d;font-size:14px'>"+fmt(collected)+"</td></tr></tfoot></table><div class='np' style='margin-top:18px;justify-content:center;gap:10px'><button onclick='window.print()' style='padding:10px 22px;background:#1a2233;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer'>🖨 Print/PDF</button><button onclick='window.close()' style='padding:10px 18px;background:#f1f5f9;color:#1a2233;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer'>Close</button></div></div></body></html>";var w=window.open("","_blank","width=760,height=620");w.document.write(html);w.document.close();}
@@ -899,7 +903,7 @@ function pProject(id){
     h+="<div><div style='font-size:14px;font-weight:800'>Suppliers</div><div style='font-size:12px;color:var(--mut2);margin-top:2px'>Who you buy from</div></div>";
     if(isAdmin())h+="<button class='btn-a' onclick='openContact(this.dataset.id,\'supplier\',null)' data-id='"+inv.id+"'>+ Add Supplier</button>";
     h+="</div>";
-    if(!suppliers.length)h+="<div style='text-align:center;padding:28px;color:var(--mut2);border:1px dashed var(--bor);border-radius:12px;font-size:13px'>No suppliers added yet.</div>";
+    if(!suppliers.length)h+="<div style='text-align:center;padding:28px;color:var(--mut2);background:var(--s2);border-radius:12px;border:1px solid var(--bor);font-size:13px;margin-bottom:8px'>No suppliers added yet. Tap + Add Supplier.</div>";
     else suppliers.forEach(function(s2,si){
       h+="<div style='background:var(--s2);border:1px solid "+(s2.active?"var(--teal)22":"var(--bor)")+";border-radius:13px;padding:13px 15px;display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:8px'>";
       h+="<div style='flex:1;min-width:150px'><div style='font-weight:700;font-size:14px'>"+s2.name+"</div>";
@@ -914,7 +918,7 @@ function pProject(id){
     h+="<div><div style='font-size:14px;font-weight:800'>Buyers</div><div style='font-size:12px;color:var(--mut2);margin-top:2px'>Who you sell to</div></div>";
     if(isAdmin())h+="<button class='btn-a' onclick='openContact(this.dataset.id,\'buyer\',null)' data-id='"+inv.id+"'>+ Add Buyer</button>";
     h+="</div>";
-    if(!buyers.length)h+="<div style='text-align:center;padding:28px;color:var(--mut2);border:1px dashed var(--bor);border-radius:12px;font-size:13px'>No buyers added yet.</div>";
+    if(!buyers.length)h+="<div style='text-align:center;padding:28px;color:var(--mut2);background:var(--s2);border-radius:12px;border:1px solid var(--bor);font-size:13px'>No buyers added yet. Tap + Add Buyer.</div>";
     else buyers.forEach(function(b2,bi){
       h+="<div style='background:var(--s2);border:1px solid "+(b2.active?"var(--gold)22":"var(--bor)")+";border-radius:13px;padding:13px 15px;display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:8px'>";
       h+="<div style='flex:1;min-width:150px'><div style='font-weight:700;font-size:14px'>"+b2.name+"</div>";
@@ -1233,7 +1237,7 @@ function bulkWa(){
     if(i>=up.length)return;
     var m=up[i++];
     var msg="Assalamu Alaikum "+m.name+",\n\nThis is a reminder that your SIPR monthly contribution of BDT 500 for "+mn+" is still pending.\n\nPlease send via bKash to: 01845526909 (Shoeb)\nDeadline: 10th of the month.\n\nJazakAllah Khair.\n— SIPR Group";
-    window.open("https://wa.me/880"+m.phone.replace(/^0/,"")+"?text="+encodeURIComponent(msg),"_blank");
+    var d2=m.phone.replace(/\D/g,"");var num2=d2.startsWith("880")?d2:d2.startsWith("0")?"88"+d2:"880"+d2;window.open("https://wa.me/"+num2+"?text="+encodeURIComponent(msg),"_blank");
     setTimeout(openNext,800);
   }
   openNext();
