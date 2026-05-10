@@ -3,7 +3,7 @@
   "short_name": "SIPR",
   "description": "SIPR Investment Group \u2014 Invest. Grow. Prosper.",
   "start_url": "/",
-  "display": "standalone",
+  "display": "minimal-ui",
   "background_color": "#0c1021",
   "theme_color": "#0c1021",
   "orientation": "portrait-primary",
