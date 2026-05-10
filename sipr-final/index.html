@@ -410,7 +410,7 @@ function showErr(id,msg){var el=$(id);if(el){el.textContent=msg;el.style.display
 function hideErr(id){var el=$(id);if(el)el.style.display="none";}
 
 // ═══════════ AUTH ═══════════
-function gLogin(){fa.signInWithPopup(gp).catch(function(e){showErr("lerr",e.message);});}
+function gLogin(){var standalone=window.matchMedia("(display-mode:standalone)").matches||!!window.navigator.standalone;if(standalone){fa.signInWithRedirect(gp).catch(function(e){showErr("lerr",e.message);});}else{fa.signInWithPopup(gp).then(function(r){}).catch(function(e){showErr("lerr",e.message);});}}
 function eLogin(){
   var em=($("em")||{value:""}).value.trim().toLowerCase();
   var pw=($("pw")||{value:""}).value;
@@ -458,6 +458,7 @@ function changePwModal(){closeProf();var h="<div class='modal-bg' onclick='if(ev
 function doCp(){var np=($("np")||{value:""}).value,cp2=($("cp2")||{value:""}).value;if(np.length<6){toast("Min 6 characters",false);return;}if(np!==cp2){toast("Passwords don't match",false);return;}var user=fa.currentUser;if(!user){toast("Not logged in",false);return;}user.updatePassword(np).then(function(){closeModal();toast("Password updated!");}).catch(function(e){toast(e.message,false);});}
 
 initTheme();
+fa.getRedirectResult().then(function(result){if(result&&result.user){}}).catch(function(e){if(e.code!=="auth/no-current-user")console.warn("redirect:",e.message);});
 fa.onAuthStateChanged(function(user){
   if(!user){$("pg-app").style.display="none";$("pg-login").style.display="flex";$("pg-invite").style.display="none";return;}
   loadMembers(function(){
