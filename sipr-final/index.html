@@ -548,7 +548,7 @@ function startLoading(){
   var msgs=["Connecting...","Loading members...","Syncing data...","Almost ready...","Done!"];
   var p=0;
   var iv=setInterval(function(){
-    p+=2.5;
+    p+=6;
     if(bar)bar.style.width=Math.min(p,95)+"%";
     if(msg)msg.textContent=msgs[Math.min(Math.floor(p/25),4)];
     if(p>=95)clearInterval(iv);
@@ -1046,311 +1046,332 @@ function pInv(){
       h+="<div style='display:flex;align-items:center;gap:8px;margin-bottom:3px;flex-wrap:wrap'>";
       h+="<span style='font-weight:800;font-size:15px'>"+inv.name+"</span>";
       h+="<span class='bdg' style='background:"+st.B+";color:"+st.C+"'>"+st.L+"</span></div>";
-      h+="<div style='font-size:12px;color:var(--mut)'>"+(inv.sector||"")+(inv.date?" · "+fd(inv.date):"");
-      if(inv.projectManagerName)h+=" · <span style='color:var(--purple)'>Mgr: "+inv.projectManagerName+"</span>";
-      if(team.length)h+=" · "+team.length+" members";
+      h+="<div style='font-size:11px;color:var(--mut);margin-bottom:6px'>"+(inv.date?fd(inv.date)+" · ":"");
+      if(inv.projectManagerName)h+="Manager: <span style='color:var(--grn);font-weight:700'>"+inv.projectManagerName+"</span>";
+      if(team.length)h+=" · "+team.length+" member"+(team.length>1?"s":"");
+      h+="</div>";
+      var phases=inv.phases||[];var curPhase=phases.find(function(p){return!p.done;})||phases[0];
+      var phasePct=inv.phasePct||0;
+      h+="<div style='display:flex;align-items:center;gap:8px'>";
+      h+="<div style='flex:1;height:2px;background:var(--bor);border-radius:99px;overflow:hidden'>";
+      h+="<div style='height:100%;width:"+phasePct+"%;background:"+st.C+";border-radius:99px'></div></div>";
+      h+="<div style='font-size:9px;color:var(--mut);white-space:nowrap'>"+phasePct+"%</div>";
       h+="</div></div>";
-      h+="<div style='text-align:right;flex-shrink:0'><div style='font-size:17px;font-weight:900;color:var(--gold)'>"+fmt(dep2)+"</div>";
-      if(pl!==0)h+="<div style='font-size:12px;font-weight:700;color:"+(pl>0?"var(--green)":"var(--red)")+"'>"+(pl>0?"+":"")+fmt(pl)+"</div>";
-      h+="</div><div style='color:var(--mut);font-size:18px;flex-shrink:0;margin-left:4px'>&#x203A;</div>";
-      h+="</div></div>";
+      h+="<div style='text-align:right;flex-shrink:0;padding-left:10px'><div style='font-size:16px;font-weight:900;color:var(--gold)'>"+fmt(dep2)+"</div>";
+      if(pl!==0)h+="<div style='font-size:11px;font-weight:700;color:"+(pl>0?"var(--green)":"var(--red)")+"'>"+(pl>0?"+":"")+fmt(pl)+"</div>";
+      h+="</div><div style='color:var(--mut);font-size:16px;flex-shrink:0;margin-left:4px'>&#x203A;</div>";
+      h+="</div>";
+      h+="</div>";
     });
     h+="</div>";
   }
   h+="</div>";return h;
 }
 
+function toggleProjMenu(id){
+  var dd=$("pm-dd-"+id);
+  if(dd)dd.style.display=dd.style.display==="block"?"none":"block";
+}
+
 function pProject(id){
   var inv=S.invs.find(function(x){return x.id===id;});
-  if(!inv)return "<div class='card' style='text-align:center;padding:60px 24px'><div style='font-size:40px;opacity:.2;margin-bottom:12px'>&#x1F4CB;</div><div style='font-weight:700;color:var(--mut);margin-bottom:16px'>Project not found.</div><button onclick='backToProjects()' class='btn-a'>&#x2190; Back</button></div>";
+  if(!inv)return "<div class='card' style='text-align:center;padding:60px 24px;color:var(--mut)'>Project not found.<br><br><button onclick='backToProjects()' class='btn-a'>&#x2190; Back</button></div>";
   var IS2={active:{L:"Active",C:"var(--grn)"},planning:{L:"Planning",C:"var(--amber)"},completed:{L:"Completed",C:"var(--green)"},paused:{L:"Paused",C:"var(--purple)"},loss:{L:"Loss",C:"var(--red)"}};
   var st=IS2[inv.status]||IS2.planning;
   var dep2=Number(inv.capitalDeployed||inv.amount||0);
   var ret2=Number(inv.actualReturn||0);
   var exp=Number(inv.expectedReturn||0);
   var pl=ret2-dep2;
-  var pp=exp>0?Math.min(Math.round(ret2/exp*100),100):0;
   var cols2=inv.collections||[];
-  var colUnit=cols2.length?(cols2.find(function(e){return e.unit;})||{unit:"units"}).unit:"units";
-  var totalQty=cols2.reduce(function(s,e){return s+Number(e.kg||0);},0);
-  var soldQty=cols2.reduce(function(s,e){return s+Number(e.soldKg||0);},0);
-  var totalRev=cols2.reduce(function(s,e){return s+Number(e.revenue||0);},0);
-  var stockQty=totalQty-soldQty;
+  var sales2=inv.sales||[];
   var team=inv.teamEntries||[];
-  var tab2=S.projTab||"overview";
+  var tab2=S._invTab||"overview";
   var canMgr=isAdmin()||isProjectManager(inv);
+
+  // ── Stock calculation ──
+  var stockMap={};
+  cols2.forEach(function(e){
+    var item=(e.plasticType||e.item||"Item").trim()||"Item";
+    var unit=e.unit||"pcs";
+    if(!stockMap[item])stockMap[item]={collected:0,sold:0,unit:unit};
+    stockMap[item].collected+=Number(e.kg||0);
+    stockMap[item].sold+=Number(e.soldKg||0);
+  });
+  var totalQty=Object.keys(stockMap).reduce(function(s,k){return s+stockMap[k].collected;},0);
+  var totalSold=Object.keys(stockMap).reduce(function(s,k){return s+stockMap[k].sold;},0);
+  var totalRev=(sales2.length?sales2:cols2).reduce(function(s,e){return s+Number(e.revenue||0);},0);
+
+  // ── Expenses ──
+  var expenses=inv.projectExpenses||[];
+  var totalExpense=expenses.reduce(function(s,e){return s+Number(e.amount||0);},0);
+
   var h="<div class='fc'>";
 
-  // ── Top nav ──
-    // Back and menu are inside header card
-
-
-  // ── Header card ──
-  h+="<div style='background:linear-gradient(135deg,var(--gdm) 0%,#0d0830 100%);border:1px solid var(--gbr);border-radius:20px;padding:22px 24px'>";
-    h+="<div style='display:flex;justify-content:space-between;align-items:center;margin-bottom:14px'>";
-  h+="<button onclick='backToProjects()' style='padding:6px 14px;border-radius:20px;border:1px solid var(--bor);background:rgba(0,0,0,.2);color:var(--txt);font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:5px'>&#x2190; Projects</button>";
-  if(isAdmin())h+="<div style='position:relative' id='proj-menu-wrap'><button id='proj-dot' onclick='document.getElementById(\"proj-actions\").style.display=document.getElementById(\"proj-actions\").style.display===\"none\"?\"block\":\"none\"' style='width:34px;height:34px;border-radius:10px;border:1px solid var(--bor);background:rgba(0,0,0,.2);color:var(--txt);font-size:20px;cursor:pointer;font-family:inherit;display:flex;align-items:center;justify-content:center;letter-spacing:1px'>&#x22EE;</button><div id='proj-actions' style='display:none;position:absolute;right:0;top:40px;background:var(--sur);border:1px solid var(--bor);border-radius:12px;overflow:hidden;z-index:50;box-shadow:0 8px 30px rgba(0,0,0,.4);min-width:130px'><button onclick=\"openInv(this.dataset.id)\" data-id='"+inv.id+"' style='width:100%;padding:11px 16px;border:none;background:none;font-family:inherit;text-align:left;color:var(--grn);font-size:13px;font-weight:700;cursor:pointer'>&#x270F; Edit</button><div style='height:1px;background:var(--bor)'></div><button onclick=\"delInv(this.dataset.id)\" data-id='"+inv.id+"' style='width:100%;padding:11px 16px;border:none;background:none;font-family:inherit;text-align:left;color:var(--red);font-size:13px;font-weight:700;cursor:pointer'>&#x1F5D1; Delete</button></div></div>";
+  // ── COMPACT HEADER CARD ──
+  h+="<div style='background:linear-gradient(135deg,var(--gdm),#0d0c30);border:1px solid var(--gbr);border-radius:18px;padding:13px 15px'>";
+  // Back + menu row
+  h+="<div style='display:flex;justify-content:space-between;align-items:center;margin-bottom:10px'>";
+  h+="<button onclick='backToProjects()' style='width:34px;height:34px;border-radius:50%;border:1px solid var(--bor);background:rgba(0,0,0,.25);color:var(--txt);font-size:16px;cursor:pointer;font-family:inherit;display:flex;align-items:center;justify-content:center;font-weight:700;flex-shrink:0'>&#x2190;</button>";
+  if(isAdmin()){
+    h+="<div style='position:relative'>";
+    h+="<button onclick='toggleProjMenu(this.dataset.mid)' data-mid='"+inv.id+"' style='width:32px;height:32px;border-radius:9px;border:1px solid var(--bor);background:rgba(0,0,0,.2);color:var(--txt);font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center'>&#x22EE;</button>";
+    h+="<div id='pm-dd-"+inv.id+"' style='display:none;position:absolute;right:0;top:38px;background:var(--sur);border:1px solid var(--bor);border-radius:12px;overflow:hidden;z-index:50;box-shadow:0 8px 30px rgba(0,0,0,.5);min-width:130px'>";
+    h+="<button onclick='openInv(this.dataset.id)' data-id='"+inv.id+"' style='width:100%;padding:11px 16px;border:none;background:none;font-family:inherit;text-align:left;color:var(--grn);font-size:13px;font-weight:700;cursor:pointer'>&#x270F; Edit</button>";
+    h+="<div style='height:1px;background:var(--bor)'></div>";
+    h+="<button onclick='delInv(this.dataset.id)' data-id='"+inv.id+"' style='width:100%;padding:11px 16px;border:none;background:none;font-family:inherit;text-align:left;color:var(--red);font-size:13px;font-weight:700;cursor:pointer'>&#x1F5D1; Delete</button>";
+    h+="</div></div>";
+  }
   h+="</div>";
-h+="<div style='display:flex;align-items:flex-start;gap:14px;flex-wrap:wrap'>";
-  h+="<div style='width:4px;min-height:54px;border-radius:99px;background:"+st.C+";flex-shrink:0;margin-top:2px;box-shadow:0 0 12px "+st.C+"60'></div>";
+  // Project info — compact single row
+  h+="<div style='display:flex;align-items:center;gap:10px'>";
+  h+="<div style='width:3px;height:36px;border-radius:99px;background:"+st.C+";flex-shrink:0;box-shadow:0 0 8px "+st.C+"60'></div>";
   h+="<div style='flex:1;min-width:0'>";
-  h+="<div style='display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:5px'>";
-  h+="<h2 style='font-size:20px;font-weight:900;letter-spacing:-.3px'>"+inv.name+"</h2>";
-  h+="<span class='bdg' style='background:"+st.C+"18;color:"+st.C+";border:1px solid "+st.C+"50'>"+st.L+"</span>";
-  h+="</div>";
-  h+="<div style='font-size:12px;color:var(--mut);margin-bottom:6px'>"+(inv.sector||"")+(inv.date?" &#xB7; Started "+fd(inv.date):"")+"</div>";
-  if(inv.projectManagerName){
-    h+="<div style='display:inline-flex;align-items:center;gap:6px;background:var(--gbr);border-radius:99px;padding:4px 12px;border:1px solid var(--bor2)'>";
-    h+="<span style='font-size:9px;font-weight:700;letter-spacing:1.5px;color:var(--mut)'>MANAGER</span>";
-    h+="<span style='font-size:12px;font-weight:800;color:var(--grn)'>"+inv.projectManagerName+"</span></div>";
-  }
-  h+="</div>";
-  h+="<div style='text-align:right;flex-shrink:0'>";
-  h+="<div style='font-size:9px;color:var(--mut);font-weight:700;letter-spacing:2px;margin-bottom:3px'>CAPITAL</div>";
-  h+="<div style='font-size:22px;font-weight:900;color:var(--gold)'>"+fmt(dep2)+"</div>";
-  if(pl!==0)h+="<div style='font-size:13px;font-weight:800;color:"+(pl>0?"var(--green)":"var(--red)")+"'>"+(pl>0?"+":"")+fmt(pl)+"</div>";
+  h+="<div style='display:flex;align-items:center;gap:7px;margin-bottom:3px;flex-wrap:wrap'><div style='font-size:18px;font-weight:900'>"+inv.name+"</div><span class='bdg' style='background:"+st.C+"18;color:"+st.C+"'>"+st.L+"</span></div>";
+  h+="<div style='font-size:11px;color:var(--mut);overflow:hidden;text-overflow:ellipsis;white-space:nowrap'>";
+  h+=(inv.date?fd(inv.date)+" · ":"");
+  if(inv.projectManagerName)h+="Manager: <span style='color:var(--grn);font-weight:700'>"+inv.projectManagerName+"</span>";
   h+="</div></div>";
-  if(exp>0){
-    h+="<div style='margin-top:16px'>";
-    h+="<div style='display:flex;justify-content:space-between;font-size:11px;color:var(--mut);margin-bottom:5px'>";
-    h+="<span>Progress</span><span>"+fmt(ret2)+" / "+fmt(exp)+" &mdash; "+pp+"%</span></div>";
-    h+="<div style='height:5px;background:#ffffff08;border-radius:99px;overflow:hidden'>";
-    h+="<div style='height:100%;width:"+pp+"%;background:"+st.C+";border-radius:99px'></div></div></div>";
+  h+="<div style='text-align:right;flex-shrink:0'>";
+  h+="<div style='font-size:9px;color:var(--mut);letter-spacing:2px;margin-bottom:2px'>CAPITAL</div>";
+  h+="<div style='font-size:17px;font-weight:900;color:var(--gold)'>"+fmt(dep2)+"</div>";
+  if(pl>0)h+="<div style='font-size:11px;font-weight:700;color:var(--green)'>+"+fmt(pl)+"</div>";
+  else if(pl<0)h+="<div style='font-size:11px;font-weight:700;color:var(--red)'>"+fmt(pl)+"</div>";
+  h+="</div></div>";
+  // Phase bar
+  var phasePct=inv.phasePct||0;
+  if(phasePct>0||inv.phases){
+    h+="<div style='margin-top:10px'>";
+    h+="<div style='height:2px;background:var(--bor);border-radius:99px;overflow:hidden'>";
+    h+="<div style='height:100%;width:"+phasePct+"%;background:"+st.C+";border-radius:99px'></div></div>";
+    h+="<div style='font-size:9px;color:var(--mut);margin-top:3px;text-align:right'>Phase progress: "+phasePct+"%</div>";
+    h+="</div>";
   }
   h+="</div>";
 
-  // ── Single card: Tabs + content ──
-  h+="<div style='background:var(--sur);border:1px solid var(--bor);border-radius:20px;overflow:hidden'>";
-
-  // Tab bar — Team is a tab now
+  // ── TAB CARD ──
   var TABS=[
     {k:"overview",l:"Overview"},
-    {k:"log",    l:"Daily Log"+(cols2.length?" ("+cols2.length+")":"")},
-    {k:"sales",  l:"Sales"},
-    {k:"contacts",l:"Contacts"},
-    {k:"milestones",l:"Milestones"},
-    {k:"team",   l:"Team"+(team.length?" ("+team.length+")":"")}
+    {k:"log",l:"Daily Log"+(cols2.length?" ("+cols2.length+")":"")},
+    {k:"sale",l:"Sale"},
+    {k:"stock",l:"Stock"},
+    {k:"budget",l:"Budget"},
+    {k:"team",l:"Team"+(team.length?" ("+team.length+")":"")}
   ];
+  h+="<div style='background:var(--sur);border:1px solid var(--bor);border-radius:18px;overflow:hidden'>";
   h+="<div class='proj-tab-bar'>";
   TABS.forEach(function(tb){
-    h+="<button class='proj-tab"+(tab2===tb.k?" active":"")+"' onclick='S.projTab=this.dataset.tab;render()' data-tab='"+tb.k+"'>"+tb.l+"</button>";
+    h+="<button class='proj-tab"+(tab2===tb.k?" active":"")+"' onclick='S._invTab=this.dataset.tab;render()' data-tab='"+tb.k+"'>"+tb.l+"</button>";
   });
   h+="</div>";
-  h+="<div style='padding:22px'>";
+  h+="<div style='padding:18px 20px'>";
 
-  // ─── OVERVIEW ───
+  // ── OVERVIEW ──
   if(tab2==="overview"){
-    h+="<div class='g4' style='margin-bottom:14px'>";
+    h+="<div class='g4' style='margin-bottom:12px'>";
     h+="<div class='stat-box'><div class='lbl2'>CAPITAL</div><div class='val' style='color:var(--gold)'>"+fmt(dep2)+"</div></div>";
     h+="<div class='stat-box'><div class='lbl2'>RETURNED</div><div class='val' style='color:var(--green)'>"+fmt(ret2)+"</div></div>";
-    h+="<div class='stat-box'><div class='lbl2'>EXPECTED</div><div class='val' style='color:var(--purple)'>"+fmt(exp)+"</div></div>";
     h+="<div class='stat-box'><div class='lbl2'>P&L</div><div class='val' style='color:"+(pl>=0?"var(--green)":"var(--red)")+"'>"+(pl>=0?"+":"")+fmt(pl)+"</div></div>";
+    h+="<div class='stat-box'><div class='lbl2'>EXPENSES</div><div class='val' style='color:var(--orange)'>"+fmt(totalExpense)+"</div></div>";
     h+="</div>";
-    if(cols2.length){
-      h+="<div class='g4' style='margin-bottom:14px'>";
-      h+="<div class='stat-box'><div class='lbl2'>COLLECTED</div><div class='val' style='color:var(--teal)'>"+totalQty.toFixed(2)+" "+colUnit+"</div></div>";
-      h+="<div class='stat-box'><div class='lbl2'>SOLD</div><div class='val' style='color:var(--green)'>"+soldQty.toFixed(2)+" "+colUnit+"</div></div>";
-      h+="<div class='stat-box'><div class='lbl2'>IN STOCK</div><div class='val' style='color:var(--amber)'>"+stockQty.toFixed(2)+" "+colUnit+"</div></div>";
+    if(Object.keys(stockMap).length){
+      h+="<div class='g3' style='margin-bottom:12px'>";
+      h+="<div class='stat-box'><div class='lbl2'>COLLECTED</div><div class='val' style='color:var(--teal)'>"+totalQty.toFixed(1)+"</div></div>";
+      h+="<div class='stat-box'><div class='lbl2'>SOLD</div><div class='val' style='color:var(--green)'>"+totalSold.toFixed(1)+"</div></div>";
       h+="<div class='stat-box'><div class='lbl2'>REVENUE</div><div class='val' style='color:var(--purple)'>"+fmt(totalRev)+"</div></div>";
       h+="</div>";
     }
+    // Capital history
     var capEntries=inv.capitalEntries||[];
     if(capEntries.length){
-      h+="<div style='background:var(--s2);border:1px solid var(--bor);border-radius:14px;padding:14px 16px;margin-bottom:14px'>";
-      h+="<div style='display:flex;justify-content:space-between;align-items:center;margin-bottom:12px'>";
-      h+="<div style='font-size:10px;color:var(--mut);font-weight:700;letter-spacing:1.5px'>CAPITAL HISTORY</div>";
-      if(isAdmin()||S.role==="finance")h+="<button onclick='addCapital(this.dataset.id)' data-id='"+inv.id+"' class='btn-a' style='font-size:11px;padding:5px 11px'>+ Add</button>";
+      h+="<div style='background:var(--s2);border:1px solid var(--bor);border-radius:13px;padding:13px 15px;margin-bottom:12px'>";
+      h+="<div style='display:flex;justify-content:space-between;align-items:center;margin-bottom:10px'><div style='font-size:10px;color:var(--mut);font-weight:700;letter-spacing:1.5px'>CAPITAL HISTORY</div>";
+      if(isAdmin()||S.role==="finance")h+="<button onclick='addCapital(this.dataset.id)' data-id='"+inv.id+"' class='btn-a' style='font-size:11px;padding:5px 10px'>+ Add</button>";
       h+="</div>";
-      capEntries.forEach(function(e){
-        h+="<div style='display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--bor)'>";
-        h+="<div style='flex:1'><div style='font-size:14px;font-weight:800;color:var(--gold)'>"+fmt(e.amount)+"</div>";
-        h+="<div style='font-size:11px;color:var(--mut);margin-top:2px'>"+(e.source||"SIPR Fund")+(e.date?" &#xB7; "+fd(e.date):"")+(e.addedBy?" &#xB7; "+e.addedBy:"")+"</div></div></div>";
-      });
+      capEntries.forEach(function(e){h+="<div style='display:flex;align-items:center;padding:7px 0;border-bottom:1px solid var(--bor)'><div style='flex:1'><div style='font-size:13px;font-weight:800;color:var(--gold)'>"+fmt(e.amount)+"</div><div style='font-size:11px;color:var(--mut)'>"+((e.source||"SIPR Fund"))+(e.date?" · "+fd(e.date):"")+(e.addedBy?" · "+e.addedBy:"")+"</div></div></div>";});
       h+="</div>";
     } else if(isAdmin()||S.role==="finance"){
-      h+="<button onclick='addCapital(this.dataset.id)' data-id='"+inv.id+"' class='btn-s' style='width:100%;font-size:12px;margin-bottom:14px'>+ Add Capital Entry</button>";
+      h+="<button onclick='addCapital(this.dataset.id)' data-id='"+inv.id+"' class='btn-s' style='width:100%;margin-bottom:10px'>+ Add Capital Entry</button>";
     }
-    var extInvs2=inv.externalInvestors||[];
-    if(extInvs2.length){
-      var extTotal=extInvs2.reduce(function(s,e){return s+Number(e.amount||0);},0);
-      h+="<div style='background:var(--gdm);border:1px solid var(--gbr);border-radius:14px;padding:13px 16px;margin-bottom:14px;display:flex;align-items:center;justify-content:space-between'>";
-      h+="<div><div style='font-size:10px;color:var(--mut);font-weight:700;letter-spacing:1.5px;margin-bottom:3px'>EXTERNAL INVESTORS</div>";
-      h+="<div style='font-size:12px;color:var(--mut)'>"+extInvs2.map(function(e){return e.name;}).join(", ")+"</div></div>";
-      h+="<div style='font-size:18px;font-weight:900;color:var(--gold)'>"+fmt(extTotal)+"</div></div>";
-    }
-    if(inv.notes)h+="<div style='font-size:13px;color:var(--mut);padding:13px 15px;background:var(--s2);border-radius:12px;line-height:1.65;border:1px solid var(--bor)'>"+inv.notes+"</div>";
-    if(inv.createdBy)h+="<div style='font-size:11px;color:var(--mut);margin-top:10px;opacity:.7'>Created by "+inv.createdBy+(inv.createdAt?" &#xB7; "+fd(inv.createdAt):"")+"</div>";
+    if(inv.notes)h+="<div style='font-size:13px;color:var(--mut);padding:12px 14px;background:var(--s2);border-radius:11px;line-height:1.6;border:1px solid var(--bor)'>"+inv.notes+"</div>";
 
-  // ─── DAILY LOG ───
+  // ── DAILY LOG ──
   } else if(tab2==="log"){
-    h+="<div style='display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;flex-wrap:wrap;gap:10px'>";
-    h+="<div><div style='font-size:16px;font-weight:800'>Daily Log</div><div style='font-size:12px;color:var(--mut);margin-top:2px'>"+cols2.length+" entr"+(cols2.length===1?"y":"ies")+" recorded</div></div>";
-    if(canMgr)h+="<button class='btn-a' onclick='openCollection(this.dataset.id)' data-id='"+inv.id+"'>+ Add Entry</button>";
+    h+="<div style='display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:10px'>";
+    h+="<div><div style='font-size:15px;font-weight:800'>Daily Log</div><div style='font-size:11px;color:var(--mut);margin-top:2px'>"+cols2.length+" collection entr"+(cols2.length===1?"y":"ies")+"</div></div>";
+    if(canMgr)h+="<button class='btn-a' onclick='openCollection(this.dataset.id)' data-id='"+inv.id+"'>&#x1F4E6; + Collect</button>";
     h+="</div>";
     if(!cols2.length){
-      h+="<div style='text-align:center;padding:48px 20px;border:1px dashed var(--bor);border-radius:14px'><div style='font-size:36px;margin-bottom:10px;opacity:.25'>&#x1F4CB;</div><div style='font-size:14px;font-weight:700;color:var(--mut);margin-bottom:4px'>No entries yet</div><div style='font-size:12px;color:var(--mut)'>Tap + Add Entry to log daily activity.</div></div>";
+      h+="<div style='text-align:center;padding:40px 20px;border:1px dashed var(--bor);border-radius:13px;color:var(--mut)'><div style='font-size:32px;margin-bottom:8px;opacity:.3'>&#x1F4CB;</div><div style='font-size:14px;font-weight:700'>No entries yet</div><div style='font-size:12px;margin-top:4px'>Tap + Collect to log daily collections.</div></div>";
     } else {
-      h+="<div class='sw'><table class='tbl'><thead><tr><th>Date</th><th>Source</th><th style='text-align:right'>Qty</th><th style='text-align:right'>Sold</th><th style='text-align:right'>Stock</th><th style='text-align:right'>Revenue</th><th></th></tr></thead><tbody>";
+      h+="<div style='display:flex;flex-direction:column;gap:8px'>";
       cols2.slice().reverse().forEach(function(e2,ci){
-        var u=e2.unit||"kg",stock2=Number(e2.kg||0)-Number(e2.soldKg||0);
-        h+="<tr>";
-        h+="<td style='color:var(--mut);font-size:12px;white-space:nowrap'>"+fd(e2.date)+"</td>";
-        h+="<td style='font-size:12px'>"+(e2.source||"&#x2014;")+"</td>";
-        h+="<td style='text-align:right;color:var(--teal);font-weight:700'>"+Number(e2.kg||0).toFixed(2)+" "+u+"</td>";
-        h+="<td style='text-align:right;color:var(--green);font-weight:700'>"+Number(e2.soldKg||0).toFixed(2)+" "+u+"</td>";
-        h+="<td style='text-align:right;color:var(--amber);font-weight:700'>"+stock2.toFixed(2)+" "+u+"</td>";
-        h+="<td style='text-align:right;color:var(--purple);font-weight:700'>"+fmt(e2.revenue||0)+"</td>";
-        h+="<td>"+(isAdmin()?"<button onclick='delCollection(this.dataset.id,this.dataset.ci)' data-id='"+inv.id+"' data-ci='"+(cols2.length-1-ci)+"' class='btn-d' style='padding:3px 8px;font-size:10px'>&#xD7;</button>":"")+"</td></tr>";
+        var actualIdx=cols2.length-1-ci;
+        var item=(e2.plasticType||e2.item||"Item").trim()||"Item";
+        h+="<div style='background:var(--s2);border:1px solid var(--bor);border-radius:12px;padding:11px 14px;display:flex;align-items:center;gap:10px'>";
+        h+="<div style='flex:1;min-width:0'>";
+        h+="<div style='font-size:13px;font-weight:700'>"+item+"</div>";
+        h+="<div style='font-size:11px;color:var(--mut);margin-top:2px'>"+fd(e2.date)+(e2.source?" · "+e2.source:"")+"</div>";
+        h+="</div>";
+        h+="<div style='text-align:right;flex-shrink:0'>";
+        h+="<div style='font-size:14px;font-weight:900;color:var(--teal)'>"+Number(e2.kg||0).toFixed(2)+" "+(e2.unit||"pcs")+"</div>";
+        h+="</div>";
+        if(isAdmin())h+="<button onclick='delCollection(this.dataset.id,this.dataset.ci)' data-id='"+inv.id+"' data-ci='"+actualIdx+"' class='btn-d' style='padding:4px 8px;font-size:10px;flex-shrink:0'>&#xD7;</button>";
+        h+="</div>";
       });
-      h+="</tbody></table></div>";
+      h+="</div>";
     }
 
-  // ─── SALES ───
-  } else if(tab2==="sales"){
-    var salesData=cols2.filter(function(e2){return Number(e2.soldKg||0)>0;});
-    h+="<div class='g3' style='margin-bottom:18px'>";
+  // ── SALE TAB ──
+  } else if(tab2==="sale"){
+    var allSales=sales2.length?sales2:cols2.filter(function(e2){return Number(e2.soldKg||0)>0;});
+    h+="<div style='display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:10px'>";
+    h+="<div><div style='font-size:15px;font-weight:800'>Sales</div><div style='font-size:11px;color:var(--mut);margin-top:2px'>"+allSales.length+" sale"+(allSales.length!==1?"s":"")+" recorded</div></div>";
+    if(canMgr)h+="<button style='padding:9px 14px;border-radius:10px;background:var(--green);border:none;color:#fff;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit' onclick='openSale(this.dataset.id)' data-id='"+inv.id+"'>&#x1F4B5; + Record Sale</button>";
+    h+="</div>";
+    h+="<div class='g3' style='margin-bottom:14px'>";
     h+="<div class='stat-box'><div class='lbl2'>REVENUE</div><div class='val' style='color:var(--purple)'>"+fmt(totalRev)+"</div></div>";
-    h+="<div class='stat-box'><div class='lbl2'>SOLD</div><div class='val' style='color:var(--green)'>"+soldQty.toFixed(2)+" "+colUnit+"</div></div>";
-    h+="<div class='stat-box'><div class='lbl2'>AVG PRICE</div><div class='val' style='color:var(--amber)'>"+(soldQty>0?fmt(Math.round(totalRev/soldQty)):"&#x2014;")+"</div></div>";
+    h+="<div class='stat-box'><div class='lbl2'>SOLD</div><div class='val' style='color:var(--green)'>"+totalSold.toFixed(1)+"</div></div>";
+    var avgP=totalSold>0?Math.round(totalRev/totalSold):0;
+    h+="<div class='stat-box'><div class='lbl2'>AVG PRICE</div><div class='val' style='color:var(--amber)'>"+(avgP>0?fmt(avgP):"—")+"</div></div>";
     h+="</div>";
-    if(!salesData.length){
-      h+="<div style='text-align:center;padding:48px 20px;border:1px dashed var(--bor);border-radius:14px'><div style='font-size:36px;margin-bottom:10px;opacity:.25'>&#x1F4B0;</div><div style='font-size:14px;font-weight:700;color:var(--mut);margin-bottom:4px'>No sales recorded</div><div style='font-size:12px;color:var(--mut)'>Log entries with sold quantities to see sales here.</div></div>";
+    if(!allSales.length){
+      h+="<div style='text-align:center;padding:40px 20px;border:1px dashed var(--bor);border-radius:13px;color:var(--mut)'><div style='font-size:32px;margin-bottom:8px;opacity:.3'>&#x1F4B0;</div><div style='font-size:14px;font-weight:700'>No sales yet</div><div style='font-size:12px;margin-top:4px'>Tap + Record Sale above.</div></div>";
     } else {
-      h+="<div class='sw'><table class='tbl'><thead><tr><th>Date</th><th>Qty Sold</th><th style='text-align:right'>Price/unit</th><th style='text-align:right'>Revenue</th></tr></thead><tbody>";
-      salesData.slice().reverse().forEach(function(e2){
-        var u=e2.unit||"kg";
-        h+="<tr>";
-        h+="<td style='color:var(--mut);font-size:12px'>"+fd(e2.date)+"</td>";
-        h+="<td style='color:var(--green);font-weight:700'>"+Number(e2.soldKg||0).toFixed(2)+" "+u+"</td>";
-        h+="<td style='text-align:right;color:var(--amber)'>"+(e2.pricePerKg?fmt(e2.pricePerKg):"&#x2014;")+"</td>";
-        h+="<td style='text-align:right;color:var(--purple);font-weight:700'>"+fmt(e2.revenue||0)+"</td></tr>";
-      });
-      h+="</tbody></table></div>";
-    }
-
-  // ─── CONTACTS ───
-  } else if(tab2==="contacts"){
-    var suppliers=inv.suppliers||[];
-    var buyers=inv.buyers||[];
-    var extInvs3=inv.externalInvestors||[];
-    // Suppliers
-    h+="<div style='margin-bottom:22px'>";
-    h+="<div style='display:flex;justify-content:space-between;align-items:center;margin-bottom:12px'>";
-    h+="<div style='font-size:14px;font-weight:800'>Suppliers</div>";
-    if(isAdmin())h+="<button class='btn-a' onclick='openContact(this.dataset.id,0)' data-id='"+inv.id+"' style='font-size:12px'>+ Add</button>";
-    h+="</div>";
-    if(!suppliers.length){
-      h+="<div style='padding:14px;text-align:center;color:var(--mut);background:var(--s2);border-radius:12px;font-size:13px'>No suppliers added yet.</div>";
-    } else suppliers.forEach(function(s,si){
-      h+="<div style='background:var(--s2);border-radius:13px;padding:13px 15px;border:1px solid var(--bor);margin-bottom:8px;display:flex;align-items:center;gap:10px;flex-wrap:wrap'>";
-      h+="<div style='flex:1;min-width:0'><div style='font-weight:700;font-size:13px'>"+s.name+"</div>";
-      h+="<div style='font-size:11px;color:var(--mut);margin-top:3px'>"+(s.phone?"&#x1F4DE; "+s.phone+" &#xB7; ":"")+(s.product||"")+(s.price?" &#xB7; &#x9F3;"+s.price+"/unit":"")+"</div></div>";
-      h+="<span class='bdg' style='background:"+(s.active?"#0d2a1a":"#2a0d0d")+";color:"+(s.active?"var(--green)":"var(--orange)")+"'>"+(s.active?"Active":"Inactive")+"</span>";
-      if(isAdmin())h+="<button onclick='openContact(this.dataset.id,0,"+si+")' data-id='"+inv.id+"' class='btn-s' style='font-size:11px;padding:4px 9px'>Edit</button><button onclick='delContact(this.dataset.id,0,"+si+")' data-id='"+inv.id+"' class='btn-d' style='font-size:11px;padding:4px 9px'>&#xD7;</button>";
-      h+="</div>";
-    });
-    h+="</div>";
-    // Buyers
-    h+="<div style='margin-bottom:22px'>";
-    h+="<div style='display:flex;justify-content:space-between;align-items:center;margin-bottom:12px'>";
-    h+="<div style='font-size:14px;font-weight:800'>Buyers</div>";
-    if(isAdmin())h+="<button class='btn-a' onclick='openContact(this.dataset.id,1)' data-id='"+inv.id+"' style='font-size:12px'>+ Add</button>";
-    h+="</div>";
-    if(!buyers.length){
-      h+="<div style='padding:14px;text-align:center;color:var(--mut);background:var(--s2);border-radius:12px;font-size:13px'>No buyers added yet.</div>";
-    } else buyers.forEach(function(b,bi){
-      h+="<div style='background:var(--s2);border-radius:13px;padding:13px 15px;border:1px solid var(--bor);margin-bottom:8px;display:flex;align-items:center;gap:10px;flex-wrap:wrap'>";
-      h+="<div style='flex:1;min-width:0'><div style='font-weight:700;font-size:13px'>"+b.name+"</div>";
-      h+="<div style='font-size:11px;color:var(--mut);margin-top:3px'>"+(b.phone?"&#x1F4DE; "+b.phone+" &#xB7; ":"")+(b.product||"")+(b.price?" &#xB7; &#x9F3;"+b.price+"/unit":"")+"</div></div>";
-      h+="<span class='bdg' style='background:"+(b.active?"#0d2a1a":"#2a0d0d")+";color:"+(b.active?"var(--green)":"var(--orange)")+"'>"+(b.active?"Active":"Inactive")+"</span>";
-      if(isAdmin())h+="<button onclick='openContact(this.dataset.id,1,"+bi+")' data-id='"+inv.id+"' class='btn-s' style='font-size:11px;padding:4px 9px'>Edit</button><button onclick='delContact(this.dataset.id,1,"+bi+")' data-id='"+inv.id+"' class='btn-d' style='font-size:11px;padding:4px 9px'>&#xD7;</button>";
-      h+="</div>";
-    });
-    h+="</div>";
-    // External investors
-    h+="<div style='display:flex;justify-content:space-between;align-items:center;margin-bottom:12px'>";
-    h+="<div style='font-size:14px;font-weight:800'>External Investors</div>";
-    if(isAdmin())h+="<button class='btn-a' onclick='openExtInv(this.dataset.id)' data-id='"+inv.id+"' style='font-size:12px'>+ Add</button>";
-    h+="</div>";
-    if(!extInvs3.length){
-      h+="<div style='padding:14px;text-align:center;color:var(--mut);background:var(--s2);border-radius:12px;font-size:13px'>No external investors.</div>";
-    } else extInvs3.forEach(function(ei,eii){
-      h+="<div style='background:var(--gdm);border-radius:13px;padding:13px 15px;border:1px solid var(--gbr);margin-bottom:8px;display:flex;align-items:center;gap:10px;flex-wrap:wrap'>";
-      h+="<div style='flex:1'><div style='font-weight:700;font-size:13px'>"+ei.name+"</div><div style='font-size:11px;color:var(--mut);margin-top:3px'>"+(ei.org?ei.org+" &#xB7; ":"")+(ei.date?fd(ei.date):"")+"</div></div>";
-      h+="<div style='font-size:17px;font-weight:900;color:var(--gold)'>"+fmt(ei.amount)+"</div>";
-      if(isAdmin())h+="<button onclick='delExtInv(this.dataset.id,"+eii+")' data-id='"+inv.id+"' class='btn-d' style='font-size:11px;padding:4px 9px'>&#xD7;</button>";
-      h+="</div>";
-    });
-
-  // ─── MILESTONES ───
-  } else if(tab2==="milestones"){
-    h+="<div style='display:flex;justify-content:space-between;align-items:center;margin-bottom:18px'>";
-    h+="<div style='font-size:16px;font-weight:800'>Milestones</div>";
-    if(isAdmin())h+="<button class='btn-a' onclick='openMilestone(this.dataset.id)' data-id='"+inv.id+"'>+ Add</button>";
-    h+="</div>";
-    var ms=inv.milestones||[];
-    if(!ms.length){
-      h+="<div style='text-align:center;padding:48px 20px;border:1px dashed var(--bor);border-radius:14px'><div style='font-size:36px;margin-bottom:10px;opacity:.25'>&#x1F3AF;</div><div style='font-size:14px;font-weight:700;color:var(--mut)'>No milestones yet</div></div>";
-    } else {
-      var done=ms.filter(function(m){return m.done;}).length;
-      h+="<div style='display:flex;align-items:center;gap:12px;margin-bottom:16px'>";
-      h+="<div style='flex:1;height:6px;background:var(--s2);border-radius:99px;overflow:hidden'>";
-      h+="<div style='height:100%;width:"+Math.round(done/ms.length*100)+"%;background:var(--green);border-radius:99px'></div></div>";
-      h+="<div style='font-size:12px;color:var(--mut);font-weight:700;white-space:nowrap'>"+done+"/"+ms.length+" done</div></div>";
-      h+="<div style='background:var(--s2);border-radius:14px;border:1px solid var(--bor);overflow:hidden'>";
-      ms.forEach(function(m,i){
-        h+="<div style='display:flex;align-items:center;gap:12px;padding:14px 16px;"+(i>0?"border-top:1px solid var(--bor);":"")+"'>";
-        h+="<div style='width:28px;height:28px;border-radius:50%;background:"+(m.done?"var(--green)":"none")+";border:2px solid "+(m.done?"var(--green)":"var(--bor2)")+";display:flex;align-items:center;justify-content:center;flex-shrink:0'>";
-        h+=m.done?"<span style='color:#fff;font-size:13px;font-weight:900'>&#x2713;</span>":"<span style='font-size:11px;color:var(--mut);font-weight:700'>"+(i+1)+"</span>";
+      h+="<div style='display:flex;flex-direction:column;gap:8px'>";
+      allSales.slice().reverse().forEach(function(e2){
+        var qty=Number(e2.soldKg||0);
+        h+="<div style='background:var(--s2);border:1px solid var(--bor);border-radius:12px;padding:11px 14px;display:flex;align-items:center;gap:10px'>";
+        h+="<div style='flex:1;min-width:0'>";
+        h+="<div style='font-size:13px;font-weight:700'>"+(e2.item||e2.plasticType||"Item")+"</div>";
+        h+="<div style='font-size:11px;color:var(--mut);margin-top:2px'>"+fd(e2.date)+(e2.note?" · "+e2.note:"")+"</div>";
         h+="</div>";
-        h+="<div style='flex:1;min-width:0'><div style='font-size:13px;font-weight:700;color:"+(m.done?"var(--green)":"var(--txt)")+"'>"+m.title+"</div>";
-        if(m.note)h+="<div style='font-size:11px;color:var(--mut);margin-top:2px'>"+m.note+"</div>";
-        h+="</div>";
-        if(m.date)h+="<div style='font-size:11px;color:var(--mut);white-space:nowrap'>"+fd(m.date)+"</div>";
-        if(isAdmin())h+="<button onclick='toggleMilestone(this.dataset.id,this.dataset.mi)' data-id='"+inv.id+"' data-mi='"+i+"' class='btn-s' style='padding:5px 10px;font-size:11px'>"+(m.done?"Undo":"Done")+"</button>";
-        h+="</div>";
+        h+="<div style='text-align:right;flex-shrink:0'>";
+        h+="<div style='font-size:13px;font-weight:800;color:var(--green)'>"+qty.toFixed(2)+" sold</div>";
+        h+="<div style='font-size:12px;font-weight:900;color:var(--purple)'>"+fmt(e2.revenue||0)+"</div>";
+        h+="</div></div>";
       });
       h+="</div>";
     }
 
-  // ─── TEAM ───
+  // ── STOCK TAB ──
+  } else if(tab2==="stock"){
+    h+="<div style='display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:10px'>";
+    h+="<div><div style='font-size:15px;font-weight:800'>Stock Inventory</div><div style='font-size:11px;color:var(--mut);margin-top:2px'>Live stock levels per item</div></div>";
+    if(canMgr)h+="<button class='btn-a' onclick='openCollection(this.dataset.id)' data-id='"+inv.id+"'>&#x1F4E6; + Collect</button>";
+    h+="</div>";
+    var items3=Object.keys(stockMap);
+    if(!items3.length){
+      h+="<div style='text-align:center;padding:40px 20px;border:1px dashed var(--bor);border-radius:13px;color:var(--mut)'><div style='font-size:32px;margin-bottom:8px;opacity:.3'>&#x1F4E6;</div><div style='font-size:14px;font-weight:700'>No stock yet</div><div style='font-size:12px;margin-top:4px'>Add a collection entry first.</div></div>";
+    } else {
+      items3.forEach(function(item){
+        var s=stockMap[item];
+        var avail=s.collected-s.sold;
+        var soldPct=s.collected>0?Math.round(s.sold/s.collected*100):0;
+        var stockPct=s.collected>0?Math.round(avail/s.collected*100):0;
+        h+="<div style='background:var(--s2);border:1px solid var(--bor);border-radius:14px;padding:14px 16px;margin-bottom:10px'>";
+        h+="<div style='font-size:15px;font-weight:800;margin-bottom:12px'>"+item+"</div>";
+        h+="<div class='g3' style='margin-bottom:12px'>";
+        h+="<div style='background:var(--bg);border:1px solid var(--bor);border-radius:10px;padding:10px;text-align:center'>";
+        h+="<div style='font-size:8px;color:var(--mut);font-weight:700;letter-spacing:2px;margin-bottom:4px'>COLLECTED</div>";
+        h+="<div style='font-size:18px;font-weight:900;color:var(--teal)'>"+s.collected.toFixed(1)+"</div>";
+        h+="<div style='font-size:9px;color:var(--mut)'>"+s.unit+"</div></div>";
+        h+="<div style='background:var(--bg);border:1px solid var(--bor);border-radius:10px;padding:10px;text-align:center'>";
+        h+="<div style='font-size:8px;color:var(--mut);font-weight:700;letter-spacing:2px;margin-bottom:4px'>SOLD</div>";
+        h+="<div style='font-size:18px;font-weight:900;color:var(--green)'>"+s.sold.toFixed(1)+"</div>";
+        h+="<div style='font-size:9px;color:var(--mut)'>"+s.unit+"</div></div>";
+        h+="<div style='background:var(--bg);border:1px solid "+(avail>0?"var(--gold)30":"var(--bor)")+";border-radius:10px;padding:10px;text-align:center'>";
+        h+="<div style='font-size:8px;color:var(--mut);font-weight:700;letter-spacing:2px;margin-bottom:4px'>IN STOCK</div>";
+        h+="<div style='font-size:18px;font-weight:900;color:"+(avail>0?"var(--gold)":"var(--mut)")+"'>"+avail.toFixed(1)+"</div>";
+        h+="<div style='font-size:9px;color:var(--mut)'>"+s.unit+"</div></div>";
+        h+="</div>";
+        // Stock bar
+        h+="<div style='height:5px;background:var(--bor);border-radius:99px;overflow:hidden;display:flex'>";
+        h+="<div style='width:"+soldPct+"%;background:var(--green)'></div>";
+        h+="<div style='width:"+stockPct+"%;background:var(--gold)'></div>";
+        h+="</div>";
+        h+="<div style='display:flex;gap:14px;font-size:10px;margin-top:5px'>";
+        h+="<span style='color:var(--green)'>&#x25A0; Sold "+soldPct+"%</span>";
+        h+="<span style='color:var(--gold)'>&#x25A0; In stock "+stockPct+"%</span>";
+        h+="</div></div>";
+      });
+    }
+
+  // ── BUDGET TAB ──
+  } else if(tab2==="budget"){
+    var budget=dep2;
+    var totalExp=totalExpense;
+    var remaining=Math.max(0,budget-totalExp);
+    var spentPct=budget>0?Math.min(Math.round(totalExp/budget*100),100):0;
+    h+="<div style='display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:10px'>";
+    h+="<div style='font-size:15px;font-weight:800'>Budget Tracker</div>";
+    if(isAdmin()||canMgr)h+="<button onclick='openProjectExpense(this.dataset.id)' data-id='"+inv.id+"' style='padding:9px 14px;border-radius:10px;background:var(--orange);border:none;color:#fff;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit'>+ Expense</button>";
+    h+="</div>";
+    // Budget overview card
+    h+="<div style='background:linear-gradient(135deg,var(--gdm),#0d0c30);border:1px solid var(--gbr);border-radius:14px;padding:14px 16px;margin-bottom:14px'>";
+    h+="<div class='g3' style='margin-bottom:12px'>";
+    h+="<div style='text-align:center'><div style='font-size:8px;color:var(--mut);font-weight:700;letter-spacing:2px;margin-bottom:4px'>BUDGET</div><div style='font-size:15px;font-weight:900;color:var(--gold)'>"+fmt(budget)+"</div></div>";
+    h+="<div style='text-align:center;border-left:1px solid var(--bor);border-right:1px solid var(--bor)'><div style='font-size:8px;color:var(--mut);font-weight:700;letter-spacing:2px;margin-bottom:4px'>SPENT</div><div style='font-size:15px;font-weight:900;color:var(--orange)'>"+fmt(totalExp)+"</div></div>";
+    h+="<div style='text-align:center'><div style='font-size:8px;color:var(--mut);font-weight:700;letter-spacing:2px;margin-bottom:4px'>LEFT</div><div style='font-size:15px;font-weight:900;color:var(--green)'>"+fmt(remaining)+"</div></div>";
+    h+="</div>";
+    h+="<div style='height:4px;background:var(--bor);border-radius:99px;overflow:hidden'>";
+    h+="<div style='height:100%;width:"+spentPct+"%;background:var(--orange);border-radius:99px'></div></div>";
+    h+="<div style='font-size:10px;color:var(--mut);margin-top:4px;text-align:center'>"+spentPct+"% of budget used</div>";
+    h+="</div>";
+    // Expense list
+    if(!expenses.length){
+      h+="<div style='text-align:center;padding:32px 20px;border:1px dashed var(--bor);border-radius:13px;color:var(--mut)'><div style='font-size:28px;margin-bottom:8px;opacity:.3'>&#x1F4C4;</div><div style='font-size:13px;font-weight:700'>No expenses yet</div></div>";
+    } else {
+      h+="<div style='font-size:10px;color:var(--mut);font-weight:700;letter-spacing:2px;margin-bottom:10px'>EXPENSE RECORDS</div>";
+      h+="<div style='display:flex;flex-direction:column;gap:8px'>";
+      expenses.slice().reverse().forEach(function(e,ei){
+        var actualIdx=expenses.length-1-ei;
+        h+="<div style='display:flex;align-items:center;gap:10px;padding:11px 13px;background:var(--s2);border:1px solid var(--bor);border-radius:12px'>";
+        h+="<div style='width:36px;height:36px;border-radius:10px;flex-shrink:0;background:var(--orange)15;display:flex;align-items:center;justify-content:center;font-size:15px'>&#x2191;</div>";
+        h+="<div style='flex:1;min-width:0'>";
+        h+="<div style='font-size:13px;font-weight:700'>"+e.desc+"</div>";
+        h+="<div style='font-size:11px;color:var(--mut);margin-top:2px'>"+fd(e.date)+" · "+e.category+"</div>";
+        h+="</div>";
+        h+="<div style='font-size:13px;font-weight:900;color:var(--orange);flex-shrink:0'>-"+fmt(e.amount)+"</div>";
+        if(isAdmin())h+="<button onclick='delProjectExpense(this.dataset.id,this.dataset.ei)' data-id='"+inv.id+"' data-ei='"+actualIdx+"' class='btn-d' style='padding:4px 8px;font-size:10px;flex-shrink:0'>&#xD7;</button>";
+        h+="</div>";
+      });
+      h+="</div>";
+    }
+
+  // ── TEAM TAB ──
   } else if(tab2==="team"){
-    // Manager section
-    h+="<div style='background:var(--s2);border:1px solid var(--bor);border-radius:16px;padding:18px;margin-bottom:16px'>";
-    h+="<div style='display:flex;justify-content:space-between;align-items:center;margin-bottom:14px'>";
-    h+="<div><div style='font-size:10px;color:var(--mut);font-weight:700;letter-spacing:2px;margin-bottom:3px'>PROJECT MANAGER</div>";
-    h+="<div style='font-size:12px;color:var(--mut)'>Responsible for day-to-day operations</div></div>";
-    if(isAdmin())h+="<button onclick='setManager(this.dataset.id)' data-id='"+inv.id+"' class='btn-a' style='font-size:12px;padding:8px 14px'>Set Manager</button>";
+    // Manager
+    h+="<div style='background:var(--s2);border:1px solid var(--bor);border-radius:14px;padding:15px;margin-bottom:14px'>";
+    h+="<div style='display:flex;justify-content:space-between;align-items:center;margin-bottom:12px'>";
+    h+="<div><div style='font-size:10px;color:var(--mut);font-weight:700;letter-spacing:2px;margin-bottom:2px'>PROJECT MANAGER</div><div style='font-size:11px;color:var(--mut)'>Responsible for operations</div></div>";
+    if(isAdmin())h+="<button onclick='setManager(this.dataset.id)' data-id='"+inv.id+"' class='btn-a' style='font-size:11px;padding:6px 12px'>Set</button>";
     h+="</div>";
     if(inv.projectManagerName){
-      h+="<div style='display:flex;align-items:center;gap:13px;padding:13px 15px;background:var(--sur);border-radius:13px;border:1px solid var(--bor2)'>";
-      h+=av(inv.projectManagerName,40);
-      h+="<div><div style='font-size:15px;font-weight:800;color:var(--grn)'>"+inv.projectManagerName+"</div><div style='font-size:11px;color:var(--mut);margin-top:2px'>Full project control</div></div>";
+      h+="<div style='display:flex;align-items:center;gap:12px;padding:11px 13px;background:var(--sur);border:1px solid var(--bor2);border-radius:12px'>";
+      h+=av(inv.projectManagerName,38);
+      h+="<div><div style='font-size:14px;font-weight:800;color:var(--grn)'>"+inv.projectManagerName+"</div><div style='font-size:11px;color:var(--mut)'>Full project control</div></div>";
       h+="</div>";
     } else {
-      h+="<div style='text-align:center;padding:18px;color:var(--mut);border:1px dashed var(--bor);border-radius:12px;font-size:13px'>No manager assigned."+(isAdmin()?" Tap <strong>Set Manager</strong> above.":"")+"</div>";
+      h+="<div style='text-align:center;padding:14px;color:var(--mut);border:1px dashed var(--bor);border-radius:10px;font-size:12px'>No manager assigned"+(isAdmin()?" — tap Set above":"")+"</div>";
     }
     h+="</div>";
     // Team members
-    h+="<div style='background:var(--s2);border:1px solid var(--bor);border-radius:16px;padding:18px'>";
-    h+="<div style='display:flex;justify-content:space-between;align-items:center;margin-bottom:14px'>";
-    h+="<div><div style='font-size:10px;color:var(--mut);font-weight:700;letter-spacing:2px;margin-bottom:3px'>TEAM MEMBERS</div>";
-    h+="<div style='font-size:12px;color:var(--mut)'>"+team.length+" member"+(team.length!==1?"s":"")+" assigned</div></div>";
-    if(canMgr)h+="<button onclick='addTeamMember(this.dataset.id)' data-id='"+inv.id+"' class='btn-a' style='font-size:12px;padding:8px 14px'>+ Add</button>";
+    h+="<div style='background:var(--s2);border:1px solid var(--bor);border-radius:14px;padding:15px'>";
+    h+="<div style='display:flex;justify-content:space-between;align-items:center;margin-bottom:12px'>";
+    h+="<div><div style='font-size:10px;color:var(--mut);font-weight:700;letter-spacing:2px;margin-bottom:2px'>TEAM ("+team.length+")</div></div>";
+    if(canMgr)h+="<button onclick='addTeamMember(this.dataset.id)' data-id='"+inv.id+"' class='btn-a' style='font-size:11px;padding:6px 12px'>+ Add</button>";
     h+="</div>";
     if(!team.length){
-      h+="<div style='text-align:center;padding:24px;color:var(--mut);border:1px dashed var(--bor);border-radius:12px;font-size:13px'>No team members yet."+(canMgr?" Tap <strong>+ Add</strong> to assign.":"")+"</div>";
+      h+="<div style='text-align:center;padding:14px;color:var(--mut);border:1px dashed var(--bor);border-radius:10px;font-size:12px'>No team members"+(canMgr?" — tap + Add":"")+"</div>";
     } else {
       h+="<div style='display:flex;flex-direction:column;gap:8px'>";
       team.forEach(function(t,ti){
-        h+="<div style='display:flex;align-items:center;gap:12px;padding:12px 14px;background:var(--sur);border-radius:13px;border:1px solid var(--bor)'>";
-        h+=av(t.name,38);
-        h+="<div style='flex:1;min-width:0'>";
-        h+="<div style='font-size:13px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap'>"+t.name+"</div>";
-        if(t.role)h+="<div style='font-size:11px;color:var(--grn);margin-top:2px'>"+t.role+"</div>";
-        if(t.isExternal)h+="<div style='font-size:10px;color:var(--mut)'>External</div>";
+        h+="<div style='display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--sur);border:1px solid var(--bor);border-radius:11px'>";
+        h+=av(t.name,34);
+        h+="<div style='flex:1;min-width:0'><div style='font-size:13px;font-weight:700'>"+t.name+"</div>";
+        if(t.role)h+="<div style='font-size:11px;color:var(--grn)'>"+t.role+"</div>";
         h+="</div>";
-        if(canMgr)h+="<button onclick='removeTeamMember(this.dataset.id,this.dataset.ti)' data-id='"+inv.id+"' data-ti='"+ti+"' style='background:none;border:1px solid var(--bor);border-radius:8px;color:var(--mut);font-size:18px;cursor:pointer;padding:4px 9px;line-height:1;font-family:inherit'>&#xD7;</button>";
+        if(canMgr)h+="<button onclick='removeTeamMember(this.dataset.id,this.dataset.ti)' data-id='"+inv.id+"' data-ti='"+ti+"' style='background:none;border:1px solid var(--bor);border-radius:7px;color:var(--mut);font-size:16px;cursor:pointer;padding:3px 8px;font-family:inherit'>&#xD7;</button>";
         h+="</div>";
       });
       h+="</div>";
@@ -1358,7 +1379,7 @@ h+="<div style='display:flex;align-items:flex-start;gap:14px;flex-wrap:wrap'>";
     h+="</div>";
   }
 
-  h+="</div></div>"; // close pad + single card
+  h+="</div></div>";
   h+="</div>";return h;
 }
 
@@ -1475,32 +1496,210 @@ function delExtInv(invId,idx){
 function openCollection(invId){
   var inv=S.invs.find(function(x){return x.id===invId;});if(!inv)return;
   var h="<div class='modal-bg' onclick='if(event.target===this)closeModal()'><div class='modal-box'>";
-  h+="<div style='display:flex;justify-content:space-between;align-items:center;margin-bottom:16px'><div style='font-weight:800;font-size:17px'>+ Add Entry</div><button onclick='closeModal()' style='background:none;border:none;color:var(--mut);font-size:20px;cursor:pointer'>&#x2715;</button></div>";
-  h+="<div style='background:var(--gdm);border:1px solid var(--gbr);border-radius:9px;padding:9px 12px;margin-bottom:14px'><div style='font-size:11px;color:var(--mut)'>Project</div><div style='font-size:14px;font-weight:800'>"+inv.name+"</div></div>";
+  h+="<div style='display:flex;justify-content:space-between;align-items:center;margin-bottom:14px'><div style='font-weight:800;font-size:17px'>&#x1F4E6; Add Collection</div><button onclick='closeModal()' style='background:none;border:none;color:var(--mut);font-size:22px;cursor:pointer;line-height:1'>&#xD7;</button></div>";
+  h+="<div style='background:var(--gdm);border:1px solid var(--gbr);border-radius:10px;padding:9px 13px;margin-bottom:14px'><div style='font-size:11px;color:var(--mut)'>Project</div><div style='font-size:14px;font-weight:800'>"+inv.name+"</div></div>";
   h+="<div class='fc'>";
   h+="<div><label class='lbl'>Date *</label><input id='cl-dt' type='date' class='inp' value='"+new Date().toISOString().split("T")[0]+"'/></div>";
-  h+="<div><label class='lbl'>Source / Location</label><input id='cl-src' type='text' class='inp' placeholder='Market, supplier...'/></div>";
-  h+="<div class='g2'><div><label class='lbl'>Quantity *</label><input id='cl-kg' type='number' class='inp' step='0.01' placeholder='0'/></div><div><label class='lbl'>Unit (kg/pcs/box...)</label><input id='cl-unit' type='text' class='inp' value='"+(inv.defaultUnit||"kg")+"'/></div></div>";
+  h+="<div><label class='lbl'>Source / Location</label><input id='cl-src' type='text' class='inp' placeholder='Market, supplier, location...'/></div>";
+  h+="<div class='g2'><div><label class='lbl'>Quantity *</label><input id='cl-kg' type='number' class='inp' step='0.01' placeholder='0' min='0'/></div><div><label class='lbl'>Unit</label><input id='cl-unit' type='text' class='inp' value='"+(inv.defaultUnit||"pcs")+"'/></div></div>";
   h+="<div><label class='lbl'>Item Type</label><input id='cl-tp' type='text' class='inp' placeholder='LED Bulb, PET Bottle...'/></div>";
-  h+="<div style='background:var(--s2);border:1px solid var(--bor);border-radius:10px;padding:12px'>";
-  h+="<div style='font-size:10px;color:var(--mut);font-weight:700;letter-spacing:1px;margin-bottom:10px'>SOLD THIS ENTRY (optional)</div>";
-  h+="<div class='g2'><div><label class='lbl'>Qty Sold</label><input id='cl-sk' type='number' class='inp' step='0.01' placeholder='0' oninput='calcRevenue()'/></div><div><label class='lbl'>Price/unit (BDT)</label><input id='cl-pp' type='number' class='inp' placeholder='0' oninput='calcRevenue()'/></div></div>";
-  h+="<div style='margin-top:10px'><label class='lbl'>Revenue (BDT)</label><input id='cl-rv' type='number' class='inp' placeholder='0'/></div>";
-  h+="<div style='margin-top:10px'><label class='lbl'>Sale Notes</label><input id='cl-sn' type='text' class='inp' placeholder='Buyer, location...'/></div>";
-  h+="</div><div><label class='lbl'>Notes</label><input id='cl-nt' type='text' class='inp' placeholder='Any info...'/></div>";
-  h+="<button class='btn-p' onclick='saveCollection(this.dataset.id)' data-id='"+invId+"'>Save Entry</button>";
-  h+="</div></div></div>";$("modal").innerHTML=h;
+  h+="<div><label class='lbl'>Notes</label><input id='cl-nt' type='text' class='inp' placeholder='Any additional info...'/></div>";
+  h+="<button id='cl-save-btn' class='btn-p' onclick='saveCollection(this.dataset.id)' data-id='"+invId+"'>Save Collection</button>";
+  h+="</div></div></div>";
+  $("modal").innerHTML=h;
 }
+
 function saveCollection(invId){
+  // Prevent double-tap
+  var btn=$("cl-save-btn");if(btn){btn.disabled=true;btn.textContent="Saving...";}
   var dt=($("cl-dt")||{value:""}).value,qty=($("cl-kg")||{value:""}).value;
-  if(!dt||!qty){toast("Date and quantity required",false);return;}
-  var unit=($("cl-unit")||{value:"kg"}).value.trim()||"kg";
-  var entry={date:dt,source:($("cl-src")||{value:""}).value.trim(),kg:Number(qty),unit:unit,plasticType:($("cl-tp")||{value:""}).value.trim(),soldKg:Number(($("cl-sk")||{value:0}).value)||0,pricePerKg:Number(($("cl-pp")||{value:0}).value)||0,revenue:Number(($("cl-rv")||{value:0}).value)||0,saleNote:($("cl-sn")||{value:""}).value.trim(),note:($("cl-nt")||{value:""}).value.trim(),addedBy:S.name,addedAt:now()};
-  var inv=S.invs.find(function(x){return x.id===invId;});if(!inv)return;
+  if(!dt||!qty||Number(qty)<=0){
+    toast("Date and quantity required",false);
+    if(btn){btn.disabled=false;btn.textContent="Save Collection";}
+    return;
+  }
+  var unit=($("cl-unit")||{value:"pcs"}).value.trim()||"pcs";
+  var entry={
+    date:dt,
+    source:($("cl-src")||{value:""}).value.trim(),
+    kg:Number(qty),unit:unit,
+    plasticType:($("cl-tp")||{value:""}).value.trim(),
+    soldKg:0,pricePerKg:0,revenue:0,
+    note:($("cl-nt")||{value:""}).value.trim(),
+    addedBy:S.name,addedAt:now()
+  };
+  var inv=S.invs.find(function(x){return x.id===invId;});if(!inv){if(btn){btn.disabled=false;btn.textContent="Save Collection";}return;}
   var cols2=(inv.collections||[]).slice();cols2.push(entry);
-  var newRet=Number(inv.actualReturn||0)+entry.revenue;
-  db.collection("investments").doc(invId).update({collections:cols2,actualReturn:newRet}).then(function(){closeModal();logAct("add_entry",qty+" "+unit+" - "+inv.name);toast("Entry added!");}).catch(function(e){toast(e.message,false);});
+  db.collection("investments").doc(invId).update({collections:cols2})
+    .then(function(){closeModal();logAct("add_collection",Number(qty)+" "+unit+" — "+inv.name);toast("&#x2713; Collection saved!");})
+    .catch(function(e){toast(e.message,false);if(btn){btn.disabled=false;btn.textContent="Save Collection";}});
 }
+
+// ── Sale functions ────────────────────────────────────────────
+// ── Budget / Expense functions ─────────────────────────────────
+function openProjectExpense(invId){
+  var inv=S.invs.find(function(x){return x.id===invId;});if(!inv)return;
+  var h="<div class='modal-bg' onclick='if(event.target===this)closeModal()'><div class='modal-box'>";
+  h+="<div style='display:flex;justify-content:space-between;align-items:center;margin-bottom:14px'><div style='font-weight:800;font-size:17px'>&#x1F4C4; Add Expense</div><button onclick='closeModal()' style='background:none;border:none;color:var(--mut);font-size:22px;cursor:pointer;line-height:1'>&#xD7;</button></div>";
+  h+="<div class='fc'>";
+  h+="<div><label class='lbl'>Date *</label><input id='pe-dt' type='date' class='inp' value='"+new Date().toISOString().split("T")[0]+"'/></div>";
+  h+="<div><label class='lbl'>Description *</label><input id='pe-desc' type='text' class='inp' placeholder='Transport, tools, materials...'/></div>";
+  h+="<div><label class='lbl'>Amount (BDT) *</label><input id='pe-amt' type='number' class='inp' placeholder='0' min='0'/></div>";
+  h+="<div><label class='lbl'>Category</label><select id='pe-cat' class='inp'>";
+  ["Transport","Equipment","Materials","Communication","Labour","Other"].forEach(function(cat){h+="<option>"+cat+"</option>";});
+  h+="</select></div>";
+  h+="<div><label class='lbl'>Note</label><input id='pe-note' type='text' class='inp' placeholder='Details...'/></div>";
+  h+="<button id='pe-save-btn' class='btn-p' onclick='saveProjectExpense(this.dataset.id)' data-id='"+invId+"'>Save Expense</button>";
+  h+="</div></div></div>";
+  $("modal").innerHTML=h;
+}
+function saveProjectExpense(invId){
+  var btn=$("pe-save-btn");if(btn){btn.disabled=true;btn.textContent="Saving...";}
+  var dt=($("pe-dt")||{value:""}).value;
+  var desc=($("pe-desc")||{value:""}).value.trim();
+  var amt=Number(($("pe-amt")||{value:0}).value)||0;
+  if(!dt||!desc||amt<=0){
+    toast("Fill in all required fields",false);
+    if(btn){btn.disabled=false;btn.textContent="Save Expense";}return;
+  }
+  var entry={date:dt,desc:desc,amount:amt,
+    category:($("pe-cat")||{value:"Other"}).value,
+    note:($("pe-note")||{value:""}).value.trim(),
+    addedBy:S.name,addedAt:now()};
+  var inv=S.invs.find(function(x){return x.id===invId;});if(!inv){if(btn)btn.disabled=false;return;}
+  var expenses=(inv.projectExpenses||[]).slice();expenses.push(entry);
+  db.collection("investments").doc(invId).update({projectExpenses:expenses})
+    .then(function(){closeModal();toast("&#x2713; Expense recorded!");})
+    .catch(function(e){toast(e.message,false);if(btn){btn.disabled=false;btn.textContent="Save Expense";}});
+}
+function delProjectExpense(invId,idx){
+  if(!confirm("Delete this expense?"))return;
+  var inv=S.invs.find(function(x){return x.id===invId;});if(!inv)return;
+  var expenses=(inv.projectExpenses||[]).slice();expenses.splice(idx,1);
+  db.collection("investments").doc(invId).update({projectExpenses:expenses})
+    .then(function(){toast("Deleted.");}).catch(function(e){toast(e.message,false);});
+}
+
+function openSale(invId){
+  var inv=S.invs.find(function(x){return x.id===invId;});if(!inv)return;
+  var cols2=inv.collections||[];
+  // Build stock per item
+  var stockMap={};
+  cols2.forEach(function(e){
+    var item=(e.plasticType||e.item||"Item").trim()||"Item";
+    var unit=e.unit||"pcs";
+    if(!stockMap[item])stockMap[item]={qty:0,sold:0,unit:unit};
+    stockMap[item].qty+=Number(e.kg||0);
+    stockMap[item].sold+=Number(e.soldKg||0);
+  });
+  var items=Object.keys(stockMap).filter(function(k){return stockMap[k].qty-stockMap[k].sold>0;});
+  var h="<div class='modal-bg' onclick='if(event.target===this)closeModal()'><div class='modal-box'>";
+  h+="<div style='display:flex;justify-content:space-between;align-items:center;margin-bottom:14px'><div style='font-weight:800;font-size:17px'>&#x1F4B5; Record Sale</div><button onclick='closeModal()' style='background:none;border:none;color:var(--mut);font-size:22px;cursor:pointer;line-height:1'>&#xD7;</button></div>";
+  // Stock banner
+  if(!items.length){
+    h+="<div style='background:var(--red)10;border:1px solid var(--red)30;border-radius:11px;padding:13px;margin-bottom:14px;color:var(--red);font-size:13px;font-weight:700;text-align:center'>&#x26A0; No stock available to sell.<br><span style='font-size:11px;font-weight:400;color:var(--mut)'>Add a collection first.</span></div>";
+    h+="<button onclick='closeModal()' class='btn-s'>Close</button>";
+    h+="</div></div>";$("modal").innerHTML=h;return;
+  }
+  h+="<div style='background:var(--green)0c;border:1px solid var(--green)28;border-radius:12px;padding:12px 14px;margin-bottom:14px'>";
+  h+="<div style='font-size:9px;color:var(--green);font-weight:700;letter-spacing:2px;margin-bottom:9px'>AVAILABLE STOCK</div>";
+  items.forEach(function(item,i){
+    var s=stockMap[item];var avail=s.qty-s.sold;
+    h+="<div style='display:flex;justify-content:space-between;align-items:center;padding:"+(i>0?"7px 0 0":"0")+";'>";
+    h+="<span style='font-size:13px;font-weight:700'>"+item+"</span>";
+    h+="<span style='font-size:14px;font-weight:900;color:var(--green)'>"+avail.toFixed(2)+" "+s.unit+"</span></div>";
+  });
+  h+="</div>";
+  h+="<div class='fc'>";
+  h+="<div><label class='lbl'>Date *</label><input id='sl-dt' type='date' class='inp' value='"+new Date().toISOString().split("T")[0]+"'/></div>";
+  // Item selector
+  if(items.length>1){
+    h+="<div><label class='lbl'>Item *</label><select id='sl-item' class='inp' onchange='updateSaleStock()'>";
+    items.forEach(function(item){h+="<option value='"+item+"'>"+item+"</option>";});
+    h+="</select></div>";
+  } else {
+    h+="<input type='hidden' id='sl-item' value='"+items[0]+"'/>";
+    h+="<div style='background:var(--s2);border:1px solid var(--bor);border-radius:10px;padding:10px 13px;margin-bottom:4px'><div style='font-size:10px;color:var(--mut);margin-bottom:2px'>ITEM</div><div style='font-size:13px;font-weight:700'>"+items[0]+"</div></div>";
+  }
+  var firstItem=items[0];var firstAvail=stockMap[firstItem].qty-stockMap[firstItem].sold;
+  var firstUnit=stockMap[firstItem].unit;
+  h+="<div><div style='font-size:10px;color:var(--mut);font-weight:700;letter-spacing:1.5px;margin-bottom:6px'>QUANTITY TO SELL *</div>";
+  h+="<div style='display:flex;align-items:center;background:var(--s2);border:1px solid var(--bor);border-radius:11px;overflow:hidden'>";
+  h+="<button onclick='adjustSaleQty(-1)' style='padding:11px 16px;border:none;background:none;color:var(--mut);font-size:20px;cursor:pointer;font-family:inherit;line-height:1'>&#x2212;</button>";
+  h+="<input id='sl-qty' type='number' step='0.01' min='0.01' max='"+firstAvail+"' value='1' oninput='updateSaleRevenue()' style='flex:1;border:none;background:transparent;color:var(--txt);font-size:16px;font-weight:900;text-align:center;outline:none;padding:0'/>";
+  h+="<button onclick='adjustSaleQty(1)' style='padding:11px 16px;border:none;background:none;color:var(--mut);font-size:20px;cursor:pointer;font-family:inherit;line-height:1'>+</button>";
+  h+="</div><div id='sl-qty-hint' style='font-size:10px;color:var(--mut);margin-top:4px'>Available: "+firstAvail.toFixed(2)+" "+firstUnit+"</div></div>";
+  h+="<div class='g2'><div><label class='lbl'>Price / unit (BDT) *</label><input id='sl-pp' type='number' class='inp' step='0.01' min='0' placeholder='0' oninput='updateSaleRevenue()'/></div>";
+  h+="<div><label class='lbl'>Revenue (auto)</label><div id='sl-rev-box' style='padding:11px 13px;background:var(--green)10;border:1px solid var(--green)30;border-radius:11px;font-size:14px;font-weight:900;color:var(--green)'>BDT 0</div></div></div>";
+  h+="<div><label class='lbl'>Buyer / Note</label><input id='sl-note' type='text' class='inp' placeholder='Buyer name, location...'/></div>";
+  h+="<button id='sl-save-btn' class='btn-p' onclick='saveSale(this.dataset.id)' data-id='"+invId+"' style='background:linear-gradient(135deg,var(--green),var(--teal))'>&#x1F4B5; Record Sale</button>";
+  h+="</div></div></div>";
+  $("modal").innerHTML=h;
+}
+function adjustSaleQty(d){
+  var el=$("sl-qty");if(!el)return;
+  var v=Math.max(0.01,Number(el.value||1)+d);
+  el.value=v;updateSaleRevenue();
+}
+function updateSaleRevenue(){
+  var qty=Number(($("sl-qty")||{value:0}).value)||0;
+  var pp=Number(($("sl-pp")||{value:0}).value)||0;
+  var box=$("sl-rev-box");
+  if(box)box.textContent=fmt(Math.round(qty*pp));
+}
+function updateSaleStock(){
+  // Update hint when item changes (for multi-item projects)
+  var hint=$("sl-qty-hint"),qty=$("sl-qty");
+  if(hint&&qty)hint.textContent="";
+}
+function saveSale(invId){
+  var btn=$("sl-save-btn");if(btn){btn.disabled=true;btn.textContent="Saving...";}
+  var dt=($("sl-dt")||{value:""}).value;
+  var item=($("sl-item")||{value:""}).value.trim();
+  var qty=Number(($("sl-qty")||{value:0}).value)||0;
+  var pp=Number(($("sl-pp")||{value:0}).value)||0;
+  if(!dt||!item||qty<=0||pp<=0){
+    toast("Fill in all required fields",false);
+    if(btn){btn.disabled=false;btn.textContent="&#x1F4B5; Record Sale";}return;
+  }
+  var revenue=Math.round(qty*pp);
+  var inv=S.invs.find(function(x){return x.id===invId;});if(!inv){if(btn){btn.disabled=false;}return;}
+  var cols2=(inv.collections||[]).slice();
+  // Validate stock
+  var totalCollected=0,totalSold=0;
+  cols2.forEach(function(e){
+    if((e.plasticType||e.item||"Item").trim()===item){
+      totalCollected+=Number(e.kg||0);totalSold+=Number(e.soldKg||0);
+    }
+  });
+  var available=totalCollected-totalSold;
+  if(qty>available){toast("Cannot sell more than available stock ("+available.toFixed(2)+")",false);if(btn){btn.disabled=false;btn.textContent="&#x1F4B5; Record Sale";}return;}
+  // Record sale as a sale entry (separate from collection)
+  var saleEntry={
+    date:dt,type:"sale",item:item,
+    soldKg:qty,pricePerKg:pp,revenue:revenue,
+    note:($("sl-note")||{value:""}).value.trim(),
+    addedBy:S.name,addedAt:now()
+  };
+  // Also update soldKg on collections (FIFO)
+  var remainToSell=qty;
+  for(var i=0;i<cols2.length&&remainToSell>0;i++){
+    if((cols2[i].plasticType||cols2[i].item||"Item").trim()!==item)continue;
+    var avail2=Number(cols2[i].kg||0)-Number(cols2[i].soldKg||0);
+    if(avail2<=0)continue;
+    var sellFromThis=Math.min(avail2,remainToSell);
+    cols2[i].soldKg=(Number(cols2[i].soldKg||0)+sellFromThis);
+    cols2[i].pricePerKg=pp;
+    cols2[i].revenue=(Number(cols2[i].revenue||0)+Math.round(sellFromThis*pp));
+    remainToSell-=sellFromThis;
+  }
+  var sales=(inv.sales||[]).slice();sales.push(saleEntry);
+  var newReturn=Number(inv.actualReturn||0)+revenue;
+  db.collection("investments").doc(invId).update({collections:cols2,sales:sales,actualReturn:newReturn})
+    .then(function(){closeModal();logAct("record_sale",fmt(revenue)+" — "+inv.name);toast("&#x2713; Sale recorded!");})
+    .catch(function(e){toast(e.message,false);if(btn){btn.disabled=false;btn.textContent="&#x1F4B5; Record Sale";}});
+}
+
 function addCapital(invId){
   var inv=S.invs.find(function(x){return x.id===invId;});if(!inv)return;
   var h="<div class='modal-bg' onclick='if(event.target===this)closeModal()'><div class='modal-box'>";
