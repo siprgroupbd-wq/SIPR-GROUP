@@ -692,7 +692,33 @@ function updateWallet(){var w=getMyWallet();var wi="<div style='background:var(-
 // ═══════════ STATS ═══════════
 function stats(){var d=sumT(S.txs,"deposit"),i=sumT(S.txs,"invest"),p=sumT(S.txs,"profit"),e=sumT(S.txs,"expense");return{d:d,i:i,p:p,e:e,f:d+p-i-e};}
 function mRows(){var km={};S.txs.forEach(function(t){var d=new Date(t.date),k=DM[d.getMonth()]+" '"+String(d.getFullYear()).slice(2);if(!km[k])km[k]={lab:k,deposit:0,invest:0,profit:0,expense:0,_y:d.getFullYear(),_m:d.getMonth()};km[k][t.type]+=Number(t.amount);});return Object.values(km).sort(function(a,b){return a._y!==b._y?a._y-b._y:a._m-b._m;});}
-function payS(y,m){return S.mems.map(function(mb){var tx=S.txs.filter(function(t){return txMatch(t,mb)&&t.type==="deposit"&&new Date(t.date).getFullYear()===y&&new Date(t.date).getMonth()===m;});var paid=tx.length>0,paidAmt=paid?tx.reduce(function(s,t){return s+Number(t.amount);},0):0;var paidDate=paid?tx.sort(function(a,b){return new Date(a.date)-new Date(b.date);})[0].date:null;return Object.assign({},mb,{paid:paid,paidAmt:paidAmt,paidDate:paidDate});});}
+function payS(y,m){
+  var DEADLINE=10; // Payment due by 10th of each month
+  return S.mems.map(function(mb){
+    var tx=S.txs.filter(function(t){
+      if(!txMatch(t,mb)||t.type!=="deposit")return false;
+      // Use paymentForYear/Month if present (new system), else fall back to date
+      if(t.paymentForYear!==undefined&&t.paymentForMonth!==undefined){
+        return t.paymentForYear===y&&t.paymentForMonth===m;
+      }
+      return new Date(t.date).getFullYear()===y&&new Date(t.date).getMonth()===m;
+    });
+    var paid=tx.length>0;
+    var paidAmt=paid?tx.reduce(function(s,t){return s+Number(t.amount);},0):0;
+    var sorted=paid?tx.slice().sort(function(a,b){return new Date(a.date)-new Date(b.date);}):[];
+    var paidDate=paid?sorted[0].date:null;
+    // Late = paid after the deadline day of that month
+    var late=false;
+    if(paid&&paidDate){
+      var pd=new Date(paidDate);
+      // Only mark late if deadline has passed (not future months)
+      var now=new Date();
+      var isCurrentOrPast=(y<now.getFullYear())||(y===now.getFullYear()&&m<=now.getMonth());
+      if(isCurrentOrPast) late=pd.getDate()>DEADLINE;
+    }
+    return Object.assign({},mb,{paid:paid,paidAmt:paidAmt,paidDate:paidDate,late:late});
+  });
+}
 
 // ═══════════ DASHBOARD ═══════════
 function pDash(){
@@ -757,7 +783,7 @@ function pDash(){
     h+=av(m.name,26);
     h+="<div style='flex:1;font-size:12px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap'>"+m.name+"</div>";
     if(m.paid){
-      h+="<span style='padding:2px 8px;border-radius:99px;background:var(--green)18;color:var(--green);font-size:10px;font-weight:700'>✓ "+fmt(m.paidAmt)+"</span>";
+      h+="<span style='padding:2px 8px;border-radius:99px;background:"+(m.late?"var(--amber)18":"var(--green)18")+";color:"+(m.late?"var(--amber)":"var(--green)")+";font-size:10px;font-weight:700'>✓ "+(m.late?"Late":"")+" "+fmt(m.paidAmt)+"</span>";
     } else {
       h+="<span style='padding:2px 8px;border-radius:99px;background:var(--pending)18;color:var(--pending);font-size:10px;font-weight:700'>Pending</span>";
     }
@@ -847,8 +873,9 @@ function pFinance(){
       if(m.paid)h+="<div style='font-size:11px;color:var(--mut)'>"+fd(m.paidDate)+"</div>";
       h+="</div>";
       if(m.paid){
-        h+="<span style='padding:3px 11px;border-radius:99px;background:var(--green)18;color:var(--green);font-size:11px;font-weight:700;white-space:nowrap'>&#x2713; Paid</span>";
-        h+="<div style='font-size:15px;font-weight:900;color:var(--green);min-width:78px;text-align:right'>"+fmt(m.paidAmt)+"</div>";
+        var lateTag=m.late?" · <span style='color:var(--amber);font-size:9px;font-weight:700'>LATE</span>":"";
+      h+="<span style='padding:3px 11px;border-radius:99px;background:"+(m.late?"var(--amber)18":"var(--green)18")+";color:"+(m.late?"var(--amber)":"var(--green)")+";font-size:11px;font-weight:700;white-space:nowrap'>&#x2713; "+(m.late?"Late":"Paid")+"</span>";
+        h+="<div style='font-size:15px;font-weight:900;color:"+(m.late?"var(--amber)":"var(--green)")+";min-width:78px;text-align:right'>"+fmt(m.paidAmt)+"</div>";
       }else{
         h+="<span style='padding:3px 11px;border-radius:99px;background:var(--pending)18;color:var(--pending);font-size:11px;font-weight:700;white-space:nowrap'>Pending</span>";
         h+="<div style='font-size:14px;font-weight:700;color:var(--pending);min-width:78px;text-align:right'>"+fmt(DUE)+"</div>";
@@ -859,6 +886,15 @@ function pFinance(){
     h+="<span style='font-size:10px;font-weight:700;letter-spacing:2px;color:var(--mut)'>TOTAL COLLECTED</span>";
     h+="<span style='font-size:17px;font-weight:900;color:var(--grn)'>"+fmt(collected2)+"</span></div>";
     h+="</div>";
+    // Late payment summary
+    var lateCount2=ps2.filter(function(m){return m.late;}).length;
+    if(lateCount2>0){
+      h+="<div style='display:flex;align-items:center;gap:10px;padding:10px 14px;background:var(--amber)08;border:1px solid var(--amber)28;border-radius:11px'>";
+      h+="<span style='font-size:16px'>⏰</span>";
+      h+="<div style='flex:1'><div style='font-size:12px;font-weight:800;color:var(--amber)'>"+ lateCount2+" Late Payment"+(lateCount2>1?"s":"")+"</div>";
+      h+="<div style='font-size:10px;color:var(--mut);margin-top:1px'>"+ps2.filter(function(m){return m.late;}).map(function(m){return m.name;}).join(", ")+" paid after the 10th</div></div>";
+      h+="</div>";
+    };
     // Remind bar
     if(up2.length>0){
       var isOD=new Date().getDate()>10;
@@ -1878,8 +1914,126 @@ function pTx(){
   else{h+="<div class='card' style='padding:0;overflow:hidden'><div class='sw'><table class='tbl'><thead><tr><th>Date</th><th>Type</th><th>Member</th><th>Amount</th><th>Note</th><th></th></tr></thead><tbody>";txs.forEach(function(t){h+="<tr><td style='color:var(--mut);font-size:11px;white-space:nowrap'>"+fd(t.date)+"</td><td>"+txbdg(t.type)+"</td><td style='font-weight:600'>"+txName(t)+"</td><td style='font-weight:700;color:"+(TC[t.type]||TC.deposit).C+"'>"+(t.type==="invest"||t.type==="expense"||t.type==="fine"?"-":"+")+fmt(t.amount)+"</td><td style='color:var(--mut);font-size:12px;max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap'>"+(t.note||"—")+"</td><td>"+(canWrite()?"<div style='display:flex;gap:4px'><button class='btn-s' onclick='openTx(\""+t.id+"\",null)' style='padding:4px 8px'>Edit</button>"+(isAdmin()?"<button class='btn-d' onclick='delTx(\""+t.id+"\")' style='padding:4px 8px'>Del</button>":"")+"</div>":"")+"</td></tr>";});h+="</tbody></table></div></div>";}
   h+="</div>";return h;
 }
-function openTx(id,type){var t=id?S.txs.find(function(x){return x.id===id;}):null;var h="<div class='modal-bg' onclick='if(event.target===this)closeModal()'><div class='modal-box'><div style='display:flex;justify-content:space-between;align-items:center;margin-bottom:18px'><div style='font-weight:800;font-size:17px'>"+(t?"Edit":"Add")+" Transaction</div><button onclick='closeModal()' style='background:none;border:none;color:var(--mut);font-size:20px;cursor:pointer'>✕</button></div><div class='fc'><div><label class='lbl'>Type</label><select id='tx-ty' class='inp'>"+Object.keys(TC).map(function(k){return"<option value='"+k+"'"+(t?t.type===k?" selected":"":type===k?" selected":k==="deposit"&&!type?" selected":"")+">"+TC[k].L+"</option>";}).join("")+"</select></div><div><label class='lbl'>Member</label><select id='tx-mb' class='inp'>"+S.mems.map(function(m){return"<option"+(t&&txName(t)===m.name?" selected":"")+">"+m.name+"</option>";}).join("")+"</select></div><div class='g2'><div><label class='lbl'>Amount (BDT)</label><input id='tx-am' type='number' class='inp' value='"+(t?t.amount:"")+"'/></div><div><label class='lbl'>Date</label><input id='tx-dt' type='date' class='inp' value='"+(t?t.date:new Date().toISOString().split("T")[0])+"'/></div></div><div><label class='lbl'>Note</label><input id='tx-nt' type='text' class='inp' value='"+(t?t.note||"":"")+"' placeholder='Optional'/></div><button class='btn-p' onclick='saveTx(\""+( t?t.id:"")+"\")'>Save</button></div></div></div>";$("modal").innerHTML=h;}
-function saveTx(id){var mn=($("tx-mb")||{value:""}).value,mem=S.mems.find(function(m){return m.name===mn;});var data={type:($("tx-ty")||{value:"deposit"}).value,member:mn,memberUID:mem?mem.id:"",memberEmail:mem?mem.email:"",amount:Number(($("tx-am")||{value:0}).value),date:($("tx-dt")||{value:""}).value,note:($("tx-nt")||{value:""}).value.trim()};if(!data.amount||!data.date){toast("Amount and date required",false);return;}var p=id?db.collection("transactions").doc(id).update(data):db.collection("transactions").add(data);p.then(function(){closeModal();logAct(id?"edit_transaction":"add_transaction",data.type+" "+data.member+" "+fmt(data.amount));toast(id?"Updated!":"Added!");}).catch(function(e){toast(e.message,false);});}
+function openTx(id,type){
+  var t=id?S.txs.find(function(x){return x.id===id;}):null;
+  var today=new Date().toISOString().split("T")[0];
+  var h="<div class='modal-bg' onclick='if(event.target===this)closeModal()'><div class='modal-box'>";
+  h+="<div style='display:flex;justify-content:space-between;align-items:center;margin-bottom:18px'>";
+  h+="<div style='font-weight:800;font-size:17px'>"+(t?"Edit":"Add")+" Transaction</div>";
+  h+="<button onclick='closeModal()' style='background:none;border:none;color:var(--mut);font-size:20px;cursor:pointer'>&#x2715;</button></div>";
+  h+="<div class='fc'>";
+  // Type
+  h+="<div><label class='lbl'>Type</label><select id='tx-ty' class='inp' onchange='txTypeChanged()'>";
+  h+=Object.keys(TC).map(function(k){return"<option value='"+k+"'"+(t?t.type===k?" selected":"":type===k?" selected":k==="deposit"&&!type?" selected":"")+">"+TC[k].L+"</option>";}).join("");
+  h+="</select></div>";
+  // Member
+  h+="<div><label class='lbl'>Member</label><select id='tx-mb' class='inp' onchange='txMemberChanged()'>";
+  h+=S.mems.map(function(m){return"<option"+(t&&txName(t)===m.name?" selected":"")+">"+m.name+"</option>";}).join("");
+  h+="</select></div>";
+  // Paying For (shown for deposits)
+  var isDeposit=!t&&(type==="deposit"||!type);
+  h+="<div id='tx-payfor-row' style='display:"+(isDeposit?"block":"none")+";background:var(--s2);border:1px solid var(--bor);border-radius:11px;padding:11px 13px'>";
+  h+="<div style='font-size:9px;color:var(--mut);font-weight:700;letter-spacing:2px;margin-bottom:8px'>PAYING FOR MONTH</div>";
+  h+="<div id='tx-payfor-info' style='font-size:13px;font-weight:700;color:var(--grn)'>Detecting...</div>";
+  h+="<select id='tx-payfor' class='inp' style='margin-top:8px;font-size:12px'></select>";
+  h+="</div>";
+  // Amount + Date
+  h+="<div class='g2'>";
+  h+="<div><label class='lbl'>Amount (৳)</label><input id='tx-am' type='number' class='inp' value='"+(t?t.amount:"")+"'/></div>";
+  h+="<div><label class='lbl'>Actual Date Paid</label><input id='tx-dt' type='date' class='inp' value='"+(t?t.date:today)+"'/></div>";
+  h+="</div>";
+  h+="<div><label class='lbl'>Note</label><input id='tx-nt' type='text' class='inp' value='"+(t?t.note||"":"")+"' placeholder='Optional'/></div>";
+  h+="<button class='btn-p' onclick='saveTx(this.dataset.tid)' data-tid='"+(t?t.id:"")+"'>"+(t?"Update":"Save")+"</button>";
+  h+="</div></div></div>";
+  $("modal").innerHTML=h;
+  // Init the paying-for selector if deposit
+  if(isDeposit) txMemberChanged();
+}
+
+function txTypeChanged(){
+  var ty=($("tx-ty")||{value:""}).value;
+  var row=$("tx-payfor-row");
+  if(row) row.style.display=(ty==="deposit"?"block":"none");
+  if(ty==="deposit") txMemberChanged();
+}
+
+function txMemberChanged(){
+  var mn=($("tx-mb")||{value:""}).value;
+  var ty=($("tx-ty")||{value:"deposit"}).value;
+  if(ty!=="deposit") return;
+  var info=$("tx-payfor-info");
+  var sel=$("tx-payfor");
+  if(!info||!sel) return;
+  // Find all months this member hasn't paid
+  var now=new Date();
+  var pending=[];
+  // Check from group start (Feb 2026) to current month
+  var startY=2026,startM=1; // Feb 2026
+  for(var y=startY;y<=now.getFullYear();y++){
+    var mStart=(y===startY?startM:0);
+    var mEnd=(y===now.getFullYear()?now.getMonth():11);
+    for(var m=mStart;m<=mEnd;m++){
+      var ps=payS(y,m);
+      var memPay=ps.find(function(p){return p.name===mn;});
+      if(memPay&&!memPay.paid){
+        pending.push({y:y,m:m,label:MF[m]+" "+y});
+      }
+    }
+  }
+  if(pending.length===0){
+    info.innerHTML="<span style='color:var(--green)'>✓ All months paid!</span>";
+    sel.style.display="none";
+    // Auto-fill with DUE amount
+    var am=$("tx-am");if(am&&!am.value)am.value=DUE;
+  } else {
+    var oldest=pending[0];
+    info.innerHTML="Oldest unpaid: <span style='color:var(--orange)'>"+oldest.label+"</span>"
+      +(pending.length>1?" ("+pending.length+" months overdue)":"");
+    sel.style.display="block";
+    sel.innerHTML=pending.map(function(p,i){
+      return"<option value='"+p.y+"-"+p.m+"'>"+(i===0?"▶ ":"")+p.label+(i>0?" (overdue)":"")+"</option>";
+    }).join("");
+    // Auto-fill amount
+    var am=$("tx-am");if(am&&!am.value)am.value=DUE;
+  }
+}
+
+function saveTx(id){
+  var mn=($("tx-mb")||{value:""}).value;
+  var mem=S.mems.find(function(m){return m.name===mn;});
+  var txType=($("tx-ty")||{value:"deposit"}).value;
+  var data={
+    type:txType,
+    member:mn,
+    memberUID:mem?mem.id:"",
+    memberEmail:mem?mem.email:"",
+    amount:Number(($("tx-am")||{value:0}).value),
+    date:($("tx-dt")||{value:""}).value,
+    note:($("tx-nt")||{value:""}).value.trim()
+  };
+  if(!data.amount||!data.date){toast("Amount and date required",false);return;}
+  // For deposits: store which month this payment is FOR
+  if(txType==="deposit"){
+    var pfSel=$("tx-payfor");
+    if(pfSel&&pfSel.value&&pfSel.style.display!=="none"){
+      var parts=pfSel.value.split("-");
+      data.paymentForYear=Number(parts[0]);
+      data.paymentForMonth=Number(parts[1]);
+    } else {
+      // If all paid or no selector, use the actual date month
+      var d=new Date(data.date);
+      data.paymentForYear=d.getFullYear();
+      data.paymentForMonth=d.getMonth();
+    }
+  }
+  var p=id?db.collection("transactions").doc(id).update(data):db.collection("transactions").add(data);
+  p.then(function(){
+    closeModal();
+    logAct(id?"edit_transaction":"add_transaction",data.type+" "+data.member+" "+fmt(data.amount));
+    toast(id?"Updated!":"Added!");
+  }).catch(function(e){toast(e.message,false);});
+}
+
 function delTx(id){if(!confirm("Delete?"))return;db.collection("transactions").doc(id).delete().then(function(){logAct("delete_transaction",id);toast("Deleted.");}).catch(function(e){toast(e.message,false);});}
 
 // ═══════════ MEMBERS ═══════════
