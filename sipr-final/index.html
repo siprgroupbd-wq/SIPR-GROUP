@@ -422,7 +422,25 @@ function showErr(id,msg){var el=$(id);if(el){el.textContent=msg;el.style.display
 function hideErr(id){var el=$(id);if(el)el.style.display="none";}
 
 // ═══════════ AUTH ═══════════
-function gLogin(){var standalone=window.matchMedia("(display-mode:standalone)").matches||!!window.navigator.standalone;if(standalone){fa.signInWithRedirect(gp).catch(function(e){showErr("lerr",e.message);});}else{fa.signInWithPopup(gp).then(function(r){}).catch(function(e){showErr("lerr",e.message);});}}
+function gLogin(){
+  // Use redirect on mobile (popup gets blocked by mobile browsers)
+  if(mob()){
+    fa.signInWithRedirect(gp).catch(function(e){showErr("lerr",e.message);});
+  } else {
+    var standalone=window.matchMedia("(display-mode:standalone)").matches||!!window.navigator.standalone;
+    if(standalone){
+      fa.signInWithRedirect(gp).catch(function(e){showErr("lerr",e.message);});
+    } else {
+      fa.signInWithPopup(gp).then(function(r){}).catch(function(e){
+        // Fallback to redirect if popup fails
+        if(e.code==="auth/popup-blocked"||e.code==="auth/popup-closed-by-user"){
+          fa.signInWithRedirect(gp).catch(function(e2){showErr("lerr",e2.message);});
+        } else { showErr("lerr",e.message); }
+      });
+    }
+  }
+}
+
 function eLogin(){
   var em=($("em")||{value:""}).value.trim().toLowerCase();
   var pw=($("pw")||{value:""}).value;
@@ -678,47 +696,113 @@ function payS(y,m){return S.mems.map(function(mb){var tx=S.txs.filter(function(t
 
 // ═══════════ DASHBOARD ═══════════
 function pDash(){
-  var s=stats(),ps=payS(new Date().getFullYear(),new Date().getMonth());
+  var s=stats();
+  var ps=payS(new Date().getFullYear(),new Date().getMonth());
   var pn=ps.filter(function(m){return m.paid;}).length;
   var up=ps.filter(function(m){return !m.paid;});
-  var dom=new Date().getDate(),mn=DM[new Date().getMonth()];
-  var isOD=dom>10&&up.length>0,rate=Math.round(pn/S.mems.length*100);
-  var GOAL=50000,gp=pct(s.f,GOAL),w=getMyWallet();
+  var dom=new Date().getDate();
+  var isOD=dom>10&&up.length>0;
+  var GOAL=100000;
+  var gPct=Math.min(Math.round(s.f/GOAL*100),100);
+  var w=getMyWallet();
   var ai=S.invs.filter(function(i){return i.status==="active";});
   var h="<div class='fc'>";
-  // Hero fund balance
-  h+="<div class='hero'><div style='font-size:10px;letter-spacing:3px;color:var(--mut);font-weight:700;margin-bottom:7px'><span class='live'></span>SIPR GROUP · FUND BALANCE</div>";
-  h+="<div id='dash-balance' data-val='"+s.f+"' style='font-size:"+(mob()?28:42)+"px;font-weight:900;line-height:1;margin-bottom:4px'>BDT 0</div>";
-  h+="<div style='font-size:12px;color:var(--mut);margin-bottom:11px'>Goal: "+fmt(GOAL)+" · "+gp+"% achieved</div>";
-  h+="<div style='height:6px;background:#ffffff0a;border-radius:99px;overflow:hidden;margin-bottom:13px'><div style='height:100%;width:"+gp+"%;background:linear-gradient(90deg,var(--gbr),var(--grn));border-radius:99px'></div></div>";
-  h+="<div style='display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--bor);border-radius:10px;overflow:hidden'>";
-  [["DEP",s.d,"var(--grn)"],["INV",s.i,"var(--gold)"],["PROFIT",s.p,"var(--purple)"],["EXP",s.e,"var(--red)"]].forEach(function(x){h+="<div style='background:var(--s2);padding:9px 6px;text-align:center'><div style='font-size:9px;letter-spacing:1px;color:var(--mut);font-weight:700;margin-bottom:3px'>"+x[0]+"</div><div style='font-size:11px;font-weight:800;color:"+x[2]+"'>"+fmt(x[1])+"</div></div>";});
-  h+="</div></div>";
-  // 2 col
-  h+="<div style='display:grid;grid-template-columns:"+(mob()?"1fr":"1fr 1fr")+";gap:12px'>";
-  // Payment status
-  h+="<div class='card' style='padding:0;overflow:hidden;border-color:"+(isOD?"#7f1d1d":"var(--bor)")+"'>";
-  h+="<div style='padding:11px 15px;border-bottom:1px solid var(--bor);display:flex;justify-content:space-between;align-items:center'>";
-  h+="<div style='font-size:10px;letter-spacing:2px;color:"+(isOD?"var(--orange)":"var(--mut)")+";font-weight:700'>"+(isOD?"⚠ OVERDUE":"📅 "+mn.toUpperCase()+" PAYMENTS")+"</div>";
-  h+="<div style='font-weight:800;color:"+(pn===S.mems.length?"var(--grn)":isOD?"#ef4444":"var(--gold)")+";font-size:12px'>"+pn+"/"+S.mems.length+"</div></div>";
-  h+="<div style='padding:3px 0'>";
-  ps.forEach(function(m){h+="<div style='display:flex;align-items:center;padding:7px 13px;border-bottom:1px solid var(--bor);gap:7px'>"+av(m.name,22)+"<div style='flex:1;min-width:0;font-size:12px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap'>"+m.name+"</div>"+(m.paid?"<div style='font-size:11px;color:var(--grn);font-weight:700'>✓ "+fmt(m.paidAmt)+"</div>":"<div style='font-size:11px;color:#ef4444;font-weight:700'>Pending</div>")+"</div>";});
-  h+="</div><div style='padding:8px 11px'><button onclick='goPage(\"payments\")' style='width:100%;padding:8px;border-radius:9px;border:1px solid var(--gbr);background:var(--gdm);color:var(--grn);font-size:12px;font-weight:700;cursor:pointer;font-family:inherit'>View Report →</button></div></div>";
-  // Right stats
-  h+="<div style='display:flex;flex-direction:column;gap:10px'>";
-  h+="<div class='g2' style='gap:8px'>";
-  h+="<div class='sc' style='background:var(--gdm);border-color:var(--gbr);text-align:center'><div style='color:var(--mut);font-size:9px;letter-spacing:1px;font-weight:700;margin-bottom:4px'>PAID</div><div style='color:var(--grn);font-weight:900;font-size:20px'>"+pn+"/"+S.mems.length+"</div></div>";
-  h+="<div class='sc' style='background:#1a0e0488;border-color:#78140044;text-align:center'><div style='color:var(--mut);font-size:9px;letter-spacing:1px;font-weight:700;margin-bottom:4px'>PENDING</div><div style='color:#ef4444;font-weight:900;font-size:20px'>"+(S.mems.length-pn)+"/"+S.mems.length+"</div></div>";
-  h+="<div class='sc' style='text-align:center'><div style='color:var(--mut);font-size:9px;letter-spacing:1px;font-weight:700;margin-bottom:4px'>PROJECTS</div><div style='color:var(--gold);font-weight:900;font-size:20px'>"+ai.length+"</div></div>";
-  h+="<div class='sc' style='background:var(--gdm);border-color:var(--gbr);text-align:center;cursor:pointer' onclick='goPage(\"wallet\")'><div style='color:var(--mut);font-size:9px;letter-spacing:1px;font-weight:700;margin-bottom:4px'>WALLET</div><div style='color:var(--grn);font-weight:900;font-size:13px'>"+fmt(w.available)+"</div></div>";
+
+  // ── Fund balance hero ──
+  h+="<div style='background:linear-gradient(135deg,var(--gdm),#121848);border:1px solid var(--gbr);border-radius:20px;padding:18px 20px'>";
+  h+="<div style='font-size:9px;letter-spacing:3px;color:var(--mut);font-weight:700;margin-bottom:8px;display:flex;align-items:center;gap:6px'>";
+  h+="<div style='width:6px;height:6px;border-radius:50%;background:var(--green);box-shadow:0 0 6px var(--green)'></div>";
+  h+="SIPR GROUP · FUND BALANCE</div>";
+  h+="<div id='dash-balance' data-val='"+s.f+"' style='font-size:32px;font-weight:900;letter-spacing:-1px;margin-bottom:4px'>"+fmt(s.f)+"</div>";
+  h+="<div style='display:flex;gap:8px;align-items:center;margin-bottom:14px;flex-wrap:wrap'>";
+  h+="<span style='padding:2px 8px;border-radius:99px;background:var(--green)18;color:var(--green);font-size:10px;font-weight:700'>Goal: "+fmt(GOAL)+"</span>";
+  h+="<span style='font-size:11px;color:var(--mut)'>"+gPct+"% achieved</span>";
   h+="</div>";
-  if(ai.length){h+="<div class='card' style='flex:1'><div style='font-size:10px;letter-spacing:2px;color:var(--mut);font-weight:700;margin-bottom:9px'>ACTIVE PROJECTS</div>";ai.slice(0,3).forEach(function(inv){var dep=Number(inv.capitalDeployed||inv.amount||0),ret=Number(inv.actualReturn||0),exp=Number(inv.expectedReturn||0),pp=exp>0?Math.min(ret/exp*100,100):0;h+="<div style='margin-bottom:8px'><div style='display:flex;justify-content:space-between;margin-bottom:3px'><span style='font-size:12px;font-weight:700'>"+inv.name+"</span><span style='font-size:11px;color:var(--gold)'>"+fmt(dep)+"</span></div><div class='pbar'><div class='pfill' style='width:"+pp+"%'></div></div></div>";});h+="</div>";}
+  h+="<div style='height:4px;background:var(--bor);border-radius:99px;overflow:hidden;margin-bottom:14px'>";
+  h+="<div style='height:100%;width:"+gPct+"%;background:linear-gradient(90deg,var(--grn),var(--purple));border-radius:99px'></div></div>";
+  h+="<div style='display:grid;grid-template-columns:repeat(4,1fr);gap:0;border-top:1px solid var(--bor);padding-top:12px'>";
+  [{l:"DEP",v:s.d,c:"var(--grn)"},{l:"INV",v:s.i,c:"var(--gold)"},{l:"PROFIT",v:s.p,c:"var(--green)"},{l:"EXP",v:s.e,c:"var(--orange)"}].forEach(function(x,i){
+    h+="<div style='text-align:center;"+(i>0?"border-left:1px solid var(--bor)":"")+"padding:0 6px'>";
+    h+="<div style='font-size:8px;color:var(--mut);font-weight:700;letter-spacing:1px;margin-bottom:2px'>"+x.l+"</div>";
+    h+="<div style='font-size:11px;font-weight:900;color:"+x.c+"'>"+fmt(x.v)+"</div></div>";
+  });
   h+="</div></div>";
-  if(isOD&&up.length>0)h+="<div style='border:1px solid #7f1d1d;border-radius:13px;padding:13px 15px;background:#0e0505;display:flex;align-items:center;gap:10px;flex-wrap:wrap'><span>⚠️</span><div style='flex:1'><div style='color:var(--orange);font-weight:700;font-size:13px'>Overdue — Past 10th</div><div style='font-size:12px;color:var(--mut)'>"+up.map(function(m){return m.name;}).join(", ")+"</div></div><button onclick='goPage(\"payments\")' class='btn-a' style='flex-shrink:0'>View →</button></div>";
-  else if(pn===S.mems.length)h+="<div style='border:1px solid var(--gbr);border-radius:13px;padding:12px 15px;background:var(--gdm);display:flex;align-items:center;gap:10px'><span>🎉</span><div style='color:var(--grn);font-weight:700;font-size:13px'>All "+S.mems.length+" members paid for "+mn+"!</div></div>";
-  h+="</div>";setTimeout(countUpBalance,80);setTimeout(countUpBalance,80);return h;
+
+  // ── Quick actions ──
+  h+="<div style='display:grid;grid-template-columns:repeat(4,1fr);gap:8px'>";
+  [{icon:"💳",l:"Finance",tab:"finance"},{icon:"📁",l:"Projects",tab:"investments"},{icon:"🔎",l:"Search",tab:"search"},{icon:"🔍",l:"Audit",tab:"activity"}].forEach(function(a){
+    h+="<div onclick='goPage(this.dataset.dt)' data-dt='"+a.tab+"' style='background:var(--sur);border:1px solid var(--bor);border-radius:12px;padding:11px 6px;text-align:center;cursor:pointer'>";
+    h+="<div style='font-size:20px;margin-bottom:4px'>"+a.icon+"</div>";
+    h+="<div style='font-size:9px;color:var(--mut);font-weight:700'>"+a.l+"</div></div>";
+  });
+  h+="</div>";
+
+  // ── Stats row ──
+  h+="<div class='g4'>";
+  h+="<div class='stat-box'><div class='lbl2'>PAID</div><div class='val' style='color:var(--green)'>"+pn+"/"+S.mems.length+"</div><div style='font-size:9px;color:var(--mut);margin-top:2px'>"+(S.mems.length-pn)+" pending</div></div>";
+  h+="<div class='stat-box'><div class='lbl2'>PROJECTS</div><div class='val' style='color:var(--grn)'>"+S.invs.length+"</div><div style='font-size:9px;color:var(--mut);margin-top:2px'>"+ai.length+" active</div></div>";
+  h+="<div class='stat-box'><div class='lbl2'>BALANCE</div><div class='val' style='color:var(--teal)'>"+fmt(s.f)+"</div></div>";
+  h+="<div class='stat-box' onclick='goPage(this.dataset.gw)' data-gw='wallet' style='cursor:pointer'><div class='lbl2'>MY WALLET</div><div class='val' style='color:var(--purple)'>"+fmt(w.total)+"</div></div>";
+  h+="</div>";
+
+  // ── Monthly payments ──
+  var allPay=ps.slice().sort(function(a,b){return (b.paid?1:0)-(a.paid?1:0);});
+  h+="<div style='background:var(--sur);border:1px solid var(--bor);border-radius:16px;overflow:hidden'>";
+  h+="<div style='padding:11px 15px;border-bottom:1px solid var(--bor);display:flex;justify-content:space-between;align-items:center'>";
+  h+="<div style='display:flex;align-items:center;gap:8px'><span style='font-size:15px'>📅</span>";
+  h+="<span style='font-size:11px;font-weight:700;letter-spacing:1.5px;color:var(--mut)'>"+DM[new Date().getMonth()].toUpperCase()+" PAYMENTS</span></div>";
+  h+="<button onclick='goPage(this.dataset.gf)' data-gf='finance' style='font-size:11px;color:var(--grn);background:none;border:none;cursor:pointer;font-weight:700;font-family:inherit'>Finance →</button></div>";
+  allPay.forEach(function(m){
+    h+="<div style='display:flex;align-items:center;gap:10px;padding:9px 15px;border-bottom:1px solid var(--bor);border-left:2px solid "+(m.paid?"var(--green)":"var(--pending)")+";'>";
+    h+=av(m.name,26);
+    h+="<div style='flex:1;font-size:12px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap'>"+m.name+"</div>";
+    if(m.paid){
+      h+="<span style='padding:2px 8px;border-radius:99px;background:var(--green)18;color:var(--green);font-size:10px;font-weight:700'>✓ "+fmt(m.paidAmt)+"</span>";
+    } else {
+      h+="<span style='padding:2px 8px;border-radius:99px;background:var(--pending)18;color:var(--pending);font-size:10px;font-weight:700'>Pending</span>";
+    }
+    h+="</div>";
+  });
+  h+="<div style='padding:10px 15px;background:var(--s2);display:flex;justify-content:space-between;align-items:center'>";
+  h+="<span style='font-size:10px;color:var(--mut);font-weight:700;letter-spacing:2px'>TOTAL COLLECTED</span>";
+  h+="<span style='font-size:15px;font-weight:900;color:var(--grn)'>"+fmt(ps.reduce(function(s,m){return s+(m.paid?m.paidAmt:0);},0))+"</span></div>";
+  h+="</div>";
+
+  // ── Active projects ──
+  if(S.invs.length>0){
+    h+="<div style='background:var(--sur);border:1px solid var(--bor);border-radius:16px;padding:13px 15px'>";
+    h+="<div style='font-size:10px;letter-spacing:2px;color:var(--mut);font-weight:700;margin-bottom:11px'>ACTIVE PROJECTS</div>";
+    S.invs.slice(0,3).forEach(function(inv){
+      var dep=Number(inv.capitalDeployed||inv.amount||0);
+      var ret=Number(inv.actualReturn||0);
+      var pl=ret-dep;
+      var IST={active:{L:"Active",C:"var(--grn)"},planning:{L:"Planning",C:"var(--amber)"},completed:{L:"Completed",C:"var(--green)"},paused:{L:"Paused",C:"var(--purple)"}};
+      var st=IST[inv.status]||IST.planning;
+      h+="<div onclick='openProject(this.dataset.id)' data-id='"+inv.id+"' style='display:flex;align-items:center;gap:11px;cursor:pointer;padding:9px 11px;background:var(--s2);border-radius:10px;border:1px solid var(--bor);border-left:3px solid "+st.C+";margin-bottom:7px'>";
+      h+="<div style='flex:1;min-width:0'>";
+      h+="<div style='font-size:13px;font-weight:800;overflow:hidden;text-overflow:ellipsis;white-space:nowrap'>"+inv.name+"</div>";
+      h+="<div style='font-size:10px;color:var(--mut);margin-top:1px'>"+st.L+" · "+fmt(dep)+" deployed</div></div>";
+      h+="<div style='text-align:right;flex-shrink:0'>";
+      if(pl!==0)h+="<div style='font-size:11px;font-weight:700;color:"+(pl>0?"var(--green)":"var(--red)")+"'>"+(pl>0?"+":"")+fmt(pl)+"</div>";
+      h+="<span style='font-size:16px;color:var(--mut)'>›</span></div>";
+      h+="</div>";
+    });
+    if(S.invs.length>3)h+="<div style='text-align:center;font-size:11px;color:var(--mut);margin-top:4px'>+more projects</div>";
+    h+="</div>";
+  }
+
+  // ── Pending reminder ──
+  if(up.length>0){
+    h+="<div style='display:flex;justify-content:space-between;align-items:center;padding:11px 14px;background:"+(isOD?"#0a0302":"var(--s2)")+";border:1px solid "+(isOD?"var(--red)28":"var(--bor)")+";border-radius:12px;flex-wrap:wrap;gap:8px'>";
+    h+="<div><div style='font-size:13px;font-weight:700;color:"+(isOD?"var(--red)":"var(--pending)")+"'>"+(isOD?"⚠ OVERDUE":"⚠")+" — "+up.length+" member"+(up.length>1?"s":"")+" pending</div>";
+    h+="<div style='font-size:10px;color:var(--mut);margin-top:1px'>"+up.slice(0,2).map(function(m){return m.name;}).join(", ")+(up.length>2?" +more":"")+"</div></div>";
+    h+="<button onclick='openRemindModal()' style='padding:7px 13px;border-radius:9px;border:1px solid #25d366;background:#071a0f;color:#25d366;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;flex-shrink:0'>💬 Remind</button>";
+    h+="</div>";
+  }
+
+  h+="</div>";return h;
 }
-// ════════════════════════════
+
 function pFinance(){
   var ft=S._fTab||"payments";
   var h="<div class='fc'>";
