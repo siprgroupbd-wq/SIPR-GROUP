@@ -347,12 +347,11 @@ var NAVS=[
   {id:"finance",    ic:"💳", lb:"Finance",      grp:1},
   {id:"investments",ic:"📈", lb:"Projects",     grp:1},
   {id:"members",    ic:"○",  lb:"Members",      grp:1},
-  {id:"wallet",     ic:"💰", lb:"My Wallet",    grp:2},
   {id:"noticeboard",ic:"🔔", lb:"Notice Board", grp:2},
   {id:"expenses",   ic:"💸", lb:"Expenses",     grp:2},
   {id:"documents",  ic:"📄", lb:"Documents",    grp:2},
-  {id:"activity",   ic:"🕐", lb:"Activity Log", grp:3},
-  {id:"goals",      ic:"◎",  lb:"Goals",        grp:3},
+  {id:"goals",      ic:"◎",  lb:"Goals",        grp:2},
+  {id:"activity",   ic:"🔍", lb:"Audit Trail",  grp:3},
   {id:"about",      ic:"✦",  lb:"About SIPR",   grp:3},
   {id:"control",    ic:"⚙",  lb:"Control Panel",grp:3,adm:true}
 ];
@@ -372,7 +371,7 @@ var S={
 // ═══════════ HELPERS ═══════════
 function $(i){return document.getElementById(i);}
 function mob(){return window.innerWidth<800;}
-function fmt(n){var v=Number(n||0),neg=v<0,abs=Math.round(Math.abs(v)).toString();return (neg?"BDT -":"BDT ")+abs.replace(/\B(?=(\d{3})+(?!\d))/g,",");}
+function fmt(n){var v=Number(n||0),neg=v<0,abs=Math.round(Math.abs(v)).toString().replace(/\B(?=(\d{3})+(?!\d))/g,",");return (neg?"\u09F3-":"\u09F3")+abs;}
 function countUpBalance(){
   var el=document.getElementById("dash-balance");
   if(!el)return;
@@ -732,20 +731,25 @@ function pFinance(){
 
   if(ft==="payments"){
     // ── Compact month + year + actions ──
-    h+="<div style='display:flex;gap:7px;align-items:center'>";
-    h+="<div style='display:flex;flex:1;background:var(--sur);border:1px solid var(--bor);border-radius:11px;overflow:hidden'>";
-    h+="<select onchange='S.payM=Number(this.value);render()' style='flex:1;padding:10px 10px;border:none;background:transparent;color:var(--txt);font-size:13px;font-family:inherit;font-weight:700;outline:none;cursor:pointer'>";
-    var MF2=["January","February","March","April","May","June","July","August","September","October","November","December"];
-    MF2.forEach(function(m,i){h+="<option value='"+i+"'"+(S.payM===i?" selected":"")+">"+m+"</option>";});
-    h+="</select>";
-    h+="<div style='width:1px;background:var(--bor)'></div>";
-    h+="<select onchange='S.payY=Number(this.value);render()' style='width:70px;padding:10px 8px;border:none;background:transparent;color:var(--txt);font-size:13px;font-family:inherit;font-weight:700;outline:none;cursor:pointer'>";
-    for(var yr2=2026;yr2<=new Date().getFullYear()+1;yr2++)h+="<option"+(S.payY===yr2?" selected":"")+">"+yr2+"</option>";
-    h+="</select></div>";
-    if(canWrite())h+="<button class='btn-a' onclick='openTx(null,this.dataset.t)' data-t='deposit' style='padding:10px 12px;font-size:12px;white-space:nowrap'>+ Add</button>";
-    h+="<button onclick='printReport()' style='padding:10px 10px;border-radius:10px;border:1px solid var(--bor);background:var(--s2);color:var(--mut);font-size:12px;font-weight:700;cursor:pointer;font-family:inherit'>PDF</button>";
-    h+="<button onclick='waReport()' style='padding:10px 10px;border-radius:10px;border:1px solid #25d366;background:#071a0f;color:#25d366;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit'>WA</button>";
+    // Month pills row
+    var MF2=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+    var fullM=["January","February","March","April","May","June","July","August","September","October","November","December"];
+    h+="<div style='display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px'>";
+    h+="<div style='display:flex;gap:5px;overflow-x:auto;scrollbar-width:none;flex:1'>";
+    MF2.forEach(function(m,i){
+      var active=S.payM===i;
+      h+="<button onclick='S.payM="+i+";render()' style='padding:6px 12px;border-radius:20px;flex-shrink:0;border:1px solid "+(active?"var(--grn)":"var(--bor)")+";background:"+(active?"var(--grn)":"var(--s2)")+";color:"+(active?"#fff":"var(--mut)")+";font-size:11px;font-weight:700;cursor:pointer;font-family:inherit'>"+m+"</button>";
+    });
     h+="</div>";
+    h+="<div style='display:flex;gap:6px;flex-shrink:0;align-items:center'>";
+    h+="<select onchange='S.payY=Number(this.value);render()' style='padding:6px 10px;border-radius:9px;border:1px solid var(--bor);background:var(--s2);color:var(--txt);font-size:12px;font-family:inherit;font-weight:700;outline:none;cursor:pointer'>";
+    for(var yr2=2026;yr2<=new Date().getFullYear()+1;yr2++)h+="<option"+(S.payY===yr2?" selected":"")+">"+yr2+"</option>";
+    h+="</select>";
+    if(canWrite())h+="<button class='btn-a' onclick='openTx(null,this.dataset.t)' data-t='deposit' style='padding:7px 12px;font-size:12px;white-space:nowrap'>+ Add</button>";
+    h+="</div></div>";
+    // Month label
+    h+="<div style='font-size:10px;color:var(--mut);font-weight:700;letter-spacing:1.5px'>"+fullM[S.payM].toUpperCase()+" "+S.payY+" · PAYMENT REPORT</div>";
+
     // ── Payment list ──
     var ps2=payS(S.payY,S.payM).slice().sort(function(a,b){return (b.paid?1:0)-(a.paid?1:0);});
     var collected2=ps2.reduce(function(s,m){return s+(m.paid?m.paidAmt:0);},0);
@@ -1747,7 +1751,17 @@ function saveInv(id){
   var data={name:nm,description:($("in-ds")||{value:""}).value.trim(),date:dt,sector:($("in-sc")||{value:""}).value.trim(),capitalDeployed:totalCap,amount:totalCap,capitalSource:($("in-cs")||{value:"SIPR Fund"}).value.trim(),capitalEntries:capitalEntries,expectedReturn:Number(($("in-er")||{value:0}).value)||0,actualReturn:ex?Number(ex.actualReturn||0):0,status:($("in-st")||{value:"planning"}).value,notes:($("in-no")||{value:""}).value.trim(),createdBy:ex?ex.createdBy:S.name,createdAt:ex?ex.createdAt:now()};
   if(ex){["milestones","collections","suppliers","buyers","externalInvestors","teamEntries","projectManagerId","projectManagerName"].forEach(function(k){if(ex[k]!==undefined)data[k]=ex[k];});}
   var p=id?db.collection("investments").doc(id).update(data):db.collection("investments").add(data);
-  p.then(function(){closeModal();logAct(id?"edit_investment":"add_investment",data.name);toast(id?"Updated!":"Project created!");}).catch(function(e){toast(e.message,false);});
+  p.then(function(ref){
+    closeModal();
+    logAct(id?"edit_investment":"add_investment",data.name);
+    // Auto-create invest transaction when NEW project with capital is created
+    if(!id&&totalCap>0){
+      var tx={type:"invest",memberUID:null,memberName:"SIPR Fund",amount:totalCap,
+        date:dt,note:"Capital → "+nm,addedBy:S.name,addedAt:now()};
+      db.collection("transactions").add(tx).then(function(){loadTxs();});
+    }
+    toast(id?"Updated!":"Project created!");
+  }).catch(function(e){toast(e.message,false);});
 }
 
 function calcRevenue(){
@@ -1984,10 +1998,76 @@ function saveDoc(){var nm=($("dc-n")||{value:""}).value.trim();if(!nm){toast("Na
 function delDoc(id){if(!confirm("Delete?"))return;db.collection("documents").doc(id).delete().then(function(){loadDocs();toast("Deleted.");}).catch(function(e){toast(e.message,false);});}
 
 // ═══════════ ACTIVITY ═══════════
-function pActivity(){return"<div class='fc'><div><h2 style='font-size:22px;font-weight:800'>Activity Log</h2><p style='font-size:13px;color:var(--mut);margin-top:4px'>Important actions only.</p></div><div id='act-list'><div style='text-align:center;padding:36px;color:var(--mut)'>Loading...</div></div></div>";}
-function loadActivity(){db.collection("activity").orderBy("ts","desc").limit(80).get().then(function(snap){var el=$("act-list");if(!el)return;if(snap.empty){el.innerHTML="<div class='card' style='text-align:center;padding:40px;color:var(--mut)'>No activity yet.</div>";return;}var acts=snap.docs.map(function(d){return Object.assign({id:d.id},d.data());});var groups={},order=[];acts.forEach(function(a){var d=a.iso?a.iso.split("T")[0]:"Unknown";if(!groups[d]){groups[d]=[];order.push(d);}groups[d].push(a);});var icons={add_transaction:"💸",edit_transaction:"✏️",delete_transaction:"🗑",add_investment:"📈",edit_investment:"✏️",delete_investment:"🗑",post_announcement:"📢",submit_proposal:"📋",distribute_profit:"💰",issue_fine:"⚠",save_member:"💾",change_role:"🔄",reset_members:"♻️",add_member:"➕",remove_member:"➖",add_collection:"📦",add_sale:"💵"};var h="";order.forEach(function(date){h+="<div style='font-size:10px;letter-spacing:2px;color:var(--mut);font-weight:700;padding:7px 0;margin-bottom:3px'>"+fd(date)+"</div><div class='card' style='padding:0;overflow:hidden;margin-bottom:10px'>";groups[date].forEach(function(a,i){var ic=icons[a.action]||"📌";h+="<div style='display:flex;align-items:center;gap:10px;padding:10px 13px;"+(i>0?"border-top:1px solid var(--bor)":"")+"'><div style='width:30px;height:30px;border-radius:9px;background:var(--s2);display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0'>"+ic+"</div><div style='flex:1;min-width:0'><div style='font-size:13px;font-weight:600'>"+a.action.replace(/_/g," ")+"</div><div style='font-size:11px;color:var(--mut)'>"+(a.detail||"")+"</div></div><div style='text-align:right;flex-shrink:0'><div style='font-size:12px;font-weight:600'>"+a.by+"</div><div style='font-size:10px;color:var(--mut)'>"+(a.iso?a.iso.split("T")[1].slice(0,5):"")+"</div></div></div>";});h+="</div>";});el.innerHTML=h;});}
+function pActivity(){
+  var h="<div class='fc'>";
+  h+="<div style='display:flex;justify-content:space-between;align-items:center'>";
+  h+="<div><div style='font-size:15px;font-weight:900'>Audit Trail</div><div style='font-size:11px;color:var(--mut);margin-top:2px'>Every action logged — who, what, when</div></div>";
+  h+="<button onclick='expAuditCSV()' class='btn-s' style='font-size:11px;padding:6px 12px'>Export CSV</button>";
+  h+="</div>";
+  // Filter pills
+  h+="<div style='display:flex;gap:6px;overflow-x:auto;scrollbar-width:none'>";
+  var filters=["All","Payments","Sales","Collections","Invoices","Projects","Members"];
+  filters.forEach(function(f){
+    var active=S.auditFilter===f||(f==="All"&&!S.auditFilter);
+    h+="<button onclick='S.auditFilter=this.dataset.af;render()' data-af='"+f+"' style='padding:5px 12px;border-radius:18px;flex-shrink:0;border:1px solid "+(active?"var(--grn)":"var(--bor)")+";background:"+(active?"var(--grn)18":"var(--s2)")+";color:"+(active?"var(--grn)":"var(--mut)")+";font-size:11px;font-weight:700;cursor:pointer;font-family:inherit'>"+f+"</button>";
+  });
+  h+="</div>";
+  return h+"</div>";
+}
+function loadActivity(){
+  var con=$("content");if(!con)return;
+  var q=db.collection("activityLog").orderBy("ts","desc").limit(80);
+  q.get().then(function(snap){
+    var logs=[];snap.forEach(function(d){logs.push({id:d.id,...d.data()});});
+    var TYPE_ICON={add_payment:"💳",add_collection:"📦",record_sale:"💵",add_investment:"📁",edit_investment:"✏",add_transaction:"↕",add_member:"👥",remove_member:"🗑",add_expense:"📤",add_capital:"💰",login:"🔑",logout:"🚪"};
+    var TYPE_COL={add_payment:"var(--green)",add_collection:"var(--teal)",record_sale:"var(--purple)",add_investment:"var(--gold)",edit_investment:"var(--grn)",add_transaction:"var(--grn)",add_member:"var(--blue)",remove_member:"var(--red)",add_expense:"var(--orange)",add_capital:"var(--gold)",login:"var(--mut)",logout:"var(--mut)"};
+    var h="<div style='background:var(--sur);border:1px solid var(--bor);border-radius:14px;overflow:hidden'>";
+    if(!logs.length){h+="<div style='text-align:center;padding:48px 20px;color:var(--mut)'><div style='font-size:32px;margin-bottom:8px;opacity:.3'>🔍</div><div style='font-size:14px;font-weight:700'>No activity yet</div></div>";}
+    logs.forEach(function(log,i){
+      var icon=TYPE_ICON[log.type]||"•";
+      var col=TYPE_COL[log.type]||"var(--mut)";
+      var ts=log.ts?new Date(log.ts.seconds?log.ts.seconds*1000:log.ts).toLocaleString("en-GB",{day:"2-digit",month:"short",hour:"2-digit",minute:"2-digit"}):"";
+      h+="<div style='display:flex;gap:10px;padding:11px 14px;border-bottom:"+(i<logs.length-1?"1px solid var(--bor)":"none")+"'>";
+      h+="<div style='width:32px;height:32px;border-radius:8px;flex-shrink:0;background:"+col+"12;display:flex;align-items:center;justify-content:center;font-size:14px'>"+icon+"</div>";
+      h+="<div style='flex:1;min-width:0'>";
+      h+="<div style='font-size:12px;font-weight:700'><span style='color:"+col+"'>"+(log.user||log.addedBy||"System")+"</span> · "+(log.action||log.type||"action")+"</div>";
+      h+="<div style='font-size:10px;color:var(--mut);margin-top:1px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap'>"+(log.detail||log.data||"")+"</div>";
+      h+="<div style='font-size:9px;color:var(--mut);margin-top:1px'>"+ts+"</div>";
+      h+="</div></div>";
+    });
+    h+="</div>";
+    var container=con.querySelector(".fc");
+    if(container)container.insertAdjacentHTML("beforeend",h);
+  }).catch(function(){
+    // Show recent tx as fallback
+    var h="<div style='background:var(--sur);border:1px solid var(--bor);border-radius:14px;overflow:hidden'>";
+    var recent=S.txs.slice(0,20);
+    if(!recent.length)h+="<div style='text-align:center;padding:40px;color:var(--mut)'>No activity recorded yet.</div>";
+    recent.forEach(function(tx,i){
+      h+="<div style='display:flex;gap:10px;padding:10px 14px;border-bottom:"+(i<recent.length-1?"1px solid var(--bor)":"none")+"'>";
+      h+="<div style='width:32px;height:32px;border-radius:8px;flex-shrink:0;background:var(--grn)12;display:flex;align-items:center;justify-content:center;font-size:14px'>↕</div>";
+      h+="<div style='flex:1;min-width:0'>";
+      h+="<div style='font-size:12px;font-weight:700'><span style='color:var(--grn)'>"+txName(tx)+"</span> · "+tx.type+"</div>";
+      h+="<div style='font-size:9px;color:var(--mut);margin-top:2px'>"+fd(tx.date)+(tx.addedBy?" · "+tx.addedBy:"")+"</div>";
+      h+="</div>";
+      h+="<div style='font-size:12px;font-weight:900;color:"+(tx.type==="deposit"?"var(--green)":"var(--orange)")+"'>"+(tx.type==="deposit"?"+":"-")+fmt(Number(tx.amount||0))+"</div>";
+      h+="</div>";
+    });
+    h+="</div>";
+    var container=con.querySelector(".fc");
+    if(container)container.insertAdjacentHTML("beforeend",h);
+  });
+}
+function expAuditCSV(){
+  var rows=[["Date","User","Action","Detail"]];
+  S.txs.slice(0,100).forEach(function(tx){
+    rows.push([fd(tx.date),txName(tx),tx.type,tx.note||""]);
+  });
+  var csv=rows.map(function(r){return r.map(function(v){return '"'+String(v).replace(/"/g,'""')+'"';}).join(",");}).join("\n");
+  var a=document.createElement("a");a.href="data:text/csv;charset=utf-8,"+encodeURIComponent(csv);
+  a.download="sipr-audit-trail.csv";a.click();
+}
 
-// ═══════════ ABOUT ═══════════
 function pAbout(){
   // Role hierarchy for sorting
   var RANK={"President & Founder":1,"Treasurer":2,"Accounts Officer":3,
