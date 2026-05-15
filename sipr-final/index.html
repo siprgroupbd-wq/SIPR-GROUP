@@ -497,24 +497,52 @@ startLoading();
   if(pa)pa.style.display="none";
   if(ld)ld.style.display="flex";
 })();
-fa.getRedirectResult().then(function(result){if(result&&result.user){}}).catch(function(e){if(e.code!=="auth/no-current-user")console.warn("redirect:",e.message);});
-fa.onAuthStateChanged(function(user){
-    if(!user){$("pg-app").style.display="none";$("pg-login").style.display="flex";$("pg-invite").style.display="none";return;}
+var _authResolved=false;
+function handleAuthUser(user){
+  if(!user){
+    $("pg-app").style.display="none";
+    $("pg-login").style.display="flex";
+    $("pg-invite").style.display="none";
+    return;
+  }
+  if(_authResolved && S.uid===user.uid) return;
+  _authResolved=true;
   loadMembers(function(){
-          var mem=S.mems.find(function(m){return m.googleUid===user.uid;})||S.mems.find(function(m){return m.googleEmail===user.email;})||S.mems.find(function(m){return m.email===user.email;});
+    var email=(user.email||"").toLowerCase();
+    var mem=S.mems.find(function(m){
+      return m.googleUid===user.uid || (m.googleEmail||"").toLowerCase()===email || (m.email||"").toLowerCase()===email;
+    });
     if(mem){
-      if(mem.status==="pending"){$("pg-login").style.display="flex";showErr("lerr","Your registration is pending admin approval.");fa.signOut();return;}
-      S.email=mem.email;S.name=mem.name||user.displayName||user.email;S.uid=user.uid;S.role=mem.role||"member";
-      $("pg-login").style.display="none";$("pg-invite").style.display="none";
+      if(mem.status==="pending"){
+        $("pg-login").style.display="flex";
+        showErr("lerr","Your registration is pending admin approval.");
+        fa.signOut();
+        return;
+      }
+      S.email=mem.email;
+      S.name=mem.name||user.displayName||user.email;
+      S.uid=user.uid;
+      S.role=mem.role||"member";
+      $("pg-login").style.display="none";
+      $("pg-invite").style.display="none";
       initApp();
     } else {
       $("pg-login").style.display="none";
-      var ip=$("pg-invite");ip.style.display="flex";
+      var ip=$("pg-invite");
+      if(ip)ip.style.display="flex";
       var gi=$("gu-info");
       if(gi)gi.innerHTML=av(user.displayName||user.email,32)+"<div><div style='font-size:13px;font-weight:700'>"+(user.displayName||"New User")+"</div><div style='font-size:11px;color:var(--mut)'>"+user.email+"</div></div>";
     }
   });
+}
+fa.getRedirectResult().then(function(result){
+  if(result&&result.user){
+    handleAuthUser(result.user);
+  }
+}).catch(function(e){
+  if(e.code!=="auth/no-current-user")console.warn("redirect:",e.message);
 });
+fa.onAuthStateChanged(handleAuthUser);
 
 // ═══════════ DATA ═══════════
 function loadMembers(cb){
