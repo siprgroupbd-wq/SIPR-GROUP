@@ -12,6 +12,8 @@
   <meta name="theme-color" content="#0c1021">
   <meta name="application-name" content="SIPR Group">
 <meta charset="UTF-8"/>
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate"/>
+  <meta http-equiv="Pragma" content="no-cache"/>
 <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no"/>
 <title>SIPR Group</title>
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800;900&display=swap" rel="stylesheet"/>
@@ -510,7 +512,8 @@ fa.onAuthStateChanged(function(user){
 
 // ═══════════ DATA ═══════════
 function loadMembers(cb){
-  db.collection("members").get().then(function(snap){
+  var mbTimeout=setTimeout(function(){console.warn("loadMembers timeout");if(cb)cb();},5000);
+  db.collection("members").get().then(function(snap){clearTimeout(mbTimeout);
     if(snap.empty){S.mems=DEF_MEMS.slice();if(cb)cb();return;}
     var seen={};
     S.mems=snap.docs.map(function(d){return Object.assign({id:d.id},d.data());}).filter(function(m){if(!m.email||seen[m.email])return false;seen[m.email]=true;return true;});
@@ -572,15 +575,18 @@ function startLoading(){
   },60);
   S._loadIv=iv;S._loadBar=bar;S._loadMsg=msg;
 
-  // Safety: if Firebase takes over 10s, force show login
+  // Safety: force show login after 6 seconds if stuck
   setTimeout(function(){
     var ls=$("pg-loading");
     if(ls&&ls.style.display!=="none"){
       ls.style.display="none";
+      document.body.style.background="";
       var lp=$("pg-login");
-      if(lp){lp.style.display="flex";}
+      if(lp){lp.style.display="flex";lp.style.opacity="1";}
+      var lapp=$("pg-app");
+      if(lapp)lapp.style.display="none";
     }
-  },10000);
+  },6000);
 }
 
 function doneLoading(){
