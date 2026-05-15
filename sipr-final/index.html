@@ -373,7 +373,9 @@ var TITLES={dashboard:"Dashboard",payments:"Monthly Payments",investments:"Proje
 
 // ═══════════ HELPERS ═══════════
 function $(i){return document.getElementById(i);}
-function mob(){return window.innerWidth<800;}
+function mob(){
+  return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth<800;
+}
 function fmt(n){var v=Number(n||0),neg=v<0,abs=Math.round(Math.abs(v)).toString().replace(/\B(?=(\d{3})+(?!\d))/g,",");return (neg?"\u09F3-":"\u09F3")+abs;}
 function countUpBalance(){
   var el=document.getElementById("dash-balance");
@@ -426,22 +428,18 @@ function hideErr(id){var el=$(id);if(el)el.style.display="none";}
 
 // ═══════════ AUTH ═══════════
 function gLogin(){
-  // Use redirect on mobile (popup gets blocked by mobile browsers)
-  if(mob()){
+  // Use redirect on mobile or PWA install mode (popup tends to fail there)
+  var standalone=window.matchMedia("(display-mode:standalone)").matches||!!window.navigator.standalone;
+  if(mob() || standalone){
     fa.signInWithRedirect(gp).catch(function(e){showErr("lerr",e.message);});
-  } else {
-    var standalone=window.matchMedia("(display-mode:standalone)").matches||!!window.navigator.standalone;
-    if(standalone){
-      fa.signInWithRedirect(gp).catch(function(e){showErr("lerr",e.message);});
-    } else {
-      fa.signInWithPopup(gp).then(function(r){}).catch(function(e){
-        // Fallback to redirect if popup fails
-        if(e.code==="auth/popup-blocked"||e.code==="auth/popup-closed-by-user"){
-          fa.signInWithRedirect(gp).catch(function(e2){showErr("lerr",e2.message);});
-        } else { showErr("lerr",e.message); }
-      });
-    }
+    return;
   }
+  fa.signInWithPopup(gp).then(function(r){}).catch(function(e){
+    // Fallback to redirect if popup fails
+    if(e.code==="auth/popup-blocked"||e.code==="auth/popup-closed-by-user"){
+      fa.signInWithRedirect(gp).catch(function(e2){showErr("lerr",e2.message);});
+    } else { showErr("lerr",e.message); }
+  });
 }
 
 function eLogin(){
