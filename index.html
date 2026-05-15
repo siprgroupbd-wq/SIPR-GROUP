@@ -679,6 +679,7 @@ function render(){
   var con=$("content");if(!con)return;
   var t=S.tab;
   // ── Render page content ──
+  try{
   if(t==="dashboard"){con.innerHTML=pDash();setTimeout(countUpBalance,80);}
   else if(t==="finance"||t==="payments"){con.innerHTML=pFinance();}
   else if(t==="investments"){
@@ -699,13 +700,12 @@ function render(){
   var tb=$("topbar");
   if(tb){
     tb.style.display="flex";
-    // Update topbar title with project name when inside project
     var ttl=$("pg-title");
-    if(S.activeProj){
-      var ap=S.invs.find(function(x){return x.id===S.activeProj;});
-      if(ttl&&ap)ttl.textContent=ap.name;
-    } else {
-      if(ttl)ttl.textContent=titles[S.tab]||S.tab;
+    if(ttl){
+      if(S.activeProj){
+        var ap=S.invs.find(function(x){return x.id===S.activeProj;});
+        if(ap)ttl.textContent=ap.name;
+      }
     }
   }
   // ── Ham button context ──
@@ -727,6 +727,11 @@ function render(){
     }
   }
   buildNav();
+
+  } catch(err){
+    console.error("Render error:",err);
+    con.innerHTML="<div style='padding:40px;text-align:center'><button onclick='location.reload()' style='padding:10px 20px;border-radius:9px;background:#5b8fff;border:none;color:#fff;font-size:13px;font-weight:700;cursor:pointer'>Reload App</button></div>";
+  }
 }
 
 function getMyWallet(){var me=getMem(S.email);if(!me||!me.id)return{available:0,locked:0,history:[]};var w=S.wallets.find(function(x){return x.memberId===me.id;})||{available:0,locked:0,history:[]};var today=new Date(),unlocked=0,locked=0;(w.history||[]).forEach(function(e){if(e.type==="salary"&&e.locked){if(e.unlockDate&&today>=new Date(e.unlockDate))unlocked+=Number(e.amount);else locked+=Number(e.amount);}});return{available:Number(w.available||0)+unlocked,locked:locked,history:w.history||[],docId:w.id};}
