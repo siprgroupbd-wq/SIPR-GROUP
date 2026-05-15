@@ -374,7 +374,11 @@ var TITLES={dashboard:"Dashboard",payments:"Monthly Payments",investments:"Proje
 // ═══════════ HELPERS ═══════════
 function $(i){return document.getElementById(i);}
 function mob(){
-  return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth<800;
+  return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)
+    || window.innerWidth<800
+    || navigator.maxTouchPoints>1
+    || window.matchMedia("(any-pointer:coarse)").matches
+    || (navigator.userAgentData&&navigator.userAgentData.mobile);
 }
 function fmt(n){var v=Number(n||0),neg=v<0,abs=Math.round(Math.abs(v)).toString().replace(/\B(?=(\d{3})+(?!\d))/g,",");return (neg?"\u09F3-":"\u09F3")+abs;}
 function countUpBalance(){
