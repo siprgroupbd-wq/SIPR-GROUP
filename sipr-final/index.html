@@ -489,8 +489,15 @@ function doLogout(){fa.signOut().then(function(){S.email="";S.name="";S.role="me
 function changePwModal(){closeProf();var h="<div class='modal-bg' onclick='if(event.target===this)closeModal()'><div class='modal-box'><div style='display:flex;justify-content:space-between;align-items:center;margin-bottom:18px'><div style='font-weight:800;font-size:17px'>Change Password</div><button onclick='closeModal()' style='background:none;border:none;color:var(--mut);font-size:20px;cursor:pointer'>✕</button></div><div class='fc'><div><label class='lbl'>New Password</label><input type='password' id='np' class='inp' placeholder='Min 6 characters'/></div><div><label class='lbl'>Confirm</label><input type='password' id='cp2' class='inp'/></div><button class='btn-p' onclick='doCp()'>Update Password</button></div></div></div>";$("modal").innerHTML=h;}
 function doCp(){var np=($("np")||{value:""}).value,cp2=($("cp2")||{value:""}).value;if(np.length<6){toast("Min 6 characters",false);return;}if(np!==cp2){toast("Passwords don't match",false);return;}var user=fa.currentUser;if(!user){toast("Not logged in",false);return;}user.updatePassword(np).then(function(){closeModal();toast("Password updated!");}).catch(function(e){toast(e.message,false);});}
 
-startLoading();
 initTheme();
+startLoading();
+// Ensure correct initial state
+(function(){
+  var pl=$("pg-login");var pa=$("pg-app");var ld=$("pg-loading");
+  if(pl)pl.style.display="none";
+  if(pa)pa.style.display="none";
+  if(ld)ld.style.display="flex";
+})();
 fa.getRedirectResult().then(function(result){if(result&&result.user){}}).catch(function(e){if(e.code!=="auth/no-current-user")console.warn("redirect:",e.message);});
 fa.onAuthStateChanged(function(user){
   if(!user){$("pg-app").style.display="none";$("pg-login").style.display="flex";$("pg-invite").style.display="none";return;}
@@ -512,8 +519,7 @@ fa.onAuthStateChanged(function(user){
 
 // ═══════════ DATA ═══════════
 function loadMembers(cb){
-  var mbTimeout=setTimeout(function(){console.warn("loadMembers timeout");if(cb)cb();},5000);
-  db.collection("members").get().then(function(snap){clearTimeout(mbTimeout);
+  db.collection("members").get().then(function(snap){
     if(snap.empty){S.mems=DEF_MEMS.slice();if(cb)cb();return;}
     var seen={};
     S.mems=snap.docs.map(function(d){return Object.assign({id:d.id},d.data());}).filter(function(m){if(!m.email||seen[m.email])return false;seen[m.email]=true;return true;});
@@ -575,18 +581,28 @@ function startLoading(){
   },60);
   S._loadIv=iv;S._loadBar=bar;S._loadMsg=msg;
 
-  // Safety: force show login after 6 seconds if stuck
+  // Safety: if stuck after 8s AND no Firebase user → show login
   setTimeout(function(){
     var ls=$("pg-loading");
-    if(ls&&ls.style.display!=="none"){
+    if(!ls||ls.style.display==="none")return; // already moved on
+    var cu=fa.currentUser;
+    if(!cu){
+      // No user logged in — safe to show login
       ls.style.display="none";
-      document.body.style.background="";
       var lp=$("pg-login");
-      if(lp){lp.style.display="flex";lp.style.opacity="1";}
-      var lapp=$("pg-app");
-      if(lapp)lapp.style.display="none";
+      if(lp)lp.style.display="flex";
+    } else {
+      // User exists but still loading — wait more then force app
+      setTimeout(function(){
+        var ls2=$("pg-loading");
+        if(ls2&&ls2.style.display!=="none"){
+          ls2.style.display="none";
+          var lp2=$("pg-login");
+          if(lp2)lp2.style.display="flex";
+        }
+      },7000);
     }
-  },6000);
+  },8000);
 }
 
 function doneLoading(){
