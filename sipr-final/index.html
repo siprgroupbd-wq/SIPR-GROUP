@@ -571,7 +571,18 @@ function startLoading(){
     if(p>=95)clearInterval(iv);
   },60);
   S._loadIv=iv;S._loadBar=bar;S._loadMsg=msg;
+
+  // Safety: if Firebase takes over 10s, force show login
+  setTimeout(function(){
+    var ls=$("pg-loading");
+    if(ls&&ls.style.display!=="none"){
+      ls.style.display="none";
+      var lp=$("pg-login");
+      if(lp){lp.style.display="flex";}
+    }
+  },10000);
 }
+
 function doneLoading(){
   if(S._loadIv)clearInterval(S._loadIv);
   var bar=$("load-bar"),msg=$("load-msg"),pg=$("pg-loading");
@@ -629,7 +640,7 @@ function setLabels(){
   var avH=av(S.name||"?",32);
   var rc={admin:"Admin",finance:"Finance",secretary:"Secretary",member:"Member"}[S.role]||"Member";
   var sn=$("su-name"),sr=$("su-role"),suav=$("su-av"),tav=$("top-av");
-  if(sn)sn.textContent=S.name;if(sr)sr.textContent=rc;if(suav)suav.innerHTML=avH;if(tav)tav.innerHTML=avH;
+  if(sn)sn.textContent=S.name;if(sr)sr.textContent=rc;if(suav)suav.innerHTML=avH;if(tav)tav.innerHTML=avH;var pgt=$("pg-title");if(pgt&&!S.activeProj)pgt.textContent=titles[S.tab]||S.tab;
   var pdi=$("pd-info");
   if(pdi)pdi.innerHTML="<div style='display:flex;align-items:center;gap:8px'>"+av(S.name,36)+"<div><div style='font-size:13px;font-weight:800'>"+S.name+"</div><div style='font-size:11px;color:var(--mut)'>"+(me.title||rc)+"</div><div style='font-size:10px;color:var(--mut)'>"+S.email+"</div></div></div>";
   updateWallet();
@@ -639,7 +650,7 @@ function closeSidebar(){var sb=$("sidebar"),ov=$("overlay");if(sb)sb.classList.r
 function toggleProf(){var d=$("prof-drop");if(d)d.style.display=d.style.display==="block"?"none":"block";}
 function closeProf(){var d=$("prof-drop");if(d)d.style.display="none";}
 function closeModal(){var m=$("modal");if(m)m.innerHTML="";}
-function goPage(tab){if(tab==="payments")tab="finance";if(tab==="transactions"){S.tab="finance";S._fTab="transactions";buildNav();closeSidebar();closeProf();render();return;}S.tab=tab;buildNav();var titles={dashboard:"Dashboard",payments:"Monthly Payments",investments:"Projects",transactions:"Transactions",members:"Members",wallet:"My Wallet",goals:"Goals",noticeboard:"Notice Board",expenses:"Expenses",documents:"Documents",activity:"Activity Log",about:"About SIPR",control:"Control Panel"};var pt=$("pg-title");if(pt)pt.textContent=titles[tab]||tab;closeSidebar();closeProf();render();}
+function goPage(tab){if(tab==="payments")tab="finance";if(tab==="transactions"){S.tab="finance";S._fTab="transactions";buildNav();closeSidebar();closeProf();render();return;}S.tab=tab;var pgt=$("pg-title");if(pgt)pgt.textContent=titles[tab]||tab;buildNav();var titles={dashboard:"Dashboard",payments:"Monthly Payments",investments:"Projects",transactions:"Transactions",members:"Members",wallet:"My Wallet",goals:"Goals",noticeboard:"Notice Board",expenses:"Expenses",documents:"Documents",activity:"Activity Log",about:"About SIPR",control:"Control Panel"};var pt=$("pg-title");if(pt)pt.textContent=titles[tab]||tab;closeSidebar();closeProf();render();}
 function moreMenu(){var vis=NAVS.filter(function(n){return !n.adm||isAdmin();});var pri=["dashboard","payments","investments","transactions","members"];var more=vis.filter(function(n){return pri.indexOf(n.id)<0;});var h="<div class='modal-bg' onclick='if(event.target===this)closeModal()'><div class='modal-box'><div style='font-size:11px;letter-spacing:2px;color:var(--mut);font-weight:700;margin-bottom:12px'>MORE PAGES</div><div style='display:flex;flex-direction:column;gap:6px'>"+more.map(function(n){return"<button onclick='goPage(\""+n.id+"\");closeModal()' style='display:flex;align-items:center;gap:12px;padding:12px;background:var(--s2);border:1px solid var(--bor);border-radius:10px;color:var(--txt);font-size:13px;font-weight:600;cursor:pointer;font-family:inherit'><span style='font-size:18px'>"+n.ic+"</span>"+n.lb+"</button>";}).join("")+"</div></div></div>";$("modal").innerHTML=h;}
 function render(){
   var con=$("content");if(!con)return;
@@ -663,18 +674,28 @@ function render(){
   else if(t==="control"){con.innerHTML=isAdmin()?pControl():"<div class='card' style='text-align:center;padding:48px;color:var(--mut)'>Admin access required.</div>";}
   // ── Topbar visibility: hide on project detail ──
   var tb=$("topbar");
-  if(tb)tb.style.display=(S.activeProj?"none":"flex");
+  if(tb){
+    tb.style.display="flex";
+    // Update topbar title with project name when inside project
+    var ttl=$("pg-title");
+    if(S.activeProj){
+      var ap=S.invs.find(function(x){return x.id===S.activeProj;});
+      if(ttl&&ap)ttl.textContent=ap.name;
+    } else {
+      if(ttl)ttl.textContent=titles[S.tab]||S.tab;
+    }
+  }
   // ── Ham button context ──
   var hb=$("ham");
   if(hb){
     var mainTabs=["dashboard","investments","members"];
     var onMainPage=mainTabs.indexOf(S.tab)>=0&&!S.activeProj;
-    if(!onMainPage){
-      hb.innerHTML="&#x2190; Back";
+    if(!onMainPage||S.activeProj){
+      hb.innerHTML="&#x2190;";
       hb.style.cssText="padding:7px 14px;border-radius:20px;border:1px solid var(--bor);background:var(--s2);cursor:pointer;font-size:13px;font-weight:700;color:var(--txt);font-family:inherit;";
       hb.onclick=function(){
         if(S.activeProj){backToProjects();}
-        else{S.tab="dashboard";render();}
+        else{goPage("dashboard");}
       };
     } else {
       hb.innerHTML="&#x2630;";
@@ -707,14 +728,19 @@ function payS(y,m){
     var paidAmt=paid?tx.reduce(function(s,t){return s+Number(t.amount);},0):0;
     var sorted=paid?tx.slice().sort(function(a,b){return new Date(a.date)-new Date(b.date);}):[];
     var paidDate=paid?sorted[0].date:null;
-    // Late = paid after the deadline day of that month
+    // Late = paid after the 10th of the month they are paying FOR
     var late=false;
     if(paid&&paidDate){
       var pd=new Date(paidDate);
-      // Only mark late if deadline has passed (not future months)
+      // Get the paymentFor month (may differ from date month for overdue payments)
+      var forYear=sorted[0].paymentForYear!==undefined?sorted[0].paymentForYear:pd.getFullYear();
+      var forMonth=sorted[0].paymentForMonth!==undefined?sorted[0].paymentForMonth:pd.getMonth();
+      // Deadline = 10th of the month they are paying for
+      var deadline=new Date(forYear,forMonth,DEADLINE,23,59,59);
+      // Only mark late for current or past months
       var now=new Date();
-      var isCurrentOrPast=(y<now.getFullYear())||(y===now.getFullYear()&&m<=now.getMonth());
-      if(isCurrentOrPast) late=pd.getDate()>DEADLINE;
+      var deadlinePassed=deadline<now;
+      if(deadlinePassed) late=pd>deadline;
     }
     return Object.assign({},mb,{paid:paid,paidAmt:paidAmt,paidDate:paidDate,late:late});
   });
@@ -1200,8 +1226,6 @@ function toggleProjMenu(id){
 function pProject(id){
   var inv=S.invs.find(function(x){return x.id===id;});
   if(!inv)return "<div class='card' style='text-align:center;padding:60px 24px;color:var(--mut)'>Project not found.<br><br><button onclick='backToProjects()' class='btn-a'>&#x2190; Back</button></div>";
-  var IS2={active:{L:"Active",C:"var(--grn)"},planning:{L:"Planning",C:"var(--amber)"},completed:{L:"Completed",C:"var(--green)"},paused:{L:"Paused",C:"var(--purple)"},loss:{L:"Loss",C:"var(--red)"}};
-  var st=IS2[inv.status]||IS2.planning;
   var dep2=Number(inv.capitalDeployed||inv.amount||0);
   var ret2=Number(inv.actualReturn||0);
   var exp=Number(inv.expectedReturn||0);
@@ -1211,8 +1235,7 @@ function pProject(id){
   var team=inv.teamEntries||[];
   var tab2=S._invTab||"overview";
   var canMgr=isAdmin()||isProjectManager(inv);
-
-  // ── Stock calculation ──
+  // Stock calculation
   var stockMap={};
   cols2.forEach(function(e){
     var item=(e.plasticType||e.item||"Item").trim()||"Item";
@@ -1224,54 +1247,9 @@ function pProject(id){
   var totalQty=Object.keys(stockMap).reduce(function(s,k){return s+stockMap[k].collected;},0);
   var totalSold=Object.keys(stockMap).reduce(function(s,k){return s+stockMap[k].sold;},0);
   var totalRev=(sales2.length?sales2:cols2).reduce(function(s,e){return s+Number(e.revenue||0);},0);
-
-  // ── Expenses ──
   var expenses=inv.projectExpenses||[];
   var totalExpense=expenses.reduce(function(s,e){return s+Number(e.amount||0);},0);
-
   var h="<div class='fc'>";
-
-  // ── COMPACT HEADER CARD ──
-  h+="<div style='background:linear-gradient(135deg,var(--gdm),#0d0c30);border:1px solid var(--gbr);border-radius:18px;padding:13px 15px'>";
-  // Back + menu row
-  h+="<div style='display:flex;justify-content:space-between;align-items:center;margin-bottom:10px'>";
-  h+="<button onclick='backToProjects()' style='width:34px;height:34px;border-radius:50%;border:1px solid var(--bor);background:rgba(0,0,0,.25);color:var(--txt);font-size:16px;cursor:pointer;font-family:inherit;display:flex;align-items:center;justify-content:center;font-weight:700;flex-shrink:0'>&#x2190;</button>";
-  if(isAdmin()){
-    h+="<div style='position:relative'>";
-    h+="<button onclick='toggleProjMenu(this.dataset.mid)' data-mid='"+inv.id+"' style='width:32px;height:32px;border-radius:9px;border:1px solid var(--bor);background:rgba(0,0,0,.2);color:var(--txt);font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center'>&#x22EE;</button>";
-    h+="<div id='pm-dd-"+inv.id+"' style='display:none;position:absolute;right:0;top:38px;background:var(--sur);border:1px solid var(--bor);border-radius:12px;overflow:hidden;z-index:50;box-shadow:0 8px 30px rgba(0,0,0,.5);min-width:130px'>";
-    h+="<button onclick='openInv(this.dataset.id)' data-id='"+inv.id+"' style='width:100%;padding:11px 16px;border:none;background:none;font-family:inherit;text-align:left;color:var(--grn);font-size:13px;font-weight:700;cursor:pointer'>&#x270F; Edit</button>";
-    h+="<div style='height:1px;background:var(--bor)'></div>";
-    h+="<button onclick='delInv(this.dataset.id)' data-id='"+inv.id+"' style='width:100%;padding:11px 16px;border:none;background:none;font-family:inherit;text-align:left;color:var(--red);font-size:13px;font-weight:700;cursor:pointer'>&#x1F5D1; Delete</button>";
-    h+="</div></div>";
-  }
-  h+="</div>";
-  // Project info — compact single row
-  h+="<div style='display:flex;align-items:center;gap:10px'>";
-  h+="<div style='width:3px;height:36px;border-radius:99px;background:"+st.C+";flex-shrink:0;box-shadow:0 0 8px "+st.C+"60'></div>";
-  h+="<div style='flex:1;min-width:0'>";
-  h+="<div style='display:flex;align-items:center;gap:7px;margin-bottom:3px;flex-wrap:wrap'><div style='font-size:18px;font-weight:900'>"+inv.name+"</div><span class='bdg' style='background:"+st.C+"18;color:"+st.C+"'>"+st.L+"</span></div>";
-  h+="<div style='font-size:11px;color:var(--mut);overflow:hidden;text-overflow:ellipsis;white-space:nowrap'>";
-  h+=(inv.date?fd(inv.date)+" · ":"");
-  if(inv.projectManagerName)h+="Manager: <span style='color:var(--grn);font-weight:700'>"+inv.projectManagerName+"</span>";
-  h+="</div></div>";
-  h+="<div style='text-align:right;flex-shrink:0'>";
-  h+="<div style='font-size:9px;color:var(--mut);letter-spacing:2px;margin-bottom:2px'>CAPITAL</div>";
-  h+="<div style='font-size:17px;font-weight:900;color:var(--gold)'>"+fmt(dep2)+"</div>";
-  if(pl>0)h+="<div style='font-size:11px;font-weight:700;color:var(--green)'>+"+fmt(pl)+"</div>";
-  else if(pl<0)h+="<div style='font-size:11px;font-weight:700;color:var(--red)'>"+fmt(pl)+"</div>";
-  h+="</div></div>";
-  // Phase bar
-  var phasePct=inv.phasePct||0;
-  if(phasePct>0||inv.phases){
-    h+="<div style='margin-top:10px'>";
-    h+="<div style='height:2px;background:var(--bor);border-radius:99px;overflow:hidden'>";
-    h+="<div style='height:100%;width:"+phasePct+"%;background:"+st.C+";border-radius:99px'></div></div>";
-    h+="<div style='font-size:9px;color:var(--mut);margin-top:3px;text-align:right'>Phase progress: "+phasePct+"%</div>";
-    h+="</div>";
-  }
-  h+="</div>";
-
   // ── TAB CARD ──
   var TABS=[
     {k:"overview",l:"Overview"},
