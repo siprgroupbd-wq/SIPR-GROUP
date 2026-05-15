@@ -369,6 +369,8 @@ var S={
   nbTab:"ann",invF:"all",_pf:"all",_mo:{},
   _invTab:"overview",_fTab:"payments"
 };
+var TITLES={dashboard:"Dashboard",payments:"Monthly Payments",investments:"Projects",members:"Members",activity:"Audit Trail",control:"Control Panel",wallet:"My Wallet",goals:"Goals",expenses:"Expenses",documents:"Documents",noticeboard:"Notice Board",about:"About SIPR"};
+
 
 // ═══════════ HELPERS ═══════════
 function $(i){return document.getElementById(i);}
@@ -663,7 +665,7 @@ function setLabels(){
   var avH=av(S.name||"?",32);
   var rc={admin:"Admin",finance:"Finance",secretary:"Secretary",member:"Member"}[S.role]||"Member";
   var sn=$("su-name"),sr=$("su-role"),suav=$("su-av"),tav=$("top-av");
-  if(sn)sn.textContent=S.name;if(sr)sr.textContent=rc;if(suav)suav.innerHTML=avH;if(tav)tav.innerHTML=avH;var pgt=$("pg-title");if(pgt&&!S.activeProj)pgt.textContent=titles[S.tab]||S.tab;
+  if(sn)sn.textContent=S.name;if(sr)sr.textContent=rc;if(suav)suav.innerHTML=avH;if(tav)tav.innerHTML=avH;var pgt=$("pg-title");if(pgt&&!S.activeProj)pgt.textContent=TITLES[S.tab]||S.tab;
   var pdi=$("pd-info");
   if(pdi)pdi.innerHTML="<div style='display:flex;align-items:center;gap:8px'>"+av(S.name,36)+"<div><div style='font-size:13px;font-weight:800'>"+S.name+"</div><div style='font-size:11px;color:var(--mut)'>"+(me.title||rc)+"</div><div style='font-size:10px;color:var(--mut)'>"+S.email+"</div></div></div>";
   updateWallet();
@@ -673,7 +675,7 @@ function closeSidebar(){var sb=$("sidebar"),ov=$("overlay");if(sb)sb.classList.r
 function toggleProf(){var d=$("prof-drop");if(d)d.style.display=d.style.display==="block"?"none":"block";}
 function closeProf(){var d=$("prof-drop");if(d)d.style.display="none";}
 function closeModal(){var m=$("modal");if(m)m.innerHTML="";}
-function goPage(tab){if(tab==="payments")tab="finance";if(tab==="transactions"){S.tab="finance";S._fTab="transactions";buildNav();closeSidebar();closeProf();render();return;}S.tab=tab;var pgt=$("pg-title");if(pgt)pgt.textContent=titles[tab]||tab;buildNav();var titles={dashboard:"Dashboard",payments:"Monthly Payments",investments:"Projects",transactions:"Transactions",members:"Members",wallet:"My Wallet",goals:"Goals",noticeboard:"Notice Board",expenses:"Expenses",documents:"Documents",activity:"Activity Log",about:"About SIPR",control:"Control Panel"};var pt=$("pg-title");if(pt)pt.textContent=titles[tab]||tab;closeSidebar();closeProf();render();}
+function goPage(tab){if(tab==="payments")tab="finance";if(tab==="transactions"){S.tab="finance";S._fTab="transactions";buildNav();closeSidebar();closeProf();render();return;}S.tab=tab;var pgt=$("pg-title");if(pgt)pgt.textContent=TITLES[tab]||tab;buildNav();var pt=$("pg-title");if(pt)pt.textContent=TITLES[tab]||tab;closeSidebar();closeProf();render();}
 function moreMenu(){var vis=NAVS.filter(function(n){return !n.adm||isAdmin();});var pri=["dashboard","payments","investments","transactions","members"];var more=vis.filter(function(n){return pri.indexOf(n.id)<0;});var h="<div class='modal-bg' onclick='if(event.target===this)closeModal()'><div class='modal-box'><div style='font-size:11px;letter-spacing:2px;color:var(--mut);font-weight:700;margin-bottom:12px'>MORE PAGES</div><div style='display:flex;flex-direction:column;gap:6px'>"+more.map(function(n){return"<button onclick='goPage(\""+n.id+"\");closeModal()' style='display:flex;align-items:center;gap:12px;padding:12px;background:var(--s2);border:1px solid var(--bor);border-radius:10px;color:var(--txt);font-size:13px;font-weight:600;cursor:pointer;font-family:inherit'><span style='font-size:18px'>"+n.ic+"</span>"+n.lb+"</button>";}).join("")+"</div></div></div>";$("modal").innerHTML=h;}
 function render(){
   var con=$("content");if(!con)return;
