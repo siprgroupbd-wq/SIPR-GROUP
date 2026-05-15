@@ -500,11 +500,9 @@ startLoading();
 })();
 fa.getRedirectResult().then(function(result){if(result&&result.user){}}).catch(function(e){if(e.code!=="auth/no-current-user")console.warn("redirect:",e.message);});
 fa.onAuthStateChanged(function(user){
-  dbg(user?"Auth: "+user.email:"No user - showing login");
-  if(!user){$("pg-app").style.display="none";$("pg-login").style.display="flex";$("pg-invite").style.display="none";return;}
+    if(!user){$("pg-app").style.display="none";$("pg-login").style.display="flex";$("pg-invite").style.display="none";return;}
   loadMembers(function(){
-    dbg("Finding member in "+S.mems.length+" members...");
-      var mem=S.mems.find(function(m){return m.googleUid===user.uid;})||S.mems.find(function(m){return m.googleEmail===user.email;})||S.mems.find(function(m){return m.email===user.email;});
+          var mem=S.mems.find(function(m){return m.googleUid===user.uid;})||S.mems.find(function(m){return m.googleEmail===user.email;})||S.mems.find(function(m){return m.email===user.email;});
     if(mem){
       if(mem.status==="pending"){$("pg-login").style.display="flex";showErr("lerr","Your registration is pending admin approval.");fa.signOut();return;}
       S.email=mem.email;S.name=mem.name||user.displayName||user.email;S.uid=user.uid;S.role=mem.role||"member";
@@ -571,11 +569,6 @@ function initTheme(){
 
 // ── Loading screen ──────────────────────────────────────────
 
-function dbg(msg){
-  var el=document.getElementById("sipr-debug");
-  if(el)el.textContent=msg;
-  console.log("[SIPR]",msg);
-}
 function startLoading(){
   var bar=$("load-bar"),msg=$("load-msg"),pg=$("pg-loading");
   if(!bar||!pg)return;
